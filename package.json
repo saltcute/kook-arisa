@@ -1,0 +1,31 @@
+{
+  "name": "kasumi-template",
+  "version": "0.1.0",
+  "description": "Template for Kasumi",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --nolazy -r ts-node/register -r tsconfig-paths/register src/index.ts",
+    "pm2": "node src/pm2/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hexona69/kasumi-template.git"
+  },
+  "keywords": [
+    "Kasumi",
+    "kook",
+    "bot"
+  ],
+  "author": "Hexona",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hexona69/kasumi-template/issues"
+  },
+  "homepage": "https://github.com/hexona69/kasumi-template#readme",
+  "dependencies": {
+    "kasumi.js": "^0.1.15",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.1.2",
+    "upath": "^2.0.1"
+  }
+}

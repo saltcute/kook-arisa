@@ -1,0 +1,39 @@
+{
+    "compilerOptions": {
+        "declaration": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "target": "es2020",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "lib": [
+            "ES2020",
+            "ES2021",
+            "ES2021.String"
+        ],
+        "baseUrl": "./src",
+        "rootDirs": [
+            "src"
+        ],
+        "outDir": "./dist",
+        "strict": true,
+        "typeRoots": [
+            "./typings",
+            "node_modules/@types"
+        ],
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": [
+        // "./src/commands/shared/*.ts",
+        // "./src/utils/*.ts",
+        // "./src/index.ts",
+        "./src/**/*.ts",
+        ".eslintrc.js",
+    ],
+    "exclude": [
+        "./src/tests/*.ts"
+    ]
+}
