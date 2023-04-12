@@ -6,4 +6,7 @@ export default {
     kookVerifyToken: '',
     kookEncryptKey: '',
     kookPort: 9999,
-} 
+}
+
+export const streamers: string[] = [
+]

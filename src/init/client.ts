@@ -15,7 +15,8 @@ if (config.useWebHook) {
 } else {
     botConifg = {
         type: 'websocket',
-        vendor: config.useBotRootWebSocket ? 'botroot' : 'hexona',
+        // vendor: config.useBotRootWebSocket ? 'botroot' : 'hexona',
+        vendor: 'kookts',
         token: config.kookToken
     }
 }

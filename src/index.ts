@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import upath from 'upath';
 
 (async () => {
+    await client.API.user.offline();
     await client.connect()
     const basicPath = upath.join(__dirname, 'menu');
     const menus = fs.readdirSync(basicPath);

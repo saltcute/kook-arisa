@@ -3,10 +3,12 @@ import { BaseMenu } from "kasumi.js";
 import upath from 'upath';
 import * as fs from 'fs';
 import './event';
+import './button';
+import { Controller } from "./controller";
 
 class AppMenu extends BaseMenu {
-    name = 'echo';
-    prefix = './!';
+    name = 'arisa';
+    prefix = './!。！';
 }
 
 const menu = new AppMenu();
@@ -23,3 +25,5 @@ for (const command of commands) {
         menu.logger.error(e);
     }
 }
+
+export const controller = new Controller(client.TOKEN);
