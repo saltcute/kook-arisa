@@ -1,10 +1,22 @@
+import config from 'config';
 import netease from 'NeteaseCloudMusicApi';
+import { songDetail } from './type';
 
 
 
 export class Netease {
+    constructor() { this.init() };
+    private cookie?: string;
+    async init() {
+        if (config.neteaseVIP) {
+            this.cookie = (await netease.login({
+                email: config.neteaseEmail,
+                password: config.neteasePassword
+            })).body.cookie;
+        }
+    }
     async search(keywords: string): Promise<Netease.song[]> {
-        const res = await netease.search({ keywords });
+        const res = await netease.search({ keywords, cookie: this.cookie });
         return (res.body.result as any).songs;
     }
     async getAlbum(id: number): Promise<{
@@ -12,22 +24,23 @@ export class Netease {
         album: Netease.album,
         artist: Netease.artist
     }> {
-        const res = await netease.album({ id });
+        const res = await netease.album({ id, cookie: this.cookie });
         return {
             songs: (res.body as any).songs,
             album: (res.body as any).album,
             artist: (res.body as any).artist
         }
     }
-    async getSong(id: number) {
-        return ((await netease.song_url({ id })).body.data as any)[0];
+    async getSong(id: number): Promise<songDetail> {
+        return ((await netease.song_detail({ ids: id.toString(), cookie: this.cookie })).body.songs as any)[0];
     }
     async getSongUrl(id: number) {
-        return (await this.getSong(id)).url;
+        return ((await netease.song_url({ id, cookie: this.cookie })).body.data as any)[0].url
     }
 }
 
 export default new Netease();
+
 
 export namespace Netease {
     export interface artist {
