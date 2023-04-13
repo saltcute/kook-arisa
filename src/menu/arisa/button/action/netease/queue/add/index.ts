@@ -26,7 +26,7 @@ export default async function (event: ButtonClickedEvent, action: string[], data
         const songData = await netease.getSong(songId);
         const url = await netease.getSongUrl(songId);
         console.log(url);
-        session.send(`已将 ${songData.name} 添加到播放列表！`);
+        session.send(`已将「${songData.name}」添加到播放列表！`);
         streamer.playBuffer(promiseGetter({
             url,
             method: 'GET',
