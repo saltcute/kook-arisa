@@ -162,14 +162,35 @@ export class Streamer {
     paused: boolean = false;
     private queue: Array<queue> = [];
 
+    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat') {
+        this.cycleMode = payload;
+    }
+
+    private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
+    private nowPlaying?: queue;
+
     async next(): Promise<queue | undefined> {
-        if (this.queue.length) {
-            const upnext = this.queue.shift();
-            if (upnext) {
-                // console.log(`Up Next: ${upnext.meta.title}`);
-                await this.playback(upnext);
-                return upnext;
-            }
+        let upnext: queue | undefined;
+        console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
+        switch (this.cycleMode) {
+            case 'no_repeat':
+                upnext = this.queue.shift();
+                break;
+            case 'repeat_one':
+                upnext = this.nowPlaying || this.queue.shift();
+                break;
+            case 'repeat':
+                if (this.nowPlaying) this.queue.push(this.nowPlaying);
+                upnext = this.queue.shift();
+                break;
+        }
+        console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
+        if (upnext) {
+            this.nowPlaying = upnext;
+            console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
+            // console.log(`Up Next: ${upnext.meta.title}`);
+            await this.playback(upnext);
+            return upnext;
         }
     }
 

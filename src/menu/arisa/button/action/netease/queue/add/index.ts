@@ -25,7 +25,7 @@ export default async function (event: ButtonClickedEvent, action: string[], data
     getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {
         const songData = await netease.getSong(songId);
         const url = await netease.getSongUrl(songId);
-        console.log(url);
+        client.logger.debug(url);
         session.send(`已将「${songData.name}」添加到播放列表！`);
         streamer.playBuffer(promiseGetter({
             url,
