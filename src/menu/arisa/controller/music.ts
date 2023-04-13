@@ -120,6 +120,7 @@ export class Streamer {
         } else {
             this.lastOperation = Date.now();
         }
+        setTimeout(() => { this.ensureUsage() }, 15 * 60 * 1000);
     }
 
     private fileP = new PassThrough();
