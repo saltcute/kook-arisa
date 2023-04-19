@@ -6,6 +6,10 @@ import { akarin } from ".";
 
 export type data = {
     songId: number
+    meta: {
+        title: string,
+        artists: string
+    }
 }
 
 async function processing(song: Netease.song, order: number) {
@@ -50,7 +54,11 @@ export default async function (keyword: string) {
             value: JSON.stringify({
                 action: 'netease:queue:add',
                 data: {
-                    songId
+                    songId,
+                    meta: {
+                        title: song.name,
+                        artists: song.artists.map(v => v.name).join(", ")
+                    }
                 } as data
             }),
             click: 'return-val'

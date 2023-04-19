@@ -6,18 +6,20 @@ import ffmpeg, { ffprobe } from 'fluent-ffmpeg';
 import delay from 'delay';
 import * as fs from 'fs';
 import upath from 'upath';
-import { client } from 'init/client';
+import netease from '../command/netease/lib';
+import axios from 'axios';
 
 interface playbackNeteaseSource {
     type: 'netease',
     data: {
-        songId: string
+        songId: number
     }
 }
 type playbackLocalSouce = string;
 type playbackFileSource = Buffer | Readable;
+type playbackPlayableSource = playbackLocalSouce | playbackFileSource;
 type playbackStreamingSource = playbackNeteaseSource;
-type playbackSource = playbackLocalSouce | playbackFileSource | playbackStreamingSource;
+type playbackSource = playbackPlayableSource | playbackStreamingSource;
 
 interface songMeta {
     title: string,
@@ -26,7 +28,7 @@ interface songMeta {
 }
 
 type queue = {
-    source: playbackSource | Promise<playbackSource>,
+    source: playbackSource | Promise<playbackSource>
     meta: songMeta
 };
 export class Streamer {
@@ -60,7 +62,7 @@ export class Streamer {
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
-    async playNetease(songId: string) {
+    async playNetease(songId: number) {
         const input: playbackNeteaseSource = {
             type: 'netease',
             data: {
@@ -72,21 +74,55 @@ export class Streamer {
     private isStreamingSource(payload: any): payload is playbackStreamingSource {
         return this.streamingServices.includes(payload.type);
     }
-    private async getStreamingSource(input: playbackStreamingSource) {
+    private async getStreamingSource(
+        input: playbackStreamingSource
+    ): Promise<{
+        source: playbackPlayableSource,
+        meta: songMeta
+    }> {
         switch (input.type) {
             case 'netease': {
-                const song = netease.getSong(input.data.songId);
-                break;
+                const song = await netease.getSong(input.data.songId);
+                const url = await netease.getSongUrl(input.data.songId);
+                const buffer = (await axios.get(url, { responseType: 'arraybuffer' })).data
+                return {
+                    source: buffer,
+                    meta: {
+                        title: song.name,
+                        artists: song.ar.map(v => v.name).join(', '),
+                        duration: song.dt
+                    }
+                }
             }
         }
     }
     async playStreaming(input: playbackStreamingSource, forceSwitch: boolean = false) {
-        if (this.previousStream && !forceSwitch) this.queue.push(input);
-        else this.playback(input);
+        let payload: queue = {
+            source: input,
+            meta: {
+                title: `Unknown streaming service audio`,
+                artists: 'Unknown',
+                duration: -1
+            }
+        }
+        this.queue.push(payload)
+        if (!(this.previousStream && !forceSwitch)) this.next();
     }
-    async playBuffer(input: playbackFileSource | Promise<playbackFileSource>, forceSwitch: boolean = false) {
-        if (this.previousStream && !forceSwitch) this.queue.push(input);
-        else this.playback(input);
+    async playBuffer(
+        input: playbackFileSource | Promise<playbackFileSource>,
+        meta: songMeta = {
+            title: `Unknown file`,
+            artists: 'Unknown',
+            duration: -1
+        },
+        forceSwitch: boolean = false
+    ) {
+        let payload: queue = {
+            source: input,
+            meta: meta
+        }
+        this.queue.push(payload)
+        if (!(this.previousStream && !forceSwitch)) this.next();
     }
     async playLocal(input: playbackLocalSouce, forceSwitch: boolean = false) {
         const path = input.trim().replace(/^['"](.*)['"]$/, '$1').trim();
@@ -105,11 +141,8 @@ export class Streamer {
                                     duration: -1
                                 }
                             }
-                            if (this.previousStream && !forceSwitch) {
-                                this.queue.push(payload);
-                            } else {
-                                await this.playback(payload);
-                            }
+                            this.queue.push(payload)
+                            if (!(this.previousStream && !forceSwitch)) this.next();
                         }
                         // console.log(data.streams.map(val => val.codec_type));
                     })
@@ -123,11 +156,8 @@ export class Streamer {
                         duration: -1
                     }
                 }
-                if (this.previousStream && !forceSwitch) {
-                    this.queue.push(payload);
-                } else {
-                    await this.playback(payload);
-                }
+                this.queue.push(payload)
+                if (!(this.previousStream && !forceSwitch)) this.next();
             }
         }
     }
@@ -190,7 +220,6 @@ export class Streamer {
 
     async next(): Promise<queue | undefined> {
         let upnext: queue | undefined;
-        console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
         switch (this.cycleMode) {
             case 'no_repeat':
                 upnext = this.queue.shift();
@@ -203,19 +232,37 @@ export class Streamer {
                 upnext = this.queue.shift();
                 break;
         }
-        console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
         if (upnext) {
             this.nowPlaying = upnext;
-            console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
-            // console.log(`Up Next: ${upnext.meta.title}`);
             await this.playback(upnext);
             return upnext;
         }
     }
 
+    private async preload() {
+        this.queue[0] = await this.preparePayload(this.queue[0]);
+    }
+
+    private async preparePayload(payload: queue): Promise<{
+        source: playbackPlayableSource,
+        meta: songMeta
+    }> {
+        let source = payload.source, meta = payload.meta;
+        if (source instanceof Promise) source = await source;
+        if (this.isStreamingSource(source)) {
+            const stream = (await this.getStreamingSource(source));
+            source = stream.source;
+            meta = stream.meta;
+        }
+        return { source, meta }
+    }
+
+    playbackStart?: number;
+
     async playback(payload: queue): Promise<void> {
+        this.preload();
+        this.playbackStart = Date.now();
         this.lastOperation = Date.now();
-        let file = payload.source;
         if (this.previousStream) {
             this.previousStream = false;
             await delay(20);
@@ -225,9 +272,12 @@ export class Streamer {
             this.fileP = new PassThrough();
         }
         this.previousStream = true;
-        this.currentMusicMeta = payload.meta;
+
+        let prepared = await this.preparePayload(payload);
+        let file = prepared.source;
+        this.currentMusicMeta = prepared.meta;
+
         var fileC: Readable;
-        if (file instanceof Promise) file = await file;
         if (file instanceof Buffer) fileC = Readable.from(file);
         else if (file instanceof Readable) fileC = structuredClone(file);
         else fileC = fs.createReadStream(file);

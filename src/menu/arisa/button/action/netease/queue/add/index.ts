@@ -1,20 +1,7 @@
 import { client } from "init/client";
 import { BaseSession, ButtonClickedEvent } from "kasumi.js";
-import { controller } from "menu/arisa";
-import netease from "menu/arisa/command/netease/lib";
 import { data } from "menu/arisa/command/netease/lib/card/searchList";
-import axios, { AxiosRequestConfig } from 'axios';
 import { getChannelStreamer } from "menu/arisa";
-
-async function promiseGetter(config: AxiosRequestConfig): Promise<any> {
-    return new Promise((resolve, reject) => {
-        axios(config).then((res) => {
-            resolve(res.data);
-        }).catch((e) => {
-            reject(e);
-        })
-    })
-}
 
 export default async function (event: ButtonClickedEvent, action: string[], data: data) {
     event.guildId = event.rawEvent.extra.body.guild_id;
@@ -24,19 +11,8 @@ export default async function (event: ButtonClickedEvent, action: string[], data
     // console.log(songId, session.guildId, event.channelId, session.channelId);
     if (!session.guildId || !songId) return;
     getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {
-        const songData = await netease.getSong(songId);
-        const url = await netease.getSongUrl(songId);
-        client.logger.debug(url);
-        session.send(`已将「${songData.name}」添加到播放列表！`);
-        streamer.playBuffer(promiseGetter({
-            url,
-            method: 'GET',
-            responseType: 'arraybuffer'
-        }), {
-            title: songData.name,
-            artists: songData.ar.map(v => v.name).join(', '),
-            duration: songData.dt
-        })
+        session.sendTemp(`已将「${data.meta.title}」添加到播放列表！`);
+        streamer.playNetease(songId)
     }).catch((e) => {
         switch (e.err) {
             case 'network_failure':
