@@ -6,7 +6,7 @@ import ffmpeg, { ffprobe } from 'fluent-ffmpeg';
 import delay from 'delay';
 import * as fs from 'fs';
 import upath from 'upath';
-import netease from '../command/netease/lib';
+import { client } from 'init/client';
 
 interface playbackNeteaseSource {
     type: 'netease',
@@ -19,6 +19,16 @@ type playbackFileSource = Buffer | Readable;
 type playbackStreamingSource = playbackNeteaseSource;
 type playbackSource = playbackLocalSouce | playbackFileSource | playbackStreamingSource;
 
+interface songMeta {
+    title: string,
+    artists: string,
+    duration: number
+}
+
+type queue = {
+    source: playbackSource | Promise<playbackSource>,
+    meta: songMeta
+};
 export class Streamer {
     readonly streamerToken: string;
     readonly targetChannelId: string;
@@ -26,6 +36,7 @@ export class Streamer {
     private controller: Controller;
     readonly kasumi: Kasumi;
     private readonly koice: Koice;
+
     constructor(token: string, guildId: string, channelId: string, controller: Controller) {
         this.streamerToken = structuredClone(token);
         this.targetChannelId = structuredClone(channelId);
@@ -36,6 +47,8 @@ export class Streamer {
             token: this.streamerToken
         });
         this.koice = new Koice(this.streamerToken);
+        this.lastOperation = Date.now();
+        this.ensureUsage();
     }
     async connect() {
         this.koice.connectWebSocket(this.targetChannelId);
@@ -84,31 +97,58 @@ export class Streamer {
                     ffprobe(fullPath, async (err, data) => {
                         if (err) return;
                         if (data.streams.map(val => val.codec_type).includes('audio')) {
+                            let payload: queue = {
+                                source: fullPath,
+                                meta: {
+                                    title: `Local file: ${upath.parse(fullPath).base}`,
+                                    artists: 'Unknown',
+                                    duration: -1
+                                }
+                            }
                             if (this.previousStream && !forceSwitch) {
-                                this.queue.push(fullPath);
+                                this.queue.push(payload);
                             } else {
-                                await this.playback(fullPath);
+                                await this.playback(payload);
                             }
                         }
                         // console.log(data.streams.map(val => val.codec_type));
                     })
                 })
             } else {
+                let payload: queue = {
+                    source: path,
+                    meta: {
+                        title: `Local file: ${upath.parse(path).base}`,
+                        artists: 'Unknown',
+                        duration: -1
+                    }
+                }
                 if (this.previousStream && !forceSwitch) {
-                    this.queue.push(path);
+                    this.queue.push(payload);
                 } else {
-                    await this.playback(path);
+                    await this.playback(payload);
                 }
             }
         }
     }
 
-    fileP = new PassThrough();
-    ffmpegInstance: ffmpeg.FfmpegCommand | undefined;
+    private lastOperation: number;
+    private ensureUsage() {
+        if (Date.now() - this.lastOperation > 30 * 60 * 1000) {
+            this.disconnect();
+        } else {
+            this.lastOperation = Date.now();
+        }
+        setTimeout(() => { this.ensureUsage() }, 15 * 60 * 1000);
+    }
+
+    private fileP = new PassThrough();
+    private ffmpegInstance: ffmpeg.FfmpegCommand | undefined;
 
 
-    previousStream: boolean = false;
-    lastRead: number = -1;
+    private previousStream: boolean = false;
+    currentMusicMeta?: songMeta;
+    private lastRead: number = -1;
 
     readonly stream = new Readable({
         read(size) {
@@ -116,36 +156,66 @@ export class Streamer {
         },
     })
 
-    shuffle(array: any[]) {
+    private _shuffle(array: any[]) {
         let currentIndex = array.length, randomIndex;
-
-        // While there remain elements to shuffle.
         while (currentIndex != 0) {
-
-            // Pick a remaining element.
             randomIndex = Math.floor(Math.random() * currentIndex);
             currentIndex--;
-
-            // And swap it with the current element.
             [array[currentIndex], array[randomIndex]] = [
                 array[randomIndex], array[currentIndex]];
         }
-
         return array;
     }
 
-    paused: boolean = false;
-    queue: Array<playbackSource | Promise<playbackSource>> = [];
+    shuffle() {
+        this.queue = this._shuffle(this.queue);
+    }
 
-    async next(): Promise<void> {
-        if (this.queue.length) {
-            const upnext = this.queue.shift();
-            if (upnext) await this.playback(upnext);
+    getQueue() {
+        return this.queue;
+    }
+    clearQueue() {
+        this.queue = [];
+    }
+
+    paused: boolean = false;
+    private queue: Array<queue> = [];
+
+    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat') {
+        this.cycleMode = payload;
+    }
+
+    private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
+    private nowPlaying?: queue;
+
+    async next(): Promise<queue | undefined> {
+        let upnext: queue | undefined;
+        console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
+        switch (this.cycleMode) {
+            case 'no_repeat':
+                upnext = this.queue.shift();
+                break;
+            case 'repeat_one':
+                upnext = this.nowPlaying || this.queue.shift();
+                break;
+            case 'repeat':
+                if (this.nowPlaying) this.queue.push(this.nowPlaying);
+                upnext = this.queue.shift();
+                break;
+        }
+        console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
+        if (upnext) {
+            this.nowPlaying = upnext;
+            console.log(this.nowPlaying?.meta.title, upnext?.meta.title);
+            // console.log(`Up Next: ${upnext.meta.title}`);
+            await this.playback(upnext);
+            return upnext;
         }
     }
 
-    async playback(file: playbackSource | Promise<playbackSource>): Promise<void> {
-        console.log("pl a");
+    async playback(payload: queue): Promise<void> {
+        this.lastOperation = Date.now();
+        let file = payload.source;
         if (this.previousStream) {
             this.previousStream = false;
             await delay(20);
@@ -155,10 +225,8 @@ export class Streamer {
             this.fileP = new PassThrough();
         }
         this.previousStream = true;
+        this.currentMusicMeta = payload.meta;
         var fileC: Readable;
-        if (this.isStreamingSource(file)) {
-            return;
-        }
         if (file instanceof Promise) file = await file;
         if (file instanceof Buffer) fileC = Readable.from(file);
         else if (file instanceof Readable) fileC = structuredClone(file);
@@ -166,7 +234,6 @@ export class Streamer {
         this.ffmpegInstance = ffmpeg()
             .input(fileC)
             .audioCodec('pcm_u8')
-            .audioBitrate(128)
             .audioChannels(2)
             .audioFrequency(48000)
             .outputFormat('wav');
@@ -198,13 +265,13 @@ export class Streamer {
                 await delay(10);
             }
             if (this.previousStream) {
-                await this.next();
                 this.previousStream = false;
                 await delay(20);
                 this.ffmpegInstance?.kill("SIGSTOP");
                 this.fileP?.removeAllListeners();
                 this.fileP?.destroy();
                 this.fileP = new PassThrough();
+                await this.next();
             }
         });
     }

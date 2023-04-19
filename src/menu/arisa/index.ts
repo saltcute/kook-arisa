@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import './event';
 import './button';
 import { Controller } from "./controller";
+import { Streamer } from "./controller/music";
 
 class AppMenu extends BaseMenu {
     name = 'arisa';
@@ -27,3 +28,28 @@ for (const command of commands) {
 }
 
 export const controller = new Controller(client.TOKEN);
+
+
+export async function getChannelStreamer(guildId: string, authorId: string): Promise<Streamer> {
+    let joinedChannel;
+    for await (const { err, data } of client.API.channel.user.joinedChannel(guildId, authorId)) {
+        if (err) {
+            throw { err: 'network_failure', msg: '获取频道失败' };
+        }
+        for (const channel of data.items) {
+            joinedChannel = channel;
+            break;
+        }
+        if (joinedChannel) break;
+    }
+    if (joinedChannel) {
+        const streamer = controller.getChannelStreamer(joinedChannel.id);
+        if (streamer) {
+            return streamer;
+        } else {
+            throw { err: 'no_streamer', msg: '没有 Arisa 在当前频道！' };
+        }
+    } else {
+        throw { err: 'no_joinedchannel', msg: '请先加入语音频道！' };
+    }
+}

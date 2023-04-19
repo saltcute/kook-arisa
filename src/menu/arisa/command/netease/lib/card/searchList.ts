@@ -33,7 +33,7 @@ async function processing(song: Netease.song, order: number) {
 
 export default async function (keyword: string) {
     const songs = await netease.search(keyword);
-    const card = new Card().setTheme('info');
+    const card = new Card().setTheme('info').addContext("部分 VIP 歌曲可能只能预览前 30s");
     const promises: Promise<Awaited<ReturnType<typeof processing>>>[] = [];
     let counter = 0;
     for (const song of songs) {

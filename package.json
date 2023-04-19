@@ -1,7 +1,7 @@
 {
-  "name": "kasumi-template",
+  "name": "kook-arisa",
   "version": "0.1.0",
-  "description": "Template for Kasumi",
+  "description": "KOOK Music Bot",
   "main": "index.js",
   "scripts": {
     "start": "node --nolazy -r ts-node/register -r tsconfig-paths/register src/index.ts",
