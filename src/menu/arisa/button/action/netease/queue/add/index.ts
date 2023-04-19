@@ -5,16 +5,6 @@ import netease from "menu/arisa/command/netease/lib";
 import { data } from "menu/arisa/command/netease/lib/card/searchList";
 import axios, { AxiosRequestConfig } from 'axios';
 
-async function promiseGetter(config: AxiosRequestConfig): Promise<any> {
-    return new Promise((resolve, reject) => {
-        axios(config).then((res) => {
-            resolve(res.data);
-        }).catch((e) => {
-            reject(e);
-        })
-    })
-}
-
 export default async function (event: ButtonClickedEvent, action: string[], data: data) {
     event.guildId = event.rawEvent.extra.body.guild_id;
     // console.log(event.rawEvent);
@@ -37,13 +27,7 @@ export default async function (event: ButtonClickedEvent, action: string[], data
     if (joinedChannel) {
         const streamer = controller.getChannelStreamer(joinedChannel.id);
         if (streamer) {
-            const url = await netease.getSongUrl(songId);
-            console.log(url);
-            streamer.playBuffer(promiseGetter({
-                url,
-                method: 'GET',
-                responseType: 'arraybuffer'
-            }))
+            streamer.playNetease(songId)
         } else {
             session.reply("没有推流姬在当前频道！");
         }

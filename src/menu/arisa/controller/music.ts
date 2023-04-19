@@ -6,10 +6,18 @@ import ffmpeg, { ffprobe } from 'fluent-ffmpeg';
 import delay from 'delay';
 import * as fs from 'fs';
 import upath from 'upath';
+import netease from '../command/netease/lib';
 
+interface playbackNeteaseSource {
+    type: 'netease',
+    data: {
+        songId: string
+    }
+}
 type playbackLocalSouce = string;
 type playbackFileSource = Buffer | Readable;
-type playbackSource = playbackLocalSouce | playbackFileSource;
+type playbackStreamingSource = playbackNeteaseSource;
+type playbackSource = playbackLocalSouce | playbackFileSource | playbackStreamingSource;
 
 export class Streamer {
     readonly streamerToken: string;
@@ -38,6 +46,30 @@ export class Streamer {
     async disconnect(): Promise<boolean> {
         await this.koice.close();
         return this.controller.returnStreamer(this);
+    }
+    async playNetease(songId: string) {
+        const input: playbackNeteaseSource = {
+            type: 'netease',
+            data: {
+                songId
+            }
+        };
+    }
+    readonly streamingServices = ['netease'];
+    private isStreamingSource(payload: any): payload is playbackStreamingSource {
+        return this.streamingServices.includes(payload.type);
+    }
+    private async getStreamingSource(input: playbackStreamingSource) {
+        switch (input.type) {
+            case 'netease': {
+                const song = netease.getSong(input.data.songId);
+                break;
+            }
+        }
+    }
+    async playStreaming(input: playbackStreamingSource, forceSwitch: boolean = false) {
+        if (this.previousStream && !forceSwitch) this.queue.push(input);
+        else this.playback(input);
     }
     async playBuffer(input: playbackFileSource | Promise<playbackFileSource>, forceSwitch: boolean = false) {
         if (this.previousStream && !forceSwitch) this.queue.push(input);
@@ -124,6 +156,9 @@ export class Streamer {
         }
         this.previousStream = true;
         var fileC: Readable;
+        if (this.isStreamingSource(file)) {
+            return;
+        }
         if (file instanceof Promise) file = await file;
         if (file instanceof Buffer) fileC = Readable.from(file);
         else if (file instanceof Readable) fileC = structuredClone(file);
