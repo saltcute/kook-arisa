@@ -9,27 +9,54 @@ import upath from 'upath';
 import netease from '../command/netease/lib';
 import axios from 'axios';
 
-interface playbackNeteaseSource {
-    type: 'netease',
-    data: {
-        songId: number
+export namespace playback {
+    export type source = source.playable | source.streaming;
+    export interface meta {
+        title: string,
+        artists: string,
+        duration: number
+    }
+    export namespace source {
+        export interface netease {
+            type: 'netease',
+            data: {
+                songId: number
+            }
+        }
+        export type local = string;
+        export type cache = Buffer | Readable;
+        export type playable = local | cache;
+        export type streaming = netease;
+    }
+    export type extra = extra.playable | extra.streaming;
+    export namespace extra {
+        export interface netease {
+            type: 'netease',
+            data: {
+                songId: number
+            }
+        }
+        export interface readable {
+            type: 'readable'
+        }
+        export interface buffer {
+            type: 'buffer'
+        }
+        export interface local {
+            type: 'local'
+        }
+
+        export type cache = buffer | readable;
+        export type playable = local | cache;
+        export type streaming = netease;
     }
 }
-type playbackLocalSouce = string;
-type playbackFileSource = Buffer | Readable;
-type playbackPlayableSource = playbackLocalSouce | playbackFileSource;
-type playbackStreamingSource = playbackNeteaseSource;
-type playbackSource = playbackPlayableSource | playbackStreamingSource;
 
-interface songMeta {
-    title: string,
-    artists: string,
-    duration: number
-}
 
-type queue = {
-    source: playbackSource | Promise<playbackSource>
-    meta: songMeta
+type queueItem = {
+    source: playback.source | Promise<playback.source>
+    meta: playback.meta,
+    extra?: playback.extra.netease
 };
 export class Streamer {
     readonly streamerToken: string;
@@ -62,31 +89,23 @@ export class Streamer {
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
-    async playNetease(songId: number) {
-        const input: playbackNeteaseSource = {
-            type: 'netease',
-            data: {
-                songId
-            }
-        };
-    }
     readonly streamingServices = ['netease'];
-    private isStreamingSource(payload: any): payload is playbackStreamingSource {
+    private isStreamingSource(payload: any): payload is playback.source.streaming {
         return this.streamingServices.includes(payload.type);
     }
     private async getStreamingSource(
-        input: playbackStreamingSource
+        input: playback.source.streaming
     ): Promise<{
-        source: playbackPlayableSource,
-        meta: songMeta
+        source: playback.source.playable,
+        meta: playback.meta
     }> {
         switch (input.type) {
             case 'netease': {
                 const song = await netease.getSong(input.data.songId);
                 const url = await netease.getSongUrl(input.data.songId);
-                const buffer = (await axios.get(url, { responseType: 'arraybuffer' })).data
+                const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
                 return {
-                    source: buffer,
+                    source: cache,
                     meta: {
                         title: song.name,
                         artists: song.ar.map(v => v.name).join(', '),
@@ -96,35 +115,48 @@ export class Streamer {
             }
         }
     }
-    async playStreaming(input: playbackStreamingSource, forceSwitch: boolean = false) {
-        let payload: queue = {
+
+    async playNetease(songId: number, meta?: playback.meta, forceSwitch: boolean = false) {
+        const input: playback.source.netease = {
+            type: 'netease',
+            data: {
+                songId
+            }
+        };
+        const extra: playback.extra.netease = {
+            type: 'netease',
+            data: { songId }
+        }
+        return this.playStreaming(input, meta, extra, forceSwitch);
+    }
+    async playStreaming(input: playback.source.streaming, meta?: playback.meta, extra?: playback.extra.streaming, forceSwitch: boolean = false) {
+        let payload: queueItem = {
             source: input,
-            meta: {
+            meta: meta || {
                 title: `Unknown streaming service audio`,
                 artists: 'Unknown',
                 duration: -1
-            }
+            },
+            extra
         }
-        this.queue.push(payload)
-        if (!(this.previousStream && !forceSwitch)) this.next();
+        this.pushPayload(payload, forceSwitch);
     }
     async playBuffer(
-        input: playbackFileSource | Promise<playbackFileSource>,
-        meta: songMeta = {
+        input: playback.source.cache | Promise<playback.source.cache>,
+        meta: playback.meta = {
             title: `Unknown file`,
             artists: 'Unknown',
             duration: -1
         },
         forceSwitch: boolean = false
     ) {
-        let payload: queue = {
+        let payload: queueItem = {
             source: input,
             meta: meta
         }
-        this.queue.push(payload)
-        if (!(this.previousStream && !forceSwitch)) this.next();
+        this.pushPayload(payload, forceSwitch);
     }
-    async playLocal(input: playbackLocalSouce, forceSwitch: boolean = false) {
+    async playLocal(input: playback.source.local, forceSwitch: boolean = false) {
         const path = input.trim().replace(/^['"](.*)['"]$/, '$1').trim();
         if (fs.existsSync(path)) {
             if (fs.lstatSync(path).isDirectory()) {
@@ -133,7 +165,7 @@ export class Streamer {
                     ffprobe(fullPath, async (err, data) => {
                         if (err) return;
                         if (data.streams.map(val => val.codec_type).includes('audio')) {
-                            let payload: queue = {
+                            let payload: queueItem = {
                                 source: fullPath,
                                 meta: {
                                     title: `Local file: ${upath.parse(fullPath).base}`,
@@ -141,14 +173,12 @@ export class Streamer {
                                     duration: -1
                                 }
                             }
-                            this.queue.push(payload)
-                            if (!(this.previousStream && !forceSwitch)) this.next();
+                            this.pushPayload(payload, forceSwitch);
                         }
-                        // console.log(data.streams.map(val => val.codec_type));
                     })
                 })
             } else {
-                let payload: queue = {
+                let payload: queueItem = {
                     source: path,
                     meta: {
                         title: `Local file: ${upath.parse(path).base}`,
@@ -156,10 +186,14 @@ export class Streamer {
                         duration: -1
                     }
                 }
-                this.queue.push(payload)
-                if (!(this.previousStream && !forceSwitch)) this.next();
+                this.pushPayload(payload, forceSwitch);
             }
         }
+    }
+    private pushPayload(payload: any, forceSwitch: boolean = false) {
+        this.preload();
+        this.queue.push(payload)
+        if (!(this.previousStream && !forceSwitch)) this.next();
     }
 
     private lastOperation: number;
@@ -177,7 +211,7 @@ export class Streamer {
 
 
     private previousStream: boolean = false;
-    currentMusicMeta?: songMeta;
+    currentMusicMeta?: playback.meta;
     private lastRead: number = -1;
 
     readonly stream = new Readable({
@@ -209,17 +243,17 @@ export class Streamer {
     }
 
     paused: boolean = false;
-    private queue: Array<queue> = [];
+    private queue: Array<queueItem> = [];
 
     setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat') {
         this.cycleMode = payload;
     }
 
     private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
-    private nowPlaying?: queue;
+    private nowPlaying?: queueItem;
 
-    async next(): Promise<queue | undefined> {
-        let upnext: queue | undefined;
+    async next(): Promise<queueItem | undefined> {
+        let upnext: queueItem | undefined;
         switch (this.cycleMode) {
             case 'no_repeat':
                 upnext = this.queue.shift();
@@ -240,12 +274,12 @@ export class Streamer {
     }
 
     private async preload() {
-        this.queue[0] = await this.preparePayload(this.queue[0]);
+        if (this.queue[0]) this.queue[0] = await this.preparePayload(this.queue[0]);
     }
 
-    private async preparePayload(payload: queue): Promise<{
-        source: playbackPlayableSource,
-        meta: songMeta
+    private async preparePayload(payload: queueItem): Promise<{
+        source: playback.source.playable,
+        meta: playback.meta
     }> {
         let source = payload.source, meta = payload.meta;
         if (source instanceof Promise) source = await source;
@@ -259,17 +293,23 @@ export class Streamer {
 
     playbackStart?: number;
 
-    async playback(payload: queue): Promise<void> {
+    async endPlayback() {
+        delete this.currentMusicMeta;
+        delete this.playbackStart;
+        this.previousStream = false;
+        await delay(20);
+        this.ffmpegInstance?.kill("SIGSTOP");
+        this.fileP?.removeAllListeners();
+        this.fileP?.destroy();
+        this.fileP = new PassThrough();
+    }
+
+    async playback(payload: queueItem): Promise<void> {
         this.preload();
         this.playbackStart = Date.now();
         this.lastOperation = Date.now();
         if (this.previousStream) {
-            this.previousStream = false;
-            await delay(20);
-            this.ffmpegInstance?.kill("SIGSTOP");
-            this.fileP?.removeAllListeners();
-            this.fileP?.destroy();
-            this.fileP = new PassThrough();
+            await this.endPlayback();
         }
         this.previousStream = true;
 
@@ -285,6 +325,7 @@ export class Streamer {
             .input(fileC)
             .audioCodec('pcm_u8')
             .audioChannels(2)
+            .audioFilter('volume=0.15')
             .audioFrequency(48000)
             .outputFormat('wav');
         this.ffmpegInstance
@@ -295,16 +336,17 @@ export class Streamer {
         })
         this.fileP.on('end', async () => {
             var now = 0;
-            var buffer = Buffer.concat(bfs);
+            var cache = Buffer.concat(bfs);
             // var rate = 11025;
-            var rate = 965;
+            // var rate = 965;
+            var rate = 975;
             while (Date.now() - this.lastRead < 20);
 
-            while (this.previousStream && now <= buffer.length) {
+            while (this.previousStream && now <= cache.length) {
                 if (!this.paused) {
                     this.lastRead = Date.now();
-                    const chunk = buffer.subarray(now, now + rate);
-                    if (this.previousStream && now <= buffer.length) {
+                    const chunk = cache.subarray(now, now + rate);
+                    if (this.previousStream && now <= cache.length) {
                         this.stream.push(chunk);
                     }
                     else {
@@ -315,12 +357,7 @@ export class Streamer {
                 await delay(10);
             }
             if (this.previousStream) {
-                this.previousStream = false;
-                await delay(20);
-                this.ffmpegInstance?.kill("SIGSTOP");
-                this.fileP?.removeAllListeners();
-                this.fileP?.destroy();
-                this.fileP = new PassThrough();
+                await this.endPlayback();
                 await this.next();
             }
         });

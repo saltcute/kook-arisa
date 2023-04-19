@@ -8,7 +8,8 @@ export type data = {
     songId: number
     meta: {
         title: string,
-        artists: string
+        artists: string,
+        duration: number
     }
 }
 
@@ -57,7 +58,8 @@ export default async function (keyword: string) {
                     songId,
                     meta: {
                         title: song.name,
-                        artists: song.artists.map(v => v.name).join(", ")
+                        artists: song.artists.map(v => v.name).join(", "),
+                        duration: song.duration
                     }
                 } as data
             }),

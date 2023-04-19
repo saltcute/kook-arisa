@@ -13,7 +13,7 @@ class AppCommand extends BaseCommand {
                 .addTitle("Now Playing");
             const queue = streamer.getQueue();
             if (streamer.currentMusicMeta) {
-                card.addText(`${streamer.currentMusicMeta.title} ${streamer.playbackStart ? `${Time.timeToString((streamer.playbackStart - Date.now()) / 1000)} / ` : ''}(font)${Time.timeToString(streamer.currentMusicMeta.duration / 1000)}(font)[secondary]`)
+                card.addText(`${streamer.currentMusicMeta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.currentMusicMeta.duration / 1000)}(font)[secondary]`)
                     .addContext(streamer.currentMusicMeta.artists)
             } else {
                 card.addText("None");
@@ -29,13 +29,13 @@ class AppCommand extends BaseCommand {
                         card
                             .addDivider()
                             .addText('**Up Next**')
-                            .addText(`${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)}(font)[secondary]`)
+                            .addText(`${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)} (font)[secondary]`)
                             .addContext(song.meta.artists)
                         flg = false;
                     } else {
                         card
                             .addDivider()
-                            .addText(`${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)}(font)[secondary]`)
+                            .addText(`${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)} (font)[secondary]`)
                             .addContext(song.meta.artists)
                     }
                 }
