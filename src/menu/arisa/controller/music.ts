@@ -101,21 +101,25 @@ export class Streamer {
     ): Promise<{
         source: playback.source.playable,
         meta: playback.meta
-    }> {
-        switch (input.type) {
-            case 'netease': {
-                const song = await netease.getSong(input.data.songId);
-                const url = await netease.getSongUrl(input.data.songId);
-                const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
-                return {
-                    source: cache,
-                    meta: {
-                        title: song.name,
-                        artists: song.ar.map(v => v.name).join(', '),
-                        duration: song.dt
+    } | undefined> {
+        try {
+            switch (input.type) {
+                case 'netease': {
+                    const song = await netease.getSong(input.data.songId);
+                    const url = await netease.getSongUrl(input.data.songId);
+                    const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
+                    return {
+                        source: cache,
+                        meta: {
+                            title: song.name,
+                            artists: song.ar.map(v => v.name).join(', '),
+                            duration: song.dt
+                        }
                     }
                 }
             }
+        } catch {
+            return undefined;
         }
     }
 
@@ -280,18 +284,22 @@ export class Streamer {
     }
 
     private async preload() {
-        if (this.queue[0]) this.queue[0] = await this.preparePayload(this.queue[0]);
+        if (this.queue[0]) {
+            const prepared = await this.preparePayload(this.queue[0]);
+            if (prepared) this.queue[0] = prepared;
+        }
     }
 
     private async preparePayload(payload: queueItem): Promise<{
         source: playback.source.playable,
         meta: playback.meta,
         extra?: playback.extra
-    }> {
+    } | undefined> {
         let source = payload.source, meta = payload.meta;
         if (source instanceof Promise) source = await source;
         if (this.isStreamingSource(source)) {
             const stream = (await this.getStreamingSource(source));
+            if (!stream) return undefined;
             source = stream.source;
             meta = stream.meta;
         }
@@ -321,6 +329,11 @@ export class Streamer {
         this.previousStream = true;
 
         let prepared = await this.preparePayload(payload);
+        if (!prepared) {
+            await this.endPlayback();
+            await this.next();
+            return;
+        }
         let file = prepared.source;
         this.currentMusic = prepared;
 

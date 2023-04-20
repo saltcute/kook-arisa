@@ -19,11 +19,11 @@ client.message.on('systemMessages', async (event) => {
         }
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) { // has arisa
-            if (list.length == 1) { // Only one user left in channel. Probably Arisa.
-                streamer.disconnect();
-            }
             if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
                 playlist.user.save(streamer, extra.body.user_id);
+            }
+            if (list.length == 1) { // Only one user left in channel. Probably Arisa.
+                streamer.disconnect();
             }
         }
     }
