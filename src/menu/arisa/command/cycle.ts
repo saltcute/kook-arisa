@@ -24,11 +24,15 @@ class AppCommand extends BaseCommand {
                     break;
                 case 'random':
                     streamer.shuffle();
+                    streamer.setCycleMode('repeat');
                     session.reply("已设置为随机循环");
                     break;
                 default:
                     session.reply(new Card()
-                        .addText("可能的模式:")
+                        .addText("当前模式：")
+                        .addText(streamer.getCycleMode())
+                        .addDivider()
+                        .addText("可能的模式：")
                         .addText("　　`no_repeat`: 不循环")
                         .addText("　　`repeat`: 顺序循环")
                         .addText("　　`repeat_one`: 单曲循环")
@@ -43,7 +47,7 @@ class AppCommand extends BaseCommand {
                 case 'no_joinedchannel':
                     return session.sendTemp(e.msg);
                 default:
-                    client.logger.error(e);
+                    this.logger.error(e);
             }
         });
     }

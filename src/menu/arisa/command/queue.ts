@@ -12,9 +12,9 @@ class AppCommand extends BaseCommand {
             const card = new Card()
                 .addTitle("Now Playing");
             const queue = streamer.getQueue();
-            if (streamer.currentMusicMeta) {
-                card.addText(`${streamer.currentMusicMeta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.currentMusicMeta.duration / 1000)}(font)[secondary]`)
-                    .addContext(streamer.currentMusicMeta.artists)
+            if (streamer.currentMusic) {
+                card.addText(`${streamer.currentMusic.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.currentMusic.meta.duration / 1000)}(font)[secondary]`)
+                    .addContext(streamer.currentMusic.meta.artists)
             } else {
                 card.addText("None");
             }

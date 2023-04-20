@@ -10,7 +10,7 @@ class AppCommand extends BaseCommand {
         if (!session.guildId) return session.reply("只能在服务器频道中使用此命令");
         getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {
             streamer.shuffle();
-            session.reply("已打乱播放列表");
+            session.reply(new Card().addText("已打乱播放列表"));
             queue.exec(session);
         }).catch((e) => {
             switch (e.err) {

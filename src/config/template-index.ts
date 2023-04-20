@@ -7,6 +7,8 @@ export default {
     kookEncryptKey: '',
     kookPort: 9999,
 
+    mongoDBURI: '',
+
     neteaseVIP: false,
     neteaseEmail: '',
     neteasePassword: '',

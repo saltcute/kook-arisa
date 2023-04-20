@@ -40,22 +40,15 @@ export class Controller {
     }
 
     async returnStreamer(streamer: Streamer) {
-        const { err, data } = await streamer.kasumi.API.user.me();
+        const { err } = await streamer.kasumi.API.guild.leave(streamer.TARGET_GUILD_ID);
         if (err) {
             streamer.kasumi.logger.error(err);
             return false;
         }
-        const streamerId = data.id; {
-            const { err } = await client.API.guild.kick(streamer.targetGuildId, streamerId);
-            if (err) {
-                streamer.kasumi.logger.error(err);
-                return false;
-            }
-        }
-        this.guildChannel.delete(streamer.targetGuildId);
-        this.streamerChannel.delete(streamer.streamerToken);
-        this.channelStreamer.delete(streamer.targetChannelId);
-        this.availableStreamers.push(streamer.streamerToken);
+        this.guildChannel.delete(streamer.TARGET_GUILD_ID);
+        this.streamerChannel.delete(streamer.STREAMER_TOKEN);
+        this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
+        this.availableStreamers.push(streamer.STREAMER_TOKEN);
         return true;
     }
 
@@ -65,11 +58,11 @@ export class Controller {
      * Bot token is auto assigned.
      * @param channelId ChannelID
      */
-    async joinChannel(guildId: string, channelId: string) {
-        const streamerToken = this.getNextAvailableStreamer();
-        if (!streamerToken) return;
+    async joinChannel(guildId: string, channelId: string, authorId: string) {
+        const STREAMER_TOKEN = this.getNextAvailableStreamer();
+        if (!STREAMER_TOKEN) return;
 
-        const streamer = new Streamer(streamerToken, guildId, channelId, this);
+        const streamer = new Streamer(STREAMER_TOKEN, guildId, channelId, authorId, this);
         const { err, data } = await streamer.kasumi.API.user.me();
         if (err) {
             streamer.kasumi.logger.error(err);
@@ -93,8 +86,20 @@ export class Controller {
                 client.logger.error(err);
                 return;
             }
+        } {
+            const { err } = await client.API.channel.permission.createUser(channelId, client.me.userId);
+            if (err) {
+                client.logger.error(err);
+                return;
+            }
+        } {
+            const { err } = await client.API.channel.permission.updateUser(channelId, client.me.userId, 1 << 11);
+            if (err) {
+                client.logger.error(err);
+                return;
+            }
         }
-        this.streamerChannel.set(streamerToken, channelId);
+        this.streamerChannel.set(STREAMER_TOKEN, channelId);
         this.guildChannel.set(guildId, channelId);
         this.channelStreamer.set(channelId, streamer);
         return streamer.connect();

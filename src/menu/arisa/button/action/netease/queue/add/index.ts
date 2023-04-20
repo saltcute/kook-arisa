@@ -1,5 +1,5 @@
 import { client } from "init/client";
-import { BaseSession, ButtonClickedEvent } from "kasumi.js";
+import { BaseSession, ButtonClickedEvent, Card } from "kasumi.js";
 import { data } from "menu/arisa/command/netease/lib/card/searchList";
 import { getChannelStreamer } from "menu/arisa";
 
@@ -8,7 +8,7 @@ export default async function (event: ButtonClickedEvent, action: string[], data
 
     if (!session.guildId || !songId) return;
     getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {
-        session.sendTemp(`已将「${data.meta.title}」添加到播放列表！`);
+        session.sendTemp(new Card().addText(`已将「${data.meta.title}」添加到播放列表！`));
         streamer.playNetease(songId, data.meta)
     }).catch((e) => {
         switch (e.err) {

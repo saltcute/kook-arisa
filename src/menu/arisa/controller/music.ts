@@ -33,7 +33,8 @@ export namespace playback {
         export interface netease {
             type: 'netease',
             data: {
-                songId: number
+                songId: number,
+                meta?: meta
             }
         }
         export interface readable {
@@ -53,34 +54,36 @@ export namespace playback {
 }
 
 
-type queueItem = {
+export type queueItem = {
     source: playback.source | Promise<playback.source>
     meta: playback.meta,
-    extra?: playback.extra.netease
+    extra?: playback.extra
 };
 export class Streamer {
-    readonly streamerToken: string;
-    readonly targetChannelId: string;
-    readonly targetGuildId: string;
+    readonly STREAMER_TOKEN: string;
+    readonly TARGET_CHANNEL_ID: string;
+    readonly TARGET_GUILD_ID: string;
+    readonly INVITATION_AUTHOR_ID: string;
     private controller: Controller;
     readonly kasumi: Kasumi;
     private readonly koice: Koice;
 
-    constructor(token: string, guildId: string, channelId: string, controller: Controller) {
-        this.streamerToken = structuredClone(token);
-        this.targetChannelId = structuredClone(channelId);
-        this.targetGuildId = structuredClone(guildId)
+    constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
+        this.STREAMER_TOKEN = structuredClone(token);
+        this.TARGET_CHANNEL_ID = structuredClone(channelId);
+        this.TARGET_GUILD_ID = structuredClone(guildId)
+        this.INVITATION_AUTHOR_ID = structuredClone(authorId);
         this.controller = controller;
         this.kasumi = new Kasumi({
             type: 'websocket',
-            token: this.streamerToken
+            token: this.STREAMER_TOKEN
         });
-        this.koice = new Koice(this.streamerToken);
+        this.koice = new Koice(this.STREAMER_TOKEN);
         this.lastOperation = Date.now();
         this.ensureUsage();
     }
     async connect() {
-        this.koice.connectWebSocket(this.targetChannelId);
+        this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         await this.koice.startStream(this.stream);
         return this;
     }
@@ -125,7 +128,7 @@ export class Streamer {
         };
         const extra: playback.extra.netease = {
             type: 'netease',
-            data: { songId }
+            data: { songId, meta }
         }
         return this.playStreaming(input, meta, extra, forceSwitch);
     }
@@ -135,7 +138,7 @@ export class Streamer {
             meta: meta || {
                 title: `Unknown streaming service audio`,
                 artists: 'Unknown',
-                duration: -1
+                duration: 0
             },
             extra
         }
@@ -146,7 +149,7 @@ export class Streamer {
         meta: playback.meta = {
             title: `Unknown file`,
             artists: 'Unknown',
-            duration: -1
+            duration: 0
         },
         forceSwitch: boolean = false
     ) {
@@ -170,7 +173,7 @@ export class Streamer {
                                 meta: {
                                     title: `Local file: ${upath.parse(fullPath).base}`,
                                     artists: 'Unknown',
-                                    duration: -1
+                                    duration: 0
                                 }
                             }
                             this.pushPayload(payload, forceSwitch);
@@ -183,7 +186,7 @@ export class Streamer {
                     meta: {
                         title: `Local file: ${upath.parse(path).base}`,
                         artists: 'Unknown',
-                        duration: -1
+                        duration: 0
                     }
                 }
                 this.pushPayload(payload, forceSwitch);
@@ -211,7 +214,7 @@ export class Streamer {
 
 
     private previousStream: boolean = false;
-    currentMusicMeta?: playback.meta;
+    currentMusic?: queueItem;
     private lastRead: number = -1;
 
     readonly stream = new Readable({
@@ -245,12 +248,15 @@ export class Streamer {
     paused: boolean = false;
     private queue: Array<queueItem> = [];
 
-    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat') {
+    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
         this.cycleMode = payload;
+    }
+    getCycleMode() {
+        return this.cycleMode;
     }
 
     private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
-    private nowPlaying?: queueItem;
+    nowPlaying?: queueItem;
 
     async next(): Promise<queueItem | undefined> {
         let upnext: queueItem | undefined;
@@ -279,7 +285,8 @@ export class Streamer {
 
     private async preparePayload(payload: queueItem): Promise<{
         source: playback.source.playable,
-        meta: playback.meta
+        meta: playback.meta,
+        extra?: playback.extra
     }> {
         let source = payload.source, meta = payload.meta;
         if (source instanceof Promise) source = await source;
@@ -288,13 +295,13 @@ export class Streamer {
             source = stream.source;
             meta = stream.meta;
         }
-        return { source, meta }
+        return { source, meta, extra: payload.extra }
     }
 
     playbackStart?: number;
 
     async endPlayback() {
-        delete this.currentMusicMeta;
+        delete this.currentMusic;
         delete this.playbackStart;
         this.previousStream = false;
         await delay(20);
@@ -315,7 +322,7 @@ export class Streamer {
 
         let prepared = await this.preparePayload(payload);
         let file = prepared.source;
-        this.currentMusicMeta = prepared.meta;
+        this.currentMusic = prepared;
 
         var fileC: Readable;
         if (file instanceof Buffer) fileC = Readable.from(file);
