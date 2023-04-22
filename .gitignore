@@ -3,6 +3,7 @@ node_modules/
 package-lock.json
 
 src/config/index.ts
+src/config/webui.ts
 
 .DS_Store
 
