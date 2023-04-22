@@ -14,3 +14,23 @@ if (userDataRaw) {
         }));
     })
 }
+
+export function setPlayback(index: number, paused: boolean) {
+    ws.send(JSON.stringify({
+        t: 1,
+        d: {
+            streamerIndex: index,
+            paused,
+        }
+    }))
+}
+
+export function changeTrack(index: number, next: boolean) {
+    ws.send(JSON.stringify({
+        t: 2,
+        d: {
+            streamerIndex: index,
+            next
+        }
+    }))
+}

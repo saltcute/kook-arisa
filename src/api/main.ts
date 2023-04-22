@@ -9,6 +9,7 @@ import { WebSocket } from 'ws';
 import { controller } from 'menu/arisa';
 import { playback } from 'menu/arisa/controller/music';
 import webui from 'config/webui';
+import { streamerDetail } from 'webapp/src/components/cards/types';
 const { app } = expressWs(express());
 
 interface payload {
@@ -23,9 +24,31 @@ app.ws('/', (ws: WebSocket) => {
             const raw = data.toString();
             const payload: payload = JSON.parse(raw);
             switch (payload.t) {
-                case 0:
+                case 0: // Get user ID
                     userId = payload.d.userId;
                     break;
+                case 1: { // Pause and resume 
+                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    if (streamer) {
+                        if (payload.d.paused) {
+                            streamer.pause();
+                        } else {
+                            streamer.resume();
+                        }
+                    }
+                    break;
+                }
+                case 2: { // Next/Previous track in queue
+                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    if (streamer) {
+                        if (payload.d.next) {
+                            streamer.next();
+                        } else {
+                            streamer.previous();
+                        }
+                    }
+                    break;
+                }
             }
         } catch (e) {
             client.logger.error(e);
@@ -44,21 +67,24 @@ app.ws('/', (ws: WebSocket) => {
         if (userId) {
             const streamers = controller.getUserStreamers(userId);
             if (streamers) {
-                let payload = [];
+                let payload: streamerDetail[] = [];
                 for (const streamer of streamers) {
                     const me = streamer.kasumi.me;
                     let queue = [], array: playback.extra[] = [];
                     if (streamer.nowPlaying) queue.push(streamer.nowPlaying);
                     queue = queue.concat(streamer.getQueue());
                     array = (queue.filter(v => v.extra).map(v => v.extra) as playback.extra[])
-                    payload.push({
+                    const data: streamerDetail = {
                         name: me.username,
                         identifyNum: me.identifyNum,
                         avatar: me.avatar,
-                        startTimestamp: streamer.playbackStart,
+                        trackPlayedTime: streamer.playbackStart ? (Date.now() - streamer.playbackStart + streamer.pausedTime) : 0,
+                        trackTotalDuration: streamer.nowPlaying?.meta.duration || 0,
+                        isPaused: streamer.isPaused(),
                         nowPlaying: streamer.nowPlaying?.extra,
                         queue: array
-                    })
+                    };
+                    payload.push(data)
                 }
                 // console.log(payload);
                 ws.send(JSON.stringify(payload));
@@ -74,15 +100,12 @@ app.ws('/', (ws: WebSocket) => {
 
     sendStatus();
     let keepAlive = setInterval(() => { ensureConnection() }, 10 * 1000);
-    let syncStatus = setInterval(() => { sendStatus() }, 5 * 1000)
+    let syncStatus = setInterval(() => { sendStatus() }, 1 * 1000)
 })
 
 app.use(bodyParser.json());
 
-app.use('/assets', express.static(upath.join(__dirname, '..', 'webapp', 'dist', 'assets')))
-app.get('/', (req, res) => {
-    res.sendFile(upath.join(__dirname, '..', 'webapp', 'dist', 'index.html'));
-})
+app.use('/', express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
 
 app.post('/api/me', (req, res) => {
     const auth = req.body.auth

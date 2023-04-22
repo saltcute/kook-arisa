@@ -63,7 +63,7 @@ class Playlist {
             for (const item of array) {
                 switch (item.type) {
                     case 'netease': {
-                        await streamer.playNetease(item.data.songId, item.data.meta);
+                        await streamer.playNetease(item.data.songId, item.meta);
                     }
                 }
             }

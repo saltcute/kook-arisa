@@ -50,6 +50,8 @@ export class Controller {
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
         this.availableStreamers.push(streamer.STREAMER_TOKEN);
+        const streamers = (this.userStreamers.get(streamer.INVITATION_AUTHOR_ID) || []).filter(v => v != streamer);
+        this.userStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
         return true;
     }
 

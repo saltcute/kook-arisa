@@ -4,11 +4,13 @@ export interface payload {
     t: number,
     d: any
 }
-export interface streamer {
+export interface streamerDetail {
     name: string,
-    identifyNum: streamer,
+    identifyNum: string,
     avatar: string,
-    startTimestamp: number,
-    nowPlaying: playback.extra,
+    trackPlayedTime: number,
+    trackTotalDuration: number,
+    isPaused: boolean,
+    nowPlaying?: playback.extra,
     queue: playback.extra[]
 }

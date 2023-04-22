@@ -31,20 +31,24 @@ export namespace playback {
     }
     export type extra = extra.playable | extra.streaming;
     export namespace extra {
-        export interface netease {
+        export interface base {
+            type: string,
+            data?: any
+            meta: meta
+        }
+        export interface netease extends base {
             type: 'netease',
             data: {
-                songId: number,
-                meta?: meta
+                songId: number
             }
         }
-        export interface readable {
+        export interface readable extends base {
             type: 'readable'
         }
-        export interface buffer {
+        export interface buffer extends base {
             type: 'buffer'
         }
-        export interface local {
+        export interface local extends base {
             type: 'local'
         }
 
@@ -58,7 +62,7 @@ export namespace playback {
 export type queueItem = {
     source: playback.source | Promise<playback.source>
     meta: playback.meta,
-    extra?: playback.extra
+    extra: playback.extra
 };
 export class Streamer {
     readonly STREAMER_TOKEN: string;
@@ -126,7 +130,7 @@ export class Streamer {
         }
     }
 
-    async playNetease(songId: number, meta?: playback.meta, forceSwitch: boolean = false) {
+    async playNetease(songId: number, meta: playback.meta, forceSwitch: boolean = false) {
         const input: playback.source.netease = {
             type: 'netease',
             data: {
@@ -135,11 +139,12 @@ export class Streamer {
         };
         const extra: playback.extra.netease = {
             type: 'netease',
-            data: { songId, meta }
+            data: { songId },
+            meta
         }
         return this.playStreaming(input, meta, extra, forceSwitch);
     }
-    async playStreaming(input: playback.source.streaming, meta?: playback.meta, extra?: playback.extra.streaming, forceSwitch: boolean = false) {
+    async playStreaming(input: playback.source.streaming, meta: playback.meta, extra: playback.extra.streaming, forceSwitch: boolean = false) {
         let payload: queueItem = {
             source: input,
             meta: meta || {
@@ -162,7 +167,11 @@ export class Streamer {
     ) {
         let payload: queueItem = {
             source: input,
-            meta: meta
+            meta: meta,
+            extra: {
+                type: 'buffer',
+                meta
+            }
         }
         this.pushPayload(payload, forceSwitch);
     }
@@ -175,12 +184,17 @@ export class Streamer {
                     ffprobe(fullPath, async (err, data) => {
                         if (err) return;
                         if (data.streams.map(val => val.codec_type).includes('audio')) {
+                            let meta = {
+                                title: `Local file: ${upath.parse(fullPath).base}`,
+                                artists: 'Unknown',
+                                duration: 0
+                            };
                             let payload: queueItem = {
                                 source: fullPath,
-                                meta: {
-                                    title: `Local file: ${upath.parse(fullPath).base}`,
-                                    artists: 'Unknown',
-                                    duration: 0
+                                meta,
+                                extra: {
+                                    type: 'local',
+                                    meta
                                 }
                             }
                             this.pushPayload(payload, forceSwitch);
@@ -188,12 +202,17 @@ export class Streamer {
                     })
                 })
             } else {
+                let meta = {
+                    title: `Local file: ${upath.parse(path).base}`,
+                    artists: 'Unknown',
+                    duration: 0
+                };
                 let payload: queueItem = {
                     source: path,
-                    meta: {
-                        title: `Local file: ${upath.parse(path).base}`,
-                        artists: 'Unknown',
-                        duration: 0
+                    meta,
+                    extra: {
+                        type: 'local',
+                        meta
                     }
                 }
                 this.pushPayload(payload, forceSwitch);
@@ -244,7 +263,6 @@ export class Streamer {
     shuffle() {
         this.queue = this._shuffle(this.queue);
     }
-
     getQueue() {
         return this.queue;
     }
@@ -252,7 +270,26 @@ export class Streamer {
         this.queue = [];
     }
 
-    paused: boolean = false;
+    private paused: boolean = false;
+    pausedTime: number = 0;
+
+    isPaused() {
+        return this.paused;
+    }
+    private pauseStart?: number;
+    pause() {
+        this.pauseStart = Date.now();
+        this.paused = true;
+    }
+    resume() {
+        if (this.pauseStart) {
+            this.pausedTime += Date.now() - this.pauseStart;
+            delete this.pauseStart;
+        }
+        this.paused = false;
+    }
+
+
     private queue: Array<queueItem> = [];
 
     setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
@@ -265,25 +302,49 @@ export class Streamer {
     private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
     nowPlaying?: queueItem;
 
+    async previous(): Promise<queueItem | undefined> {
+        try {
+            let upnext: queueItem | undefined;
+            switch (this.cycleMode) {
+                case 'no_repeat':
+                    upnext = this.queue.pop();
+                    break;
+                case 'repeat_one':
+                    upnext = this.nowPlaying || this.queue.pop();
+                    break;
+                case 'repeat':
+                    if (this.nowPlaying) this.queue.unshift(this.nowPlaying);
+                    upnext = this.queue.pop();
+                    break;
+            }
+            if (upnext) {
+                this.nowPlaying = upnext;
+                await this.playback(upnext);
+                return upnext;
+            }
+        } catch { };
+    }
     async next(): Promise<queueItem | undefined> {
-        let upnext: queueItem | undefined;
-        switch (this.cycleMode) {
-            case 'no_repeat':
-                upnext = this.queue.shift();
-                break;
-            case 'repeat_one':
-                upnext = this.nowPlaying || this.queue.shift();
-                break;
-            case 'repeat':
-                if (this.nowPlaying) this.queue.push(this.nowPlaying);
-                upnext = this.queue.shift();
-                break;
-        }
-        if (upnext) {
-            this.nowPlaying = upnext;
-            await this.playback(upnext);
-            return upnext;
-        }
+        try {
+            let upnext: queueItem | undefined;
+            switch (this.cycleMode) {
+                case 'no_repeat':
+                    upnext = this.queue.shift();
+                    break;
+                case 'repeat_one':
+                    upnext = this.nowPlaying || this.queue.shift();
+                    break;
+                case 'repeat':
+                    if (this.nowPlaying) this.queue.push(this.nowPlaying);
+                    upnext = this.queue.shift();
+                    break;
+            }
+            if (upnext) {
+                this.nowPlaying = upnext;
+                await this.playback(upnext);
+                return upnext;
+            }
+        } catch { }
     }
 
     private async preload() {
@@ -296,7 +357,7 @@ export class Streamer {
     private async preparePayload(payload: queueItem): Promise<{
         source: playback.source.playable,
         meta: playback.meta,
-        extra?: playback.extra
+        extra: playback.extra
     } | undefined> {
         let source = payload.source, meta = payload.meta;
         if (source instanceof Promise) source = await source;
@@ -323,66 +384,72 @@ export class Streamer {
     }
 
     async playback(payload: queueItem): Promise<void> {
-        this.preload();
-        this.playbackStart = Date.now();
-        this.lastOperation = Date.now();
-        if (this.previousStream) {
-            await this.endPlayback();
-        }
-        this.previousStream = true;
-
-        let prepared = await this.preparePayload(payload);
-        if (!prepared) {
-            await this.endPlayback();
-            await this.next();
-            return;
-        }
-        let file = prepared.source;
-        this.currentMusic = prepared;
-
-        var fileC: Readable;
-        if (file instanceof Buffer) fileC = Readable.from(file);
-        else if (file instanceof Readable) fileC = structuredClone(file);
-        else fileC = fs.createReadStream(file);
-        this.ffmpegInstance = ffmpeg()
-            .input(fileC)
-            .audioCodec('pcm_u8')
-            .audioChannels(2)
-            .audioFilter('volume=0.15')
-            .audioFrequency(48000)
-            .outputFormat('wav');
-        this.ffmpegInstance
-            .stream(this.fileP);
-        var bfs: any[] = [];
-        this.fileP.on('data', (chunk) => {
-            bfs.push(chunk)
-        })
-        this.fileP.on('end', async () => {
-            var now = 0;
-            var cache = Buffer.concat(bfs);
-            // var rate = 11025;
-            // var rate = 965;
-            var rate = 975;
-            while (Date.now() - this.lastRead < 20);
-
-            while (this.previousStream && now <= cache.length) {
-                if (!this.paused) {
-                    this.lastRead = Date.now();
-                    const chunk = cache.subarray(now, now + rate);
-                    if (this.previousStream && now <= cache.length) {
-                        this.stream.push(chunk);
-                    }
-                    else {
-                        return;
-                    }
-                    now += rate;
-                }
-                await delay(10);
-            }
+        try {
+            this.preload();
+            this.pausedTime = 0;
+            this.playbackStart = Date.now();
+            this.lastOperation = Date.now();
             if (this.previousStream) {
                 await this.endPlayback();
-                await this.next();
             }
-        });
+            this.previousStream = true;
+
+            let prepared = await this.preparePayload(payload);
+            if (!prepared) {
+                await this.endPlayback();
+                await this.next();
+                return;
+            }
+            let file = prepared.source;
+            this.currentMusic = prepared;
+
+            var fileC: Readable;
+            if (file instanceof Buffer) fileC = Readable.from(file);
+            else if (file instanceof Readable) fileC = structuredClone(file);
+            else fileC = fs.createReadStream(file);
+            this.ffmpegInstance = ffmpeg()
+                .input(fileC)
+                .audioCodec('pcm_u8')
+                .audioChannels(2)
+                .audioFilter('volume=0.15')
+                .audioFrequency(48000)
+                .outputFormat('wav');
+            this.ffmpegInstance
+                .stream(this.fileP);
+            var bfs: any[] = [];
+            this.fileP.on('data', (chunk) => {
+                bfs.push(chunk)
+            })
+            this.fileP.on('end', async () => {
+                var now = 0;
+                var cache = Buffer.concat(bfs);
+                // var rate = 11025;
+                // var rate = 965;
+                var rate = 975;
+                while (Date.now() - this.lastRead < 20);
+
+                while (this.previousStream && now <= cache.length) {
+                    if (!this.paused) {
+                        this.lastRead = Date.now();
+                        const chunk = cache.subarray(now, now + rate);
+                        if (this.previousStream && now <= cache.length) {
+                            this.stream.push(chunk);
+                        }
+                        else {
+                            return;
+                        }
+                        now += rate;
+                    }
+                    await delay(10);
+                }
+                if (this.previousStream) {
+                    await this.endPlayback();
+                    await this.next();
+                }
+            });
+        } catch {
+            await this.endPlayback();
+            await this.next();
+        }
     }
 }
