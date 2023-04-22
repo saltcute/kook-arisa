@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import upath from 'upath';
 import netease from '../command/netease/lib';
 import axios from 'axios';
+import { client } from 'init/client';
 
 export namespace playback {
     export type source = source.playable | source.streaming;
@@ -78,6 +79,7 @@ export class Streamer {
             type: 'websocket',
             token: this.STREAMER_TOKEN
         });
+        this.kasumi.fetchMe();
         this.koice = new Koice(this.STREAMER_TOKEN);
         this.lastOperation = Date.now();
         this.ensureUsage();
@@ -118,7 +120,8 @@ export class Streamer {
                     }
                 }
             }
-        } catch {
+        } catch (e) {
+            client.logger.error(e);
             return undefined;
         }
     }

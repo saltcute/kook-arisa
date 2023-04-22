@@ -1,12 +1,16 @@
 {
+    "extends": "@vue/tsconfig/tsconfig.web.json",
     "compilerOptions": {
+        "importsNotUsedAsValues": "remove",
         "declaration": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "target": "es2020",
-        "module": "commonjs",
-        "moduleResolution": "node",
+        "module": "Node16",
+        "preserveValueImports": false,
+        "moduleResolution": "node16",
         "lib": [
+            "DOM",
             "ES2020",
             "ES2021",
             "ES2021.String"
@@ -27,13 +31,18 @@
         "forceConsistentCasingInFileNames": true
     },
     "include": [
-        // "./src/commands/shared/*.ts",
-        // "./src/utils/*.ts",
-        // "./src/index.ts",
+        "env.d.ts",
+        "src/**/*",
+        "src/**/*.vue",
         "./src/**/*.ts",
         ".eslintrc.js",
     ],
     "exclude": [
         "./src/tests/*.ts"
+    ],
+    "references": [
+        {
+            "path": "./tsconfig.node.json"
+        }
     ]
 }

@@ -32,10 +32,10 @@ export class Netease {
         }
     }
     async getSong(id: number): Promise<songDetail> {
-        return ((await netease.song_detail({ ids: id.toString(), cookie: this.cookie })).body.songs as any)[0];
+        return ((await netease.song_detail({ ids: id.toString(), cookie: this.cookie, realIP: '106.11.249.99' })).body.songs as any)[0];
     }
     async getSongUrl(id: number) {
-        return ((await netease.song_url({ id, cookie: this.cookie })).body.data as any)[0].url
+        return ((await netease.song_url({ id, cookie: this.cookie, realIP: '106.11.249.99' })).body.data as any)[0].url
     }
 }
 

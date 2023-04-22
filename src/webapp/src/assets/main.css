@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans&family=M+PLUS+Rounded+1c&family=Secular+One&family=Varela+Round&display=swap');
+
+body {
+    font-family: "Varela Round", "Josefin Sans", "M PLUS Rounded 1c", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Secular One", sans-serif;
+}

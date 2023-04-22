@@ -4,6 +4,7 @@ import { Streamer } from "./music";
 
 
 export class Controller {
+    private userStreamers: Map<string, Streamer[]> = new Map();
     private streamerChannel: Map<string, string> = new Map();
     private channelStreamer: Map<string, Streamer> = new Map();
     private guildChannel: Map<string, string> = new Map();
@@ -102,6 +103,10 @@ export class Controller {
         this.streamerChannel.set(STREAMER_TOKEN, channelId);
         this.guildChannel.set(guildId, channelId);
         this.channelStreamer.set(channelId, streamer);
+
+        let streamers = this.userStreamers.get(authorId) || [];
+        streamers.push(streamer);
+        this.userStreamers.set(authorId, streamers);
         return streamer.connect();
     }
 
@@ -118,5 +123,9 @@ export class Controller {
 
     getChannelStreamer(channelId: string): Streamer | undefined {
         return this.channelStreamer.get(channelId);
+    }
+
+    getUserStreamers(userId: string): Streamer[] | undefined {
+        return this.userStreamers.get(userId);
     }
 }

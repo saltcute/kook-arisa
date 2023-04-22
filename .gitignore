@@ -5,3 +5,5 @@ package-lock.json
 src/config/index.ts
 
 .DS_Store
+
+dist/

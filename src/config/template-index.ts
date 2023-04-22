@@ -1,6 +1,10 @@
 export default {
-    useBotRootWebSocket: true,
+    useBotRootWebSocket: false,
     kookToken: '',
+    kookClientSecret: '',
+
+    webDashboardPort: 10000,
+    webSocketPort: 10001,
 
     useWebHook: false,
     kookVerifyToken: '',
