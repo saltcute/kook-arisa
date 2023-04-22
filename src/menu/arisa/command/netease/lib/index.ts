@@ -1,6 +1,7 @@
 import config from 'config';
 import netease from 'NeteaseCloudMusicApi';
 import { songDetail } from './type';
+import { client } from 'init/client'
 
 
 
@@ -8,11 +9,16 @@ export class Netease {
     constructor() { this.init() };
     private cookie?: string;
     async init() {
-        if (config.neteaseVIP) {
-            this.cookie = (await netease.login({
-                email: config.neteaseEmail,
-                password: config.neteasePassword
-            })).body.cookie;
+        try {
+            if (config.neteaseVIP) {
+                this.cookie = (await netease.login({
+                    email: config.neteaseEmail,
+                    password: config.neteasePassword
+                })).body.cookie;
+            }
+        } catch (e) {
+            client.logger.error(e);
+            this.cookie = undefined;
         }
     }
     async search(keywords: string): Promise<Netease.song[]> {

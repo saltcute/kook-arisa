@@ -27,7 +27,7 @@ if (userDataRaw) {
         try {
             if (data.data) {
                 streamers.value = JSON.parse(data.data.toString());
-                console.log(streamers.value[currentIndex].nowPlaying);
+                // console.log(streamers.value[currentIndex].nowPlaying);
             }
         } catch { }
     })
@@ -51,7 +51,7 @@ function getPlaybackProgress() {
     const streamer = selectedStreamer();
     const played = streamer.trackPlayedTime
     const duration = streamer.trackTotalDuration
-    console.log(played, duration);
+    // console.log(played, duration);
     if (played && duration) {
         return played / duration
     } else {
