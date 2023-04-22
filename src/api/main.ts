@@ -1,24 +1,22 @@
 import express from 'express';
+import expressWs from 'express-ws';
 import config from '../config';
 import { client } from 'init/client';
 import upath from 'upath';
 import axios, { isAxiosError } from 'axios';
 import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
-import http from 'http';
 import { controller } from 'menu/arisa';
 import { playback } from 'menu/arisa/controller/music';
 import webui from 'config/webui';
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const { app } = expressWs(express());
 
 interface payload {
     t: number,
     d: any
 }
 
-wss.on('connection', (ws: WebSocket) => {
+app.ws('/', (ws: WebSocket) => {
 
     ws.on('message', (data) => {
         try {
@@ -173,9 +171,4 @@ app.get('/api/login', (req, res) => {
 app.listen(config.webDashboardPort, () => {
     client.logger.info(`Webui start listening on port ${config.webDashboardPort}`);
     client.logger.info(`Access webui at http://localhost:${config.webDashboardPort}`)
-})
-
-server.listen(config.webSocketPort, () => {
-    client.logger.info(`WebSocket start listening on port ${config.webSocketPort}`);
-    client.logger.info(`Connect to WebSocket at ws://localhost:${config.webSocketPort}`);
 })
