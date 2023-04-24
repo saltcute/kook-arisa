@@ -1,6 +1,7 @@
-import { streamers } from "config";
 import { client } from "init/client";
 import { Streamer } from "./music";
+import * as fs from 'fs';
+import upath from 'upath';
 
 
 export class Controller {
@@ -23,14 +24,44 @@ export class Controller {
         return array;
     }
 
-    private readonly streamerPool: string[];
-    private availableStreamers: string[];
+    private streamerPool: string[] = [];
+    get allStreamerTokens() {
+        return this.streamerPool;
+    }
+    private availableStreamers: string[] = [];
+    get allAvailableStreamersTokens() {
+        return this.availableStreamers;
+    }
 
     constructor(token: string) {
         this.controllerToken = structuredClone(token);
 
-        this.streamerPool = this.shuffle(structuredClone(streamers));
-        this.availableStreamers = structuredClone(this.streamerPool);
+        this.loadStreamer();
+    }
+
+    loadStreamer() {
+        try {
+            const config: string[] = JSON.parse(fs.readFileSync(upath.join(__dirname, '..', '..', '..', 'config', 'streamer.json'), { encoding: 'utf-8' })).streamers;
+            let newPool: string[] = [], newAvailable: string[] = [];
+            for (const token of config) {
+                newPool.push(token);
+                if (this.streamerPool.includes(token)) { // Duplicate
+                    if (this.availableStreamers.includes(token)) { // Available
+                        newAvailable.push(token);
+                    }
+                } else {
+                    newAvailable.push(token);
+                }
+            }
+            this.streamerPool = structuredClone(newPool);
+            this.availableStreamers = structuredClone(newAvailable);
+        } catch (e) {
+            client.logger.error(e);
+            if (!this.streamerPool.length) {
+                client.logger.fatal("No streamer available. Arisa is shutting down!");
+                process.exit(0);
+            }
+        }
     }
 
     private getNextAvailableStreamer(): string | undefined {
@@ -48,7 +79,9 @@ export class Controller {
         }
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
-        this.availableStreamers.push(streamer.STREAMER_TOKEN); {
+        if (this.streamerPool.includes(streamer.STREAMER_TOKEN)) {
+            this.availableStreamers.push(streamer.STREAMER_TOKEN);
+        } {
             const streamers = (this.userStreamers.get(streamer.INVITATION_AUTHOR_ID) || []).filter(v => v != streamer);
             this.userStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
         } {
