@@ -1,4 +1,5 @@
 export default {
     kookClientID: '',
-    oauth2Url: 'http://example.com',
+    dashboardUrl: 'http://example.com',
+    websocketUrl: 'ws://example.com'
 }

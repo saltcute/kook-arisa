@@ -9,13 +9,16 @@ import upath from 'upath';
 import netease from '../command/netease/lib';
 import axios from 'axios';
 import { client } from 'init/client';
+import { akarin } from '../command/netease/lib/card';
+import playlist from './playlist';
 
 export namespace playback {
     export type source = source.playable | source.streaming;
     export interface meta {
         title: string,
         artists: string,
-        duration: number
+        duration: number,
+        cover: string
     }
     export namespace source {
         export interface netease {
@@ -103,7 +106,8 @@ export class Streamer {
         return this.streamingServices.includes(payload.type);
     }
     private async getStreamingSource(
-        input: playback.source.streaming
+        input: playback.source.streaming,
+        meta?: playback.meta
     ): Promise<{
         source: playback.source.playable,
         meta: playback.meta
@@ -116,10 +120,11 @@ export class Streamer {
                     const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
                     return {
                         source: cache,
-                        meta: {
+                        meta: meta || {
                             title: song.name,
                             artists: song.ar.map(v => v.name).join(', '),
-                            duration: song.dt
+                            duration: song.dt,
+                            cover: song.al.picUrl
                         }
                     }
                 }
@@ -161,7 +166,8 @@ export class Streamer {
         meta: playback.meta = {
             title: `Unknown file`,
             artists: 'Unknown',
-            duration: 0
+            duration: 0,
+            cover: akarin
         },
         forceSwitch: boolean = false
     ) {
@@ -187,7 +193,8 @@ export class Streamer {
                             let meta = {
                                 title: `Local file: ${upath.parse(fullPath).base}`,
                                 artists: 'Unknown',
-                                duration: 0
+                                duration: 0,
+                                cover: akarin
                             };
                             let payload: queueItem = {
                                 source: fullPath,
@@ -205,7 +212,8 @@ export class Streamer {
                 let meta = {
                     title: `Local file: ${upath.parse(path).base}`,
                     artists: 'Unknown',
-                    duration: 0
+                    duration: 0,
+                    cover: akarin
                 };
                 let payload: queueItem = {
                     source: path,
@@ -271,7 +279,16 @@ export class Streamer {
     }
 
     private paused: boolean = false;
-    pausedTime: number = 0;
+    private previousPausedTime: number = 0;
+
+    get pausedTime() {
+        if (this.pauseStart) return this.previousPausedTime + (Date.now() - this.pauseStart);
+        else return this.previousPausedTime;
+    }
+    get playedTime() {
+        if (this.playbackStart) return (Date.now() - this.playbackStart) - this.pausedTime;
+        else return 0;
+    }
 
     isPaused() {
         return this.paused;
@@ -283,7 +300,7 @@ export class Streamer {
     }
     resume() {
         if (this.pauseStart) {
-            this.pausedTime += Date.now() - this.pauseStart;
+            this.previousPausedTime += Date.now() - this.pauseStart;
             delete this.pauseStart;
         }
         this.paused = false;
@@ -292,7 +309,44 @@ export class Streamer {
 
     private queue: Array<queueItem> = [];
 
+    queueMoveUp(index: number) {
+        if (index) {
+            const item = this.queue[index], previous = this.queue[index - 1];
+            if (item && previous) {
+                this.queue[index] = previous;
+                this.queue[index - 1] = item;
+            }
+        } else {
+            const item = this.queue.shift();
+            if (item) {
+                this.queue.push(item);
+            }
+        }
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
+    }
+    queueMoveDown(index: number) {
+        if (index != this.queue.length - 1) {
+            const item = this.queue[index], next = this.queue[index + 1];
+            if (item && next) {
+                this.queue[index] = next;
+                this.queue[index + 1] = item;
+            }
+        } else {
+            const item = this.queue.pop();
+            if (item) {
+                this.queue.unshift(item);
+            }
+        }
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
+    }
+    queueDelete(index: number) {
+        const item = this.queue[index];
+        this.queue = this.queue.filter(v => v != item);
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
+    }
+
     setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
+        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat') payload = 'no_repeat';
         this.cycleMode = payload;
     }
     getCycleMode() {
@@ -301,6 +355,7 @@ export class Streamer {
 
     private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
     nowPlaying?: queueItem;
+
 
     async previous(): Promise<queueItem | undefined> {
         try {
@@ -348,9 +403,9 @@ export class Streamer {
     }
 
     private async preload() {
-        if (this.queue[0]) {
-            const prepared = await this.preparePayload(this.queue[0]);
-            if (prepared) this.queue[0] = prepared;
+        let item = this.queue[0];
+        if (item) {
+            await this.preparePayload(item);
         }
     }
 
@@ -362,12 +417,14 @@ export class Streamer {
         let source = payload.source, meta = payload.meta;
         if (source instanceof Promise) source = await source;
         if (this.isStreamingSource(source)) {
-            const stream = (await this.getStreamingSource(source));
+            const stream = (await this.getStreamingSource(source, payload.meta));
             if (!stream) return undefined;
             source = stream.source;
             meta = stream.meta;
         }
-        return { source, meta, extra: payload.extra }
+        payload.source = source;
+        payload.meta = meta;
+        return payload as any;
     }
 
     playbackStart?: number;
@@ -376,8 +433,8 @@ export class Streamer {
         delete this.currentMusic;
         delete this.playbackStart;
         this.previousStream = false;
-        await delay(20);
         this.ffmpegInstance?.kill("SIGSTOP");
+        await delay(100);
         this.fileP?.removeAllListeners();
         this.fileP?.destroy();
         this.fileP = new PassThrough();
@@ -386,9 +443,6 @@ export class Streamer {
     async playback(payload: queueItem): Promise<void> {
         try {
             this.preload();
-            this.pausedTime = 0;
-            this.playbackStart = Date.now();
-            this.lastOperation = Date.now();
             if (this.previousStream) {
                 await this.endPlayback();
             }
@@ -416,11 +470,20 @@ export class Streamer {
                 .outputFormat('wav');
             this.ffmpegInstance
                 .stream(this.fileP);
+            this.ffmpegInstance.on('error', async (err) => {
+                client.logger.error(err);
+                const controller = this.controller, guildId = this.TARGET_GUILD_ID, channelId = this.TARGET_CHANNEL_ID, userId = this.INVITATION_AUTHOR_ID;
+                await this.disconnect();
+                await controller.joinChannel(guildId, channelId, userId);
+            })
             var bfs: any[] = [];
             this.fileP.on('data', (chunk) => {
                 bfs.push(chunk)
             })
             this.fileP.on('end', async () => {
+                this.previousPausedTime = 0;
+                this.playbackStart = Date.now();
+                this.lastOperation = Date.now();
                 var now = 0;
                 var cache = Buffer.concat(bfs);
                 // var rate = 11025;

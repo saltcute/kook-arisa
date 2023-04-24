@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faSun, faMoon, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
+library.add(faSun, faMoon, faMagnifyingGlass);
+
+import { auth } from './cards/common';
 import axios from 'axios';
 import webui from '../../../config/webui';
 import { Ref, ref, } from 'vue';
-interface auth {
-    access_token: string,
-    expires_in: number,
-    token_type: string,
-    scope: string,
-    expires: number
-}
+
+const props = defineProps<{
+    showNeteaseSearchDialog: () => void
+}>()
 
 function logout() {
     localStorage.removeItem('auth');
@@ -42,7 +45,7 @@ callbackUrl = ref('');
     if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
         const userData = (await getUserMe(auth.access_token)).data
         localStorage.setItem('user', JSON.stringify(userData));
-        user.value = `Hi, ${userData.username}`
+        user.value = `${userData.username}`
     } else {
         localStorage.removeItem('auth');
         const code = query.get('code');
@@ -59,11 +62,32 @@ callbackUrl = ref('');
                 location.replace('/');
             });
         } else {
-            callbackUrl.value = `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${webui.kookClientID}&redirect_uri=${encodeURIComponent(webui.oauth2Url)}&response_type=code&scope=get_user_info`
+            callbackUrl.value = `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${webui.kookClientID}&redirect_uri=${encodeURIComponent(webui.dashboardUrl)}&response_type=code&scope=get_user_info`
             user.value = '';
         }
     }
 })()
+
+function switchTheme() {
+    let finalTheme;
+    const root = document.querySelector(":root");
+    if (root) {
+        const theme = root.getAttribute('data-theme');
+        if (
+            (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ||
+            (theme && theme != 'light')
+        ) {
+            finalTheme = 'dark';
+        } else {
+            finalTheme = 'light';
+        }
+        if (finalTheme == 'light') {
+            root.setAttribute('data-theme', 'dark');
+        } else {
+            root.setAttribute('data-theme', 'light');
+        }
+    }
+}
 </script>
 
 <template>
@@ -73,6 +97,19 @@ callbackUrl = ref('');
                 <li><strong class="title">Arisa</strong></li>
             </ul>
             <ul>
+                <li>
+                    <i style="cursor: pointer;" @click="showNeteaseSearchDialog">
+                        <font-awesome-icon :icon="['fas', 'magnifying-glass']" />
+                    </i>
+                </li>
+                <li>
+                    <i class="switch-theme-light" @click="switchTheme">
+                        <font-awesome-icon :icon="['fas', 'sun']"></font-awesome-icon>
+                    </i>
+                    <i class="switch-theme-dark" @click="switchTheme">
+                        <font-awesome-icon :icon="['fas', 'moon']"></font-awesome-icon>
+                    </i>
+                </li>
                 <li>
                     <a v-if="user">{{ user }}</a>
                     <a v-else="callbackUrl" :href="callbackUrl" role="button">Login with KOOK</a>
@@ -93,5 +130,30 @@ callbackUrl = ref('');
 header {
     padding-left: 2em;
     padding-right: 2em;
+}
+
+.switch-theme-light,
+.switch-theme-dark {
+    cursor: pointer;
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .switch-theme-dark {
+        display: none;
+    }
+}
+
+@media only screen and (prefers-color-scheme: light) {
+    :root:not([data-theme]) .switch-theme-light {
+        display: none;
+    }
+}
+
+:root[data-theme="dark"] .switch-theme-dark {
+    display: none;
+}
+
+:root[data-theme="light"] .switch-theme-light {
+    display: none;
 }
 </style>
