@@ -9,7 +9,7 @@ import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendC
 import { streamerDetail } from './types';
 import { Ref, computed, ref } from 'vue';
 const proxy = "img.kookapp.lolicon.ac.cn";
-let streamers: Ref<streamerDetail[]> = ref([]), selectedStreamerName: Ref<string>;
+let streamers: Ref<streamerDetail[]> = ref([]);
 
 const busy = ref(true);
 const userDataRaw = localStorage.getItem('user');
@@ -26,8 +26,15 @@ if (userDataRaw) {
             }
         } catch { }
     })
+}
 
-    selectedStreamerName = ref('Select an Arisa')
+function selectedStreamerName() {
+    const streamer = selectedStreamer();
+    if (streamer) {
+        return `${streamer.name}#${streamer.identifyNum}`;
+    } else {
+        return "Select a Streamer";
+    }
 }
 
 function selectStreamer(event: Event) {
@@ -35,7 +42,6 @@ function selectStreamer(event: Event) {
     if (value) {
         const index = parseInt(value);
         setStreamerIndex(index);
-        selectedStreamerName.value = `${streamers.value[index].name}#${streamers.value[index].identifyNum}`;
         (event.target as HTMLInputElement).parentElement?.parentElement?.removeAttribute('open');
     }
 }
@@ -193,7 +199,7 @@ function getQueueBackground(queue: playback.extra) {
             </div>
         </article>
         <details v-if="userDataRaw" role="list" id="streamerSelector">
-            <summary aria-haspopup="listbox">{{ selectedStreamerName }}</summary>
+            <summary aria-haspopup="listbox">{{ selectedStreamerName() }}</summary>
             <ul role="listbox" class="dropdown">
                 <li v-if="!streamers.length">
                     No Streamers
@@ -231,19 +237,23 @@ function getQueueBackground(queue: playback.extra) {
 <style scoped>
 @property --playlist-card-top {
     syntax: '<color>';
-    initial-value: rgb(0, 0, 0, 77%);
+    initial-value: rgb(0, 0, 0, 91%);
     inherits: false;
 }
 
 @property --playlist-card-bottom {
     syntax: '<color>';
-    initial-value: rgb(255, 255, 255, 32%);
+    initial-value: rgb(255, 255, 255, 16%);
     inherits: false;
 }
 
 .playlist>article>div {
     background-image: linear-gradient(var(--playlist-card-top), 75%, var(--playlist-card-bottom));
     transition: --playlist-card-top var(--transition), --playlist-card-botoom var(--transition);
+}
+
+.playlist>article.now-playing-sign>div {
+    background-image: linear-gradient(var(--playlist-card-top), 85%, var(--playlist-card-bottom));
 }
 
 div:hover {
@@ -253,26 +263,27 @@ div:hover {
 
 @media only screen and (prefers-color-scheme: dark) {
     :root:not([data-theme]) .playlist>article>div {
-        --playlist-card-top: rgb(0, 0, 0, 77%);
-        --playlist-card-bottom: rgb(255, 255, 255, 32%);
-    }
-}
-
-@media only screen and (prefers-color-scheme: light) {
-    :root:not([data-theme]) .playlist>article>div {
-        --playlist-card-top: rgb(255, 255, 255, 70%);
-        --playlist-card-bottom: rgb(0, 0, 0, 35%);
+        --playlist-card-top: rgb(0, 0, 0, 91%);
+        --playlist-card-bottom: rgb(255, 255, 255, 16%);
     }
 }
 
 :root[data-theme="dark"] .playlist>article>div {
-    --playlist-card-top: rgb(0, 0, 0, 77%);
-    --playlist-card-bottom: rgb(255, 255, 255, 32%);
+    --playlist-card-top: rgb(0, 0, 0, 91%);
+    --playlist-card-bottom: rgb(255, 255, 255, 16%);
+}
+
+
+@media only screen and (prefers-color-scheme: light) {
+    :root:not([data-theme]) .playlist>article>div {
+        --playlist-card-top: rgb(255, 255, 255, 91%);
+        --playlist-card-bottom: rgb(0, 0, 0, 20%);
+    }
 }
 
 :root[data-theme="light"] .playlist>article>div {
-    --playlist-card-top: rgb(255, 255, 255, 70%);
-    --playlist-card-bottom: rgb(0, 0, 0, 35%);
+    --playlist-card-top: rgb(255, 255, 255, 91%);
+    --playlist-card-bottom: rgb(0, 0, 0, 20%);
 }
 
 .playlist>article>div>i {

@@ -5,9 +5,9 @@ import { Streamer } from "./music";
 
 export class Controller {
     private userStreamers: Map<string, Streamer[]> = new Map();
+    private guildStreamers: Map<string, Streamer[]> = new Map();
     private streamerChannel: Map<string, string> = new Map();
     private channelStreamer: Map<string, Streamer> = new Map();
-    private guildChannel: Map<string, string> = new Map();
 
     private controllerToken: string;
 
@@ -46,12 +46,15 @@ export class Controller {
             streamer.kasumi.logger.error(err);
             return false;
         }
-        this.guildChannel.delete(streamer.TARGET_GUILD_ID);
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
-        this.availableStreamers.push(streamer.STREAMER_TOKEN);
-        const streamers = (this.userStreamers.get(streamer.INVITATION_AUTHOR_ID) || []).filter(v => v != streamer);
-        this.userStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
+        this.availableStreamers.push(streamer.STREAMER_TOKEN); {
+            const streamers = (this.userStreamers.get(streamer.INVITATION_AUTHOR_ID) || []).filter(v => v != streamer);
+            this.userStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
+        } {
+            const streamers = (this.guildStreamers.get(streamer.TARGET_GUILD_ID) || []).filter(v => v != streamer);
+            this.guildStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
+        }
         return true;
     }
 
@@ -103,12 +106,15 @@ export class Controller {
             }
         }
         this.streamerChannel.set(STREAMER_TOKEN, channelId);
-        this.guildChannel.set(guildId, channelId);
-        this.channelStreamer.set(channelId, streamer);
-
-        let streamers = this.userStreamers.get(authorId) || [];
-        streamers.push(streamer);
-        this.userStreamers.set(authorId, streamers);
+        this.channelStreamer.set(channelId, streamer); {
+            const streamers = this.userStreamers.get(authorId) || [];
+            streamers.push(streamer);
+            this.userStreamers.set(authorId, streamers);
+        } {
+            const streamers = this.guildStreamers.get(guildId) || [];
+            streamers.push(streamer);
+            this.guildStreamers.set(authorId, streamers);
+        }
         return streamer.connect();
     }
 
@@ -119,8 +125,8 @@ export class Controller {
         return true;
     }
 
-    getGuildChannel(guildId: string): string | undefined {
-        return this.guildChannel.get(guildId);
+    getGuildStreamers(guildId: string): Streamer[] | undefined {
+        return this.guildStreamers.get(guildId);
     }
 
     getChannelStreamer(channelId: string): Streamer | undefined {

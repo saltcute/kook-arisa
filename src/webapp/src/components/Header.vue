@@ -7,7 +7,7 @@ library.add(faSun, faMoon, faMagnifyingGlass);
 import { auth } from './cards/common';
 import axios from 'axios';
 import webui from '../../../config/webui';
-import { Ref, ref, } from 'vue';
+import { Ref, onMounted, ref, } from 'vue';
 
 const props = defineProps<{
     showNeteaseSearchDialog: () => void
@@ -82,12 +82,21 @@ function switchTheme() {
             finalTheme = 'light';
         }
         if (finalTheme == 'light') {
+            localStorage.setItem('preferredTheme', 'dark');
             root.setAttribute('data-theme', 'dark');
         } else {
+            localStorage.setItem('preferredTheme', 'light');
             root.setAttribute('data-theme', 'light');
         }
     }
 }
+
+onMounted(() => {
+    const preferredTheme = localStorage.getItem('preferredTheme');
+    if (preferredTheme == 'light' || preferredTheme == 'dark') {
+        document.querySelector(":root")?.setAttribute('data-theme', preferredTheme);
+    }
+})
 </script>
 
 <template>

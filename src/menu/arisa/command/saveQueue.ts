@@ -8,11 +8,15 @@ class AppCommand extends BaseCommand {
     func: CommandFunction<BaseSession, any> = async (session) => {
         if (!session.guildId) return session.reply("只能在服务器频道中使用此命令");
         getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {
-            const { err, data } = await session.send(new Card().addText("正在保存播放列表"));
-            if (err) throw err;
-            const messageId = data.msg_id;
-            await playlist.user.save(streamer, session.authorId);
-            return session.update(messageId, new Card().addText("已保存播放列表"));
+            if (streamer.INVITATION_AUTHOR_ID == session.authorId) {
+                const { err, data } = await session.send(new Card().addText("正在保存播放列表"));
+                if (err) throw err;
+                const messageId = data.msg_id;
+                await playlist.user.save(streamer, session.authorId);
+                return session.update(messageId, new Card().addText("已保存播放列表"));
+            } else {
+                return session.send(new Card().addText("只有将 Arisa 邀请进入频道的用户才能保存播放列表"));
+            }
         }).catch((e) => {
             switch (e.err) {
                 case 'network_failure':

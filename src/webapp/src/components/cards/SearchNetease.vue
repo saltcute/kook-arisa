@@ -51,14 +51,17 @@ async function getSongDetails(ids: string): Promise<Netease.songDetail[]> {
 function search() {
     let searchResultElement = document.querySelector("#netease-search .search-result");
     if (searchResultElement?.getAttribute("aria-busy") != "true") {
+        searched.value = false;
+        searchResult = [];
+        instance?.proxy?.$forceUpdate();
         searchResultElement?.setAttribute("aria-busy", "true");
         getNeteaseSearch(searchInput.value).then((res) => {
             if (res) {
                 getSongDetails(res.map(v => v.id).join(',')).then(async (re) => {
                     searchResult = re;
-                    searched.value = true;
                     searchResultElement?.removeAttribute("aria-busy");
-                    await nextTick()
+                    searched.value = true;
+                    await nextTick();
                     instance?.proxy?.$forceUpdate();
                 }).catch((e) => {
                     console.error(e);
@@ -67,10 +70,12 @@ function search() {
                 })
             } else {
                 searched.value = false;
+                searchResult = [];
                 searchResultElement?.removeAttribute("aria-busy");
             }
         }).catch((e) => {
             searched.value = false;
+            searchResult = [];
             searchResultElement?.removeAttribute("aria-busy");
             console.error(e);
         })
@@ -78,7 +83,7 @@ function search() {
         notify({
             group: "search",
             title: "Error",
-            text: `Please wait for previous search to complete`,
+            text: `Please wait for the previous search to complete`,
         });
     }
 }

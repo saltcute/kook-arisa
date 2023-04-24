@@ -270,12 +270,14 @@ export class Streamer {
 
     shuffle() {
         this.queue = this._shuffle(this.queue);
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
     getQueue() {
         return this.queue;
     }
     clearQueue() {
         this.queue = [];
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
     private paused: boolean = false;
@@ -348,6 +350,7 @@ export class Streamer {
     setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
         if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat') payload = 'no_repeat';
         this.cycleMode = payload;
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
     getCycleMode() {
         return this.cycleMode;
@@ -456,6 +459,7 @@ export class Streamer {
             }
             let file = prepared.source;
             this.currentMusic = prepared;
+            playlist.user.save(this, this.INVITATION_AUTHOR_ID);
 
             var fileC: Readable;
             if (file instanceof Buffer) fileC = Readable.from(file);
@@ -465,16 +469,20 @@ export class Streamer {
                 .input(fileC)
                 .audioCodec('pcm_u8')
                 .audioChannels(2)
-                .audioFilter('volume=0.15')
+                // .audioFilter('volume=0.5')
                 .audioFrequency(48000)
                 .outputFormat('wav');
             this.ffmpegInstance
                 .stream(this.fileP);
             this.ffmpegInstance.on('error', async (err) => {
                 client.logger.error(err);
-                const controller = this.controller, guildId = this.TARGET_GUILD_ID, channelId = this.TARGET_CHANNEL_ID, userId = this.INVITATION_AUTHOR_ID;
-                await this.disconnect();
-                await controller.joinChannel(guildId, channelId, userId);
+                if (this.previousStream) {
+                    await this.endPlayback();
+                    await this.next();
+                }
+                // const controller = this.controller, guildId = this.TARGET_GUILD_ID, channelId = this.TARGET_CHANNEL_ID, userId = this.INVITATION_AUTHOR_ID;
+                // await this.disconnect();
+                // await controller.joinChannel(guildId, channelId, userId);
             })
             var bfs: any[] = [];
             this.fileP.on('data', (chunk) => {

@@ -13,10 +13,12 @@ class AppCommand extends BaseCommand {
             this.logger.error(err);
             return;
         }
-        let previousChannel, joinedChannel;
-        if (previousChannel = controller.getGuildChannel(session.guildId)) {
-            if (session.args.includes('\\-\\-force') || session.args.includes('--force')) await controller.abortStream(previousChannel);
-            else return session.update(msg.msg_id, new Card().addText("一个服务器中只能同时有一只 Arisa 推流，使用 `/arisa join --force` 来强制取消另一频道的推流"));
+        let previousStreamers, joinedChannel;
+        let guildLimit = 4;
+        if (previousStreamers = controller.getGuildStreamers(session.guildId)) {
+            if (previousStreamers.length >= guildLimit) {
+                return session.update(msg.msg_id, new Card().addText(`一个服务器中只能同时有 ${guildLimit} 只 Arisa 推流`));
+            }
         }
         for await (const { err, data } of client.API.channel.user.joinedChannel(session.guildId, session.authorId)) {
             if (err) {
