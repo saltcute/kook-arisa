@@ -12,18 +12,6 @@ export class Controller {
 
     private controllerToken: string;
 
-
-    private shuffle(array: any[]) {
-        let currentIndex = array.length, randomIndex;
-        while (currentIndex != 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [
-                array[randomIndex], array[currentIndex]];
-        }
-        return array;
-    }
-
     private streamerPool: string[] = [];
     get allStreamerTokens() {
         return this.streamerPool;
@@ -168,5 +156,9 @@ export class Controller {
 
     getUserStreamers(userId: string): Streamer[] | undefined {
         return this.userStreamers.get(userId);
+    }
+
+    getStreamerChannel(token: string): string | undefined {
+        return this.streamerChannel.get(token);
     }
 }

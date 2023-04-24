@@ -467,7 +467,8 @@ export class Streamer {
             else fileC = fs.createReadStream(file);
             this.ffmpegInstance = ffmpeg()
                 .input(fileC)
-                .audioCodec('pcm_u8')
+                // .audioCodec('pcm_u8')
+                .audioCodec('pcm_s16le')
                 .audioChannels(2)
                 // .audioFilter('volume=0.5')
                 .audioFrequency(48000)
@@ -492,24 +493,36 @@ export class Streamer {
                 this.previousPausedTime = 0;
                 this.playbackStart = Date.now();
                 this.lastOperation = Date.now();
-                var now = 0;
                 var cache = Buffer.concat(bfs);
-                // var rate = 11025;
-                // var rate = 965;
-                var rate = 975;
+                var now = 0;
+                const FILE_HEADER_SIZE = 44;
+                /**
+                 * Rate for PCM audio 
+                 * 48000Khz * 8 bit * 2 channel = 768kbps = 96KB/s
+                 * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms
+                 */
+                // var rate = 960; // For pcm_u8;
+                var rate = 1920;
                 while (Date.now() - this.lastRead < 20);
+
+                this.lastRead = Date.now();
+                const chunk = cache.subarray(now, now + FILE_HEADER_SIZE + 1);
+                if (this.previousStream && now <= cache.length) {
+                    this.stream.push(chunk);
+                }
+                now += FILE_HEADER_SIZE + 1;
 
                 while (this.previousStream && now <= cache.length) {
                     if (!this.paused) {
                         this.lastRead = Date.now();
-                        const chunk = cache.subarray(now, now + rate);
+                        const chunk = cache.subarray(now, now + rate + 1);
                         if (this.previousStream && now <= cache.length) {
                             this.stream.push(chunk);
                         }
                         else {
-                            return;
+                            break;
                         }
-                        now += rate;
+                        now += rate + 1;
                     }
                     await delay(10);
                 }

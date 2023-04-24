@@ -11,7 +11,12 @@ class AppCommand extends BaseCommand {
             return session.reply("You do not have the permission to use this command")
         }
         const streamers = controller.allStreamerTokens;
-        const card = new Card().addText(streamers.map(v => v.slice(0, 11) + '###############' + v.slice(26)).join('\n'));
+        const card = new Card().addText(streamers.map((v) => {
+            return v.slice(0, 11) +
+                '###############' +
+                v.slice(26) +
+                (controller.getStreamerChannel(v) ? '(in use)' : '');
+        }).join('\n'));
         return session.reply(card);
     }
 }
