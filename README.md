@@ -1,3 +1,3 @@
-# Kasumi-Template
+# kook-arisa
 
-See example commands in src/menu for hands on tutorial
+Yet another KOOK music bot, with a web dashboard.
