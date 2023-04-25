@@ -87,3 +87,22 @@ export function addTrack(data: playback.extra.streaming) {
         }
     }))
 }
+
+export function jumpToPercentage(percent: number) {
+    ws.send(JSON.stringify({
+        t: 7,
+        d: {
+            streamerIndex: currentStreamerIndex,
+            percent
+        }
+    }))
+}
+
+export function sendSelectServer(guildId: string) {
+    ws.send(JSON.stringify({
+        t: 8,
+        d: {
+            guildId
+        }
+    }))
+}

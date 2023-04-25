@@ -77,10 +77,10 @@ export class Streamer {
     private readonly koice: Koice;
 
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
-        this.STREAMER_TOKEN = structuredClone(token);
-        this.TARGET_CHANNEL_ID = structuredClone(channelId);
-        this.TARGET_GUILD_ID = structuredClone(guildId)
-        this.INVITATION_AUTHOR_ID = structuredClone(authorId);
+        this.STREAMER_TOKEN = token;
+        this.TARGET_CHANNEL_ID = channelId;
+        this.TARGET_GUILD_ID = guildId
+        this.INVITATION_AUTHOR_ID = authorId;
         this.controller = controller;
         this.kasumi = new Kasumi({
             type: 'websocket',
@@ -92,6 +92,12 @@ export class Streamer {
         this.ensureUsage();
     }
     async connect() {
+        const { err, data } = await this.kasumi.API.channel.voiceChannelUserList(this.TARGET_CHANNEL_ID)
+        if (err) {
+            client.logger.error(err);
+        } else {
+            this.audienceIds = data.map(v => v.id);
+        }
         this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         await this.koice.startStream(this.stream);
         return this;
@@ -280,6 +286,8 @@ export class Streamer {
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
+    audienceIds: string[] = []
+
     private paused: boolean = false;
     private previousPausedTime: number = 0;
 
@@ -287,9 +295,15 @@ export class Streamer {
         if (this.pauseStart) return this.previousPausedTime + (Date.now() - this.pauseStart);
         else return this.previousPausedTime;
     }
+    get duration() {
+        const bytesPerSecond = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8
+        return this.currentBufferSize / bytesPerSecond;
+    }
     get playedTime() {
-        if (this.playbackStart) return (Date.now() - this.playbackStart) - this.pausedTime;
-        else return 0;
+        const bytesPerSecond = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8
+        return this.currentChunkStart / bytesPerSecond;
+        // if (this.playbackStart) return (Date.now() - this.playbackStart) - this.pausedTime;
+        // else return 0;
     }
 
     isPaused() {
@@ -437,12 +451,26 @@ export class Streamer {
         delete this.playbackStart;
         this.previousStream = false;
         this.ffmpegInstance?.kill("SIGSTOP");
-        await delay(100);
+        await delay(this.PUSH_INTERVAL + 50);
         this.fileP?.removeAllListeners();
         this.fileP?.destroy();
         this.fileP = new PassThrough();
     }
 
+    jumpToPercentage(percent: number) {
+        if (percent >= 0 && percent <= 1) {
+            this.currentChunkStart = Math.trunc(this.currentBufferSize * percent);
+        }
+    }
+
+
+    private currentChunkStart = 0;
+    private currentBufferSize = 0;
+    private readonly OUTPUT_FREQUENCY = 48000;
+    private readonly OUTPUT_CHANNEL = 2;
+    private readonly OUTPUT_BITS = 8;
+    private readonly PUSH_INTERVAL = 50;
+    private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async playback(payload: queueItem): Promise<void> {
         try {
             this.preload();
@@ -467,11 +495,11 @@ export class Streamer {
             else fileC = fs.createReadStream(file);
             this.ffmpegInstance = ffmpeg()
                 .input(fileC)
-                // .audioCodec('pcm_u8')
-                .audioCodec('pcm_s16le')
-                .audioChannels(2)
+                .audioCodec('pcm_u8')
+                // .audioCodec('pcm_s16le')
+                .audioChannels(this.OUTPUT_CHANNEL)
                 // .audioFilter('volume=0.5')
-                .audioFrequency(48000)
+                .audioFrequency(this.OUTPUT_FREQUENCY)
                 .outputFormat('wav');
             this.ffmpegInstance
                 .stream(this.fileP);
@@ -494,37 +522,37 @@ export class Streamer {
                 this.playbackStart = Date.now();
                 this.lastOperation = Date.now();
                 var cache = Buffer.concat(bfs);
-                var now = 0;
                 const FILE_HEADER_SIZE = 44;
+                this.currentChunkStart = 0;
+                this.currentBufferSize = cache.length;
                 /**
                  * Rate for PCM audio 
                  * 48000Khz * 8 bit * 2 channel = 768kbps = 96KB/s
                  * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms
                  */
                 // var rate = 960; // For pcm_u8;
-                var rate = 1920;
                 while (Date.now() - this.lastRead < 20);
 
                 this.lastRead = Date.now();
-                const chunk = cache.subarray(now, now + FILE_HEADER_SIZE + 1);
-                if (this.previousStream && now <= cache.length) {
+                const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + FILE_HEADER_SIZE + 1);
+                if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     this.stream.push(chunk);
                 }
-                now += FILE_HEADER_SIZE + 1;
+                this.currentChunkStart += FILE_HEADER_SIZE + 1;
 
-                while (this.previousStream && now <= cache.length) {
+                while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     if (!this.paused) {
                         this.lastRead = Date.now();
-                        const chunk = cache.subarray(now, now + rate + 1);
-                        if (this.previousStream && now <= cache.length) {
+                        const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE + 1);
+                        if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                             this.stream.push(chunk);
                         }
                         else {
                             break;
                         }
-                        now += rate + 1;
+                        this.currentChunkStart += this.RATE + 1;
                     }
-                    await delay(10);
+                    await delay(this.PUSH_INTERVAL);
                 }
                 if (this.previousStream) {
                     await this.endPlayback();

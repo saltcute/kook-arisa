@@ -5,15 +5,41 @@ import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash
 library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle);
 
 import { playback } from 'menu/arisa/controller/music';
-import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex } from './common';
+import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex, jumpToPercentage, sendSelectServer } from './common';
 import { streamerDetail } from './types';
-import { Ref, computed, ref } from 'vue';
+import { computed, ref } from 'vue';
+import { RawGuildListResponseItem } from 'kasumi.js/dist/api/guild/type';
+import axios from 'axios';
 const proxy = "img.kookapp.lolicon.ac.cn";
-let streamers: Ref<streamerDetail[]> = ref([]);
+let streamers = ref<streamerDetail[]>([]);
+let servers = ref<RawGuildListResponseItem[]>([]);
+
+async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> {
+    return new Promise((resolve, rejects) => {
+        axios({
+            url: '/api/guilds',
+            method: 'POST',
+            data: {
+                auth: `Bearer ${token}`
+            }
+        }).then(({ data }) => {
+            resolve(data.data.items);
+        }).catch((e) => { rejects(e) });
+    })
+}
 
 const busy = ref(true);
 const userDataRaw = localStorage.getItem('user');
-if (userDataRaw) {
+if (userDataRaw && ws) {
+    const auth = JSON.parse(localStorage.getItem('auth') || "{}");
+    const token = auth.access_token;
+    if (token) {
+        getGuildList(token).then((res) => {
+            servers.value = res;
+            console.log(servers.value);
+        }).catch((e) => { console.error(e) });
+    }
+
     ws.addEventListener('open', () => {
         busy.value = false;
     })
@@ -26,6 +52,16 @@ if (userDataRaw) {
             }
         } catch { }
     })
+}
+
+let currentServerIndex = 0;
+function selectedServerName() {
+    const server = servers.value[currentServerIndex];
+    if (server) {
+        return server.name;
+    } else {
+        return "Select a Server"
+    }
 }
 
 function selectedStreamerName() {
@@ -55,16 +91,6 @@ function nowPlaying() {
         // console.log(streamer.nowPlaying);
         return streamer.nowPlaying;
     } else return undefined;
-}
-function getPlaybackProgress() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        const played = streamer.trackPlayedTime
-        const duration = streamer.trackTotalDuration
-        if (played && duration) return played / duration
-        else return 0;
-    } else return 0;
-    // console.log(played, duration);
 }
 
 function switchPlayback() {
@@ -140,6 +166,60 @@ function switchCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
 function getQueueBackground(queue: playback.extra) {
     return `background-image: url("${proxiedKookImage(queue.meta.cover)}")`
 }
+
+
+let keep = false, percent = 0;
+window.addEventListener('mousemove', (event) => {
+    const target = document.getElementById('playback-progress') as HTMLProgressElement | null;
+    if (target) {
+        const localX = event.clientX - target.offsetLeft;
+        if (keep) {
+            percent = localX / target.offsetWidth;
+            target.value = percent
+        }
+    }
+});
+window.addEventListener('mousedown', (event) => {
+    const target = event.target as HTMLProgressElement | null;
+    if (target?.id == 'playback-progress') {
+        keep = true;
+        const localX = event.clientX - target.offsetLeft;
+        percent = localX / target.offsetWidth;
+        target.value = percent;
+    }
+})
+window.addEventListener('mouseup', () => {
+    if (keep) {
+        keep = false;
+        jumpToPercentage(percent);
+    }
+})
+
+function getPlaybackProgress() {
+    if (keep) {
+        return percent;
+    } else {
+        const streamer = selectedStreamer();
+        if (streamer) {
+            const played = streamer.trackPlayedTime
+            const duration = streamer.trackTotalDuration
+            if (played && duration) return played / duration
+            else return 0;
+        } else return 0;
+    }
+}
+
+function selectServer(event: Event) {
+    const value = (event.target as HTMLElement).getAttribute('index');
+    if (value) {
+        const index = currentServerIndex = parseInt(value);
+        const server = servers.value[currentServerIndex];
+        if (server) {
+            sendSelectServer(server.id);
+        }
+        (event.target as HTMLInputElement).parentElement?.parentElement?.removeAttribute('open');
+    }
+}
 </script>
 
 <template>
@@ -152,7 +232,7 @@ function getQueueBackground(queue: playback.extra) {
             <div class="song-artists">{{
                 (nowPlaying() as playback.extra.netease)?.meta?.artists || ""
             }}</div>
-            <progress :value="getPlaybackProgress() * 100" max="100"></progress>
+            <progress id="playback-progress" :value="getPlaybackProgress()"></progress>
             <div v-if="selectedStreamer()" class="playback-control grid">
                 <i data-tooltip="Click to Shuffle Playlist" @click="shuffleQueue">
                     <font-awesome-icon :icon="['fas', 'shuffle']" />
@@ -208,6 +288,18 @@ function getQueueBackground(queue: playback.extra) {
                     @click="selectStreamer">
                     <img :src="proxiedKookImage(streamer.avatar)" />
                     {{ streamer.name }}#{{ streamer.identifyNum }}
+                </li>
+            </ul>
+        </details>
+        <details v-if="userDataRaw" role="list" id="streamerSelector">
+            <summary aria-haspopup="listbox">{{ selectedServerName() }}</summary>
+            <ul role="listbox" class="dropdown">
+                <li v-if="!servers.length">
+                    No Servers
+                </li>
+                <li v-else class="grid" v-for="(server, index) in servers" :index="index" @click="selectServer">
+                    <img :src="proxiedKookImage(server.icon)" />
+                    {{ server.name }}
                 </li>
             </ul>
         </details>

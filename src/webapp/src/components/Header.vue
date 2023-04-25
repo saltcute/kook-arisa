@@ -41,28 +41,28 @@ user = ref('Loading...');
 callbackUrl = ref('');
 (async () => {
     const query = new URLSearchParams(window.location.search);
+    const code = query.get('code');
     const authRaw = localStorage.getItem('auth');
-    if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
-        const userData = (await getUserMe(auth.access_token)).data
-        localStorage.setItem('user', JSON.stringify(userData));
-        user.value = `${userData.username}`
+    if (code) {
+        await axios.get(`/api/login?code=${code}`).then(async ({ data }) => {
+            const store = data.data;
+            store.expires = Date.now() + store.expire_in * 1000;
+            localStorage.setItem('auth', JSON.stringify(store));
+            const userData = (await getUserMe(store.access_token)).data
+            localStorage.setItem('user', JSON.stringify(userData));
+            user.value = `${userData.username}`;
+            location.replace('/');
+        }).catch(() => {
+            location.replace('/');
+        });
     } else {
-        localStorage.removeItem('auth');
-        const code = query.get('code');
-        if (code) {
-            await axios.get(`/api/login?code=${code}`).then(async ({ data }) => {
-                const store = data.data;
-                store.expires = Date.now() + store.expire_in * 1000;
-                localStorage.setItem('auth', JSON.stringify(store));
-                const userData = (await getUserMe(store.access_token)).data
-                localStorage.setItem('user', JSON.stringify(userData));
-                user.value = `${userData.username}`;
-                location.replace('/');
-            }).catch(() => {
-                location.replace('/');
-            });
+        if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
+            const userData = (await getUserMe(auth.access_token)).data
+            localStorage.setItem('user', JSON.stringify(userData));
+            user.value = `${userData.username}`
         } else {
-            callbackUrl.value = `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${webui.kookClientID}&redirect_uri=${encodeURIComponent(webui.dashboardUrl)}&response_type=code&scope=get_user_info`
+            localStorage.removeItem('auth');
+            callbackUrl.value = `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${webui.kookClientID}&redirect_uri=${encodeURIComponent(webui.dashboardUrl)}&response_type=code&scope=get_user_info%20get_user_guilds`
             user.value = '';
         }
     }

@@ -6,8 +6,8 @@ import upath from 'upath';
 import axios from 'axios';
 import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
-import { controller } from 'menu/arisa';
-import { playback } from 'menu/arisa/controller/music';
+import { controller, getChannelStreamer } from 'menu/arisa';
+import { Streamer, playback } from 'menu/arisa/controller/music';
 import webui from 'config/webui';
 import { streamerDetail } from 'webapp/src/components/cards/types';
 import api from './api';
@@ -49,7 +49,7 @@ app.ws('/', (ws: WebSocket) => {
                     userId = user.data.id;
                     break;
                 case 1: { // Pause and resume 
-                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         if (payload.d.paused) {
                             streamer.pause();
@@ -60,7 +60,7 @@ app.ws('/', (ws: WebSocket) => {
                     break;
                 }
                 case 2: { // Next/Previous track in queue
-                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         if (payload.d.next) {
                             streamer.next();
@@ -71,7 +71,7 @@ app.ws('/', (ws: WebSocket) => {
                     break;
                 }
                 case 3: { // Move queue items
-                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         const queueIndex = payload.d.queueIndex;
                         switch (payload.d.action) {
@@ -89,21 +89,21 @@ app.ws('/', (ws: WebSocket) => {
                     break;
                 }
                 case 4: { // Shuffle queue
-                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         streamer.shuffle();
                     }
                     break;
                 }
                 case 5: { // Change cycle mode
-                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         streamer.setCycleMode(payload.d.cycleMode)
                     }
                     break;
                 }
                 case 6: { // Play song
-                    const streamer = (controller.getUserStreamers(userId) || [])[payload.d.streamerIndex];
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         const data = payload.d.data as playback.extra.streaming;
                         switch (data.type) {
@@ -115,6 +115,21 @@ app.ws('/', (ws: WebSocket) => {
                     }
                     break;
                 }
+                case 7: { // Jump to percentage
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
+                    if (streamer) {
+                        const percent = payload.d.percent;
+                        if (percent >= 0 && percent <= 1) {
+                            streamer.jumpToPercentage(percent);
+                        }
+                    }
+                    break;
+                }
+                case 8: { // Select guild
+                    guildId = payload.d.guildId;
+                    getChannelStreamer()
+                    break;
+                }
             }
         } catch (e) {
             client.logger.error(e);
@@ -123,15 +138,22 @@ app.ws('/', (ws: WebSocket) => {
 
     let isAlive = true;
     let userId = '';
+    let guildId = '';
     ensureConnection();
 
     ws.on('pong', () => {
         isAlive = true;
     })
 
+    function getAllStreamers() {
+        const userStreamers = controller.getUserStreamers(userId) || [];
+        const channelStreamers = getChannelStreamer()
+        return [...new Set([...userStreamers, ...channelStreamers])];
+    }
+
     async function sendStatus() {
         if (userId) {
-            const streamers = controller.getUserStreamers(userId);
+            const streamers = getAllStreamers();
             if (streamers) {
                 let payload: streamerDetail[] = [];
                 for (const streamer of streamers) {
@@ -145,7 +167,7 @@ app.ws('/', (ws: WebSocket) => {
                         identifyNum: me.identifyNum,
                         avatar: me.avatar,
                         trackPlayedTime: streamer.playedTime,
-                        trackTotalDuration: streamer.nowPlaying?.meta.duration || 0,
+                        trackTotalDuration: streamer.duration,
                         isPaused: streamer.isPaused(),
                         nowPlaying: streamer.nowPlaying?.extra,
                         queue: array,
@@ -163,6 +185,14 @@ app.ws('/', (ws: WebSocket) => {
         if (!isAlive) ws.terminate();
         isAlive = false;
         ws.ping();
+    }
+
+    function getChannelStreamer() {
+        if (guildId) {
+            return (controller.getGuildStreamers(guildId) || []).filter(v => v.audienceIds.includes(userId))
+        } else {
+            return [];
+        }
     }
 
     sendStatus();

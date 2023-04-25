@@ -134,7 +134,7 @@ export class Controller {
         } {
             const streamers = this.guildStreamers.get(guildId) || [];
             streamers.push(streamer);
-            this.guildStreamers.set(authorId, streamers);
+            this.guildStreamers.set(guildId, streamers);
         }
         return streamer.connect();
     }
