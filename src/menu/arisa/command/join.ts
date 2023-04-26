@@ -48,10 +48,10 @@ class AppCommand extends BaseCommand {
                     return session.update(msg.msg_id, new Card().addText("没有更多可用推流机器人，请稍后再试"));
                 }
             } else {
-                return session.update(msg.msg_id, new Card().addText("没有更多可用推流机器人，请稍后再试"));
+                return session.update(msg.msg_id, new Card().addText('一个频道只能有一只 Arisa'));
             }
         } else {
-            return session.update(msg.msg_id, new Card().addText('一个频道只能有一只 Arisa'));
+            return session.update(msg.msg_id, new Card().addText('请先加入语音频道'));
         }
     }
 }

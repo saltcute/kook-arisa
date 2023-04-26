@@ -1,5 +1,7 @@
 import { playback } from "menu/arisa/controller/music";
 import webui from "../../../../config/webui";
+import { streamerDetail } from "./types";
+import { ref } from 'vue';
 export let ws: WebSocket;
 export interface auth {
     access_token: string,
@@ -9,10 +11,16 @@ export interface auth {
     expires: number
 }
 
-let auth: auth;
+export let auth: auth, streamers = ref<streamerDetail[]>([]);
 const authRaw = localStorage.getItem('auth');
 if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
     ws = new WebSocket(webui.websocketUrl);
+    ws.addEventListener('error', () => {
+        reconnectWs();
+    });
+    ws.addEventListener('close', () => {
+        reconnectWs();
+    })
     ws.addEventListener('open', () => {
         ws.send(JSON.stringify({
             t: 0,
@@ -21,6 +29,42 @@ if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 
             }
         }));
     })
+    ws.addEventListener('message', (data) => {
+        try {
+            if (data.data) {
+                streamers.value = JSON.parse(data.data.toString());
+                // console.log(streamers.value[currentStreamerIndex].nowPlaying);
+            }
+        } catch (e) { console.error(e) }
+    })
+    function reconnectWs() {
+        if (ws instanceof WebSocket) {
+            ws.close();
+        }
+        ws = new WebSocket(webui.websocketUrl);
+        ws.addEventListener('open', () => {
+            ws.send(JSON.stringify({
+                t: 0,
+                d: {
+                    access_token: auth.access_token
+                }
+            }));
+        })
+        ws.addEventListener('error', () => {
+            reconnectWs();
+        });
+        ws.addEventListener('close', () => {
+            reconnectWs();
+        })
+        ws.addEventListener('message', (data) => {
+            try {
+                if (data.data) {
+                    streamers.value = JSON.parse(data.data.toString());
+                    // console.log(streamers.value[currentStreamerIndex].nowPlaying);
+                }
+            } catch (e) { console.error(e) }
+        })
+    }
 }
 
 export let currentStreamerIndex = 0;

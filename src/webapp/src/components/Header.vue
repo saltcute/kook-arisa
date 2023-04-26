@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSun, faMoon, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 library.add(faSun, faMoon, faMagnifyingGlass);
 
-import { auth } from './cards/common';
+import type { auth as authType } from './cards/common';
 import axios from 'axios';
 import webui from '../../../config/webui';
 import { Ref, onMounted, ref, } from 'vue';
@@ -36,7 +36,7 @@ async function getUserMe(token: string): Promise<{
         }).catch((e) => { rejects(e) });
     })
 }
-let callbackUrl: Ref<string>, user: Ref<string>, auth: auth;
+let callbackUrl: Ref<string>, user: Ref<string>, auth: authType;
 user = ref('Loading...');
 callbackUrl = ref('');
 (async () => {

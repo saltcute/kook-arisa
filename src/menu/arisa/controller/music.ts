@@ -96,7 +96,8 @@ export class Streamer {
         if (err) {
             client.logger.error(err);
         } else {
-            this.audienceIds = data.map(v => v.id);
+            this.audienceIds = new Set(data.map(v => v.id));
+            this.audienceIds.delete(this.kasumi.me.userId);
         }
         this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         await this.koice.startStream(this.stream);
@@ -286,7 +287,7 @@ export class Streamer {
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
-    audienceIds: string[] = []
+    audienceIds: Set<string> = new Set();
 
     private paused: boolean = false;
     private previousPausedTime: number = 0;

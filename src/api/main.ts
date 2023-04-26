@@ -189,7 +189,7 @@ app.ws('/', (ws: WebSocket) => {
 
     function getChannelStreamer() {
         if (guildId) {
-            return (controller.getGuildStreamers(guildId) || []).filter(v => v.audienceIds.includes(userId))
+            return (controller.getGuildStreamers(guildId) || []).filter(v => v.audienceIds.has(userId))
         } else {
             return [];
         }

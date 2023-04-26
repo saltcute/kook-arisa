@@ -5,13 +5,11 @@ import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash
 library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle);
 
 import { playback } from 'menu/arisa/controller/music';
-import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex, jumpToPercentage, sendSelectServer } from './common';
-import { streamerDetail } from './types';
+import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex, jumpToPercentage, sendSelectServer, streamers } from './common';
 import { computed, ref } from 'vue';
 import { RawGuildListResponseItem } from 'kasumi.js/dist/api/guild/type';
 import axios from 'axios';
 const proxy = "img.kookapp.lolicon.ac.cn";
-let streamers = ref<streamerDetail[]>([]);
 let servers = ref<RawGuildListResponseItem[]>([]);
 
 async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> {
@@ -44,14 +42,6 @@ if (userDataRaw && ws) {
         busy.value = false;
     })
 
-    ws.addEventListener('message', (data) => {
-        try {
-            if (data.data) {
-                streamers.value = JSON.parse(data.data.toString());
-                // console.log(streamers.value[currentStreamerIndex].nowPlaying);
-            }
-        } catch { }
-    })
 }
 
 let currentServerIndex = 0;
@@ -278,20 +268,20 @@ function selectServer(event: Event) {
                 </i>
             </div>
         </article>
-        <details v-if="userDataRaw" role="list" id="streamerSelector">
+        <details v-if="userDataRaw" role="list" id="streamerselector">
             <summary aria-haspopup="listbox">{{ selectedStreamerName() }}</summary>
             <ul role="listbox" class="dropdown">
                 <li v-if="!streamers.length">
                     No Streamers
                 </li>
-                <li v-else class="grid" v-for="(   streamer, index   ) in   streamers  " :index="index"
+                <li v-else class="grid" v-for="(   streamer, index   ) in  streamers " :index="index"
                     @click="selectStreamer">
                     <img :src="proxiedKookImage(streamer.avatar)" />
                     {{ streamer.name }}#{{ streamer.identifyNum }}
                 </li>
             </ul>
         </details>
-        <details v-if="userDataRaw" role="list" id="streamerSelector">
+        <details v-if="userDataRaw" role="list" id="streamerselector">
             <summary aria-haspopup="listbox">{{ selectedServerName() }}</summary>
             <ul role="listbox" class="dropdown">
                 <li v-if="!servers.length">
