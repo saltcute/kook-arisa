@@ -23,11 +23,11 @@ client.message.on('systemMessages', async (event) => {
         const extra: userLeaveVoiceChannelEventExtra = event.rawEvent.extra;
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) { // has arisa
-            streamer.audienceIds = streamer.audienceIds.filter(v => v != extra.body.user_id);
+            streamer.audienceIds.delete(extra.body.user_id);
             if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
                 playlist.user.save(streamer, extra.body.user_id);
             }
-            if (!streamer.audienceIds.length) { // No audiences left
+            if (!streamer.audienceIds.size) { // No audiences left
                 streamer.disconnect();
             }
         }
@@ -35,7 +35,7 @@ client.message.on('systemMessages', async (event) => {
         const extra: userJoinVoiceChannelEventExtra = event.rawEvent.extra;
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) {
-            streamer.audienceIds.push(extra.body.user_id);
+            if (extra.body.user_id != streamer.kasumi.me.userId) streamer.audienceIds.add(extra.body.user_id);
         }
     }
 });
