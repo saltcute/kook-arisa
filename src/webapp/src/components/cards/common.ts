@@ -14,57 +14,38 @@ export interface auth {
 export let auth: auth, streamers = ref<streamerDetail[]>([]);
 const authRaw = localStorage.getItem('auth');
 if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
-    ws = new WebSocket(webui.websocketUrl);
-    ws.addEventListener('error', () => {
-        reconnectWs();
-    });
-    ws.addEventListener('close', () => {
-        reconnectWs();
-    })
-    ws.addEventListener('open', () => {
-        ws.send(JSON.stringify({
-            t: 0,
-            d: {
-                access_token: auth.access_token
-            }
-        }));
-    })
-    ws.addEventListener('message', (data) => {
-        try {
-            if (data.data) {
-                streamers.value = JSON.parse(data.data.toString());
-                // console.log(streamers.value[currentStreamerIndex].nowPlaying);
-            }
-        } catch (e) { console.error(e) }
-    })
-    function reconnectWs() {
-        if (ws instanceof WebSocket) {
-            ws.close();
-        }
+    function connect() {
         ws = new WebSocket(webui.websocketUrl);
-        ws.addEventListener('open', () => {
+        ws.onopen = function () {
             ws.send(JSON.stringify({
                 t: 0,
                 d: {
                     access_token: auth.access_token
                 }
             }));
-        })
-        ws.addEventListener('error', () => {
-            reconnectWs();
-        });
-        ws.addEventListener('close', () => {
-            reconnectWs();
-        })
-        ws.addEventListener('message', (data) => {
+        };
+
+        ws.onmessage = function (data) {
             try {
                 if (data.data) {
                     streamers.value = JSON.parse(data.data.toString());
                     // console.log(streamers.value[currentStreamerIndex].nowPlaying);
                 }
             } catch (e) { console.error(e) }
-        })
+        };
+
+        ws.onclose = function (e) {
+            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+            setTimeout(connect, 1000);
+        };
+
+        ws.onerror = function (err) {
+            console.error('Socket encountered error: ', err, 'Closing socket');
+            ws.close();
+        };
     }
+
+    connect();
 }
 
 export let currentStreamerIndex = 0;
@@ -142,11 +123,11 @@ export function jumpToPercentage(percent: number) {
     }))
 }
 
-export function sendSelectServer(guildId: string) {
-    ws.send(JSON.stringify({
-        t: 8,
-        d: {
-            guildId
-        }
-    }))
-}
+// export function sendSelectServer(guildId: string) {
+//     ws.send(JSON.stringify({
+//         t: 8,
+//         d: {
+//             guildId
+//         }
+//     }))
+// }

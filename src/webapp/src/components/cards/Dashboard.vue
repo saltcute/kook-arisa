@@ -5,12 +5,11 @@ import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash
 library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle);
 
 import { playback } from 'menu/arisa/controller/music';
-import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex, jumpToPercentage, sendSelectServer, streamers } from './common';
+import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex, jumpToPercentage, streamers } from './common';
 import { computed, ref } from 'vue';
 import { RawGuildListResponseItem } from 'kasumi.js/dist/api/guild/type';
 import axios from 'axios';
 const proxy = "img.kookapp.lolicon.ac.cn";
-let servers = ref<RawGuildListResponseItem[]>([]);
 
 async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> {
     return new Promise((resolve, rejects) => {
@@ -31,27 +30,11 @@ const userDataRaw = localStorage.getItem('user');
 if (userDataRaw && ws) {
     const auth = JSON.parse(localStorage.getItem('auth') || "{}");
     const token = auth.access_token;
-    if (token) {
-        getGuildList(token).then((res) => {
-            servers.value = res;
-            console.log(servers.value);
-        }).catch((e) => { console.error(e) });
-    }
 
     ws.addEventListener('open', () => {
         busy.value = false;
     })
 
-}
-
-let currentServerIndex = 0;
-function selectedServerName() {
-    const server = servers.value[currentServerIndex];
-    if (server) {
-        return server.name;
-    } else {
-        return "Select a Server"
-    }
 }
 
 function selectedStreamerName() {
@@ -198,18 +181,6 @@ function getPlaybackProgress() {
         } else return 0;
     }
 }
-
-function selectServer(event: Event) {
-    const value = (event.target as HTMLElement).getAttribute('index');
-    if (value) {
-        const index = currentServerIndex = parseInt(value);
-        const server = servers.value[currentServerIndex];
-        if (server) {
-            sendSelectServer(server.id);
-        }
-        (event.target as HTMLInputElement).parentElement?.parentElement?.removeAttribute('open');
-    }
-}
 </script>
 
 <template>
@@ -278,18 +249,6 @@ function selectServer(event: Event) {
                     @click="selectStreamer">
                     <img :src="proxiedKookImage(streamer.avatar)" />
                     {{ streamer.name }}#{{ streamer.identifyNum }}
-                </li>
-            </ul>
-        </details>
-        <details v-if="userDataRaw" role="list" id="streamerselector">
-            <summary aria-haspopup="listbox">{{ selectedServerName() }}</summary>
-            <ul role="listbox" class="dropdown">
-                <li v-if="!servers.length">
-                    No Servers
-                </li>
-                <li v-else class="grid" v-for="(server, index) in servers" :index="index" @click="selectServer">
-                    <img :src="proxiedKookImage(server.icon)" />
-                    {{ server.name }}
                 </li>
             </ul>
         </details>

@@ -1,8 +1,9 @@
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
-import menu, { getChannelStreamer } from "..";
-import playlist from "../controller/playlist";
+import { getChannelStreamer } from "../..";
+import playlist from "../../controller/playlist";
+import queueMenu from ".";
 
-class AppCommand extends BaseCommand {
+class SaveCommand extends BaseCommand {
     name = 'save';
     description = '保存当前播放列表';
     func: CommandFunction<BaseSession, any> = async (session) => {
@@ -30,6 +31,5 @@ class AppCommand extends BaseCommand {
     }
 }
 
-const command = new AppCommand();
-export default command;
-menu.addCommand(command);
+const save = new SaveCommand();
+export default save;

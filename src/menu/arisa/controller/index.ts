@@ -9,6 +9,7 @@ export class Controller {
     private guildStreamers: Map<string, Streamer[]> = new Map();
     private streamerChannel: Map<string, string> = new Map();
     private channelStreamer: Map<string, Streamer> = new Map();
+    private allStreamers: Set<Streamer> = new Set();
 
     private controllerToken: string;
 
@@ -25,6 +26,10 @@ export class Controller {
         this.controllerToken = structuredClone(token);
 
         this.loadStreamer();
+    }
+
+    get getAllStreamers() {
+        return [...this.allStreamers];
     }
 
     loadStreamer() {
@@ -76,6 +81,7 @@ export class Controller {
             const streamers = (this.guildStreamers.get(streamer.TARGET_GUILD_ID) || []).filter(v => v != streamer);
             this.guildStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
         }
+        this.allStreamers.delete(streamer);
         return true;
     }
 
@@ -93,40 +99,47 @@ export class Controller {
         const { err, data } = await streamer.kasumi.API.user.me();
         if (err) {
             streamer.kasumi.logger.error(err);
+            streamer.disconnect();
             return;
         }
         const streamerId = data.id; {
             const { err } = await streamer.kasumi.API.rest.get('/guild/join', { id: guildId });
             if (err) {
                 streamer.kasumi.logger.error(err);
+                streamer.disconnect();
                 return;
             }
         } {
             const { err } = await client.API.channel.permission.createUser(channelId, streamerId);
             if (err) {
                 client.logger.error(err);
+                streamer.disconnect();
                 return;
             }
         } {
             const { err } = await client.API.channel.permission.updateUser(channelId, streamerId, 1 << 15);
             if (err) {
                 client.logger.error(err);
+                streamer.disconnect();
                 return;
             }
         } {
             const { err } = await client.API.channel.permission.createUser(channelId, client.me.userId);
             if (err) {
                 client.logger.error(err);
+                streamer.disconnect();
                 return;
             }
         } {
             const { err } = await client.API.channel.permission.updateUser(channelId, client.me.userId, 1 << 11);
             if (err) {
                 client.logger.error(err);
+                streamer.disconnect();
                 return;
             }
         }
         this.streamerChannel.set(STREAMER_TOKEN, channelId);
+        this.allStreamers.add(streamer);
         this.channelStreamer.set(channelId, streamer); {
             const streamers = this.userStreamers.get(authorId) || [];
             streamers.push(streamer);

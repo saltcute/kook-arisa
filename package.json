@@ -37,7 +37,7 @@
     "express-ws": "^5.0.2",
     "fluent-ffmpeg": "^2.1.2",
     "isomorphic-ws": "^5.0.0",
-    "kasumi.js": "^0.2.14",
+    "kasumi.js": "^0.3.1",
     "koice": "^0.1.11",
     "memory-cache": "^0.2.0",
     "mongodb": "^5.3.0",

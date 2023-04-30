@@ -126,8 +126,8 @@ app.ws('/', (ws: WebSocket) => {
                     break;
                 }
                 case 8: { // Select guild
-                    guildId = payload.d.guildId;
-                    getChannelStreamer()
+                    // guildId = payload.d.guildId;
+                    // getChannelStreamer()
                     break;
                 }
             }
@@ -138,7 +138,7 @@ app.ws('/', (ws: WebSocket) => {
 
     let isAlive = true;
     let userId = '';
-    let guildId = '';
+    // let guildId = '';
     ensureConnection();
 
     ws.on('pong', () => {
@@ -188,11 +188,7 @@ app.ws('/', (ws: WebSocket) => {
     }
 
     function getChannelStreamer() {
-        if (guildId) {
-            return (controller.getGuildStreamers(guildId) || []).filter(v => v.audienceIds.has(userId))
-        } else {
-            return [];
-        }
+        return controller.getAllStreamers.filter(v => v.audienceIds.has(userId))
     }
 
     sendStatus();

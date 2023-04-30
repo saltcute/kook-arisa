@@ -1,9 +1,9 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
-import menu, { getChannelStreamer } from "..";
-import { Time } from "../controller/time";
+import { getChannelStreamer } from "../..";
+import queueMenu from ".";
 
-class AppCommand extends BaseCommand {
+class ClearCommand extends BaseCommand {
     name = 'clear';
     description = '清空播放列表';
     func: CommandFunction<BaseSession, any> = async (session) => {
@@ -24,6 +24,5 @@ class AppCommand extends BaseCommand {
     }
 }
 
-const command = new AppCommand();
-export default command;
-menu.addCommand(command);
+const clear = new ClearCommand();
+export default clear;

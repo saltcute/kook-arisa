@@ -28,4 +28,3 @@ class AppCommand extends BaseCommand {
 const command = new AppCommand();
 export default command;
 menu.addCommand(command);
-menu.addAlias(command, 'next');
