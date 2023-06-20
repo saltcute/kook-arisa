@@ -11,23 +11,15 @@ import axios from 'axios';
 import { client } from 'init/client';
 
 export namespace playback {
-    export type source = source.playable | source.streaming;
+    export type source = source.playable;
     export interface meta {
         title: string,
         artists: string,
         duration: number
     }
     export namespace source {
-        export interface netease {
-            type: 'netease',
-            data: {
-                songId: number
-            }
-        }
-        export type local = string;
         export type cache = Buffer | Readable;
-        export type playable = local | cache;
-        export type streaming = netease;
+        export type playable = cache;
     }
     export type extra = extra.playable | extra.streaming;
     export namespace extra {
@@ -49,7 +41,8 @@ export namespace playback {
             type: 'buffer'
         }
         export interface local extends base {
-            type: 'local'
+            type: 'local',
+            path: string
         }
 
         export type cache = buffer | readable;
@@ -60,7 +53,7 @@ export namespace playback {
 
 
 export type queueItem = {
-    source: playback.source | Promise<playback.source>
+    source?: playback.source.cache,
     meta: playback.meta,
     extra: playback.extra
 };
@@ -99,11 +92,11 @@ export class Streamer {
         return this.controller.returnStreamer(this);
     }
     readonly streamingServices = ['netease'];
-    private isStreamingSource(payload: any): payload is playback.source.streaming {
+    private isStreamingSource(payload: any): payload is playback.extra.streaming {
         return this.streamingServices.includes(payload.type);
     }
     private async getStreamingSource(
-        input: playback.source.streaming
+        input: playback.extra
     ): Promise<{
         source: playback.source.playable,
         meta: playback.meta
@@ -131,22 +124,15 @@ export class Streamer {
     }
 
     async playNetease(songId: number, meta: playback.meta, forceSwitch: boolean = false) {
-        const input: playback.source.netease = {
-            type: 'netease',
-            data: {
-                songId
-            }
-        };
         const extra: playback.extra.netease = {
             type: 'netease',
             data: { songId },
             meta
         }
-        return this.playStreaming(input, meta, extra, forceSwitch);
+        return this.playStreaming(meta, extra, forceSwitch);
     }
-    async playStreaming(input: playback.source.streaming, meta: playback.meta, extra: playback.extra.streaming, forceSwitch: boolean = false) {
+    async playStreaming(meta: playback.meta, extra: playback.extra.streaming, forceSwitch: boolean = false) {
         let payload: queueItem = {
-            source: input,
             meta: meta || {
                 title: `Unknown streaming service audio`,
                 artists: 'Unknown',
@@ -157,7 +143,7 @@ export class Streamer {
         this.pushPayload(payload, forceSwitch);
     }
     async playBuffer(
-        input: playback.source.cache | Promise<playback.source.cache>,
+        input: playback.source.cache,
         meta: playback.meta = {
             title: `Unknown file`,
             artists: 'Unknown',
@@ -175,8 +161,8 @@ export class Streamer {
         }
         this.pushPayload(payload, forceSwitch);
     }
-    async playLocal(input: playback.source.local, forceSwitch: boolean = false) {
-        const path = input.trim().replace(/^['"](.*)['"]$/, '$1').trim();
+    async playLocal(input: playback.extra.local, forceSwitch: boolean = false) {
+        const path = input.path.trim().replace(/^['"](.*)['"]$/, '$1').trim();
         if (fs.existsSync(path)) {
             if (fs.lstatSync(path).isDirectory()) {
                 fs.readdirSync(path).forEach((file) => {
@@ -190,10 +176,10 @@ export class Streamer {
                                 duration: 0
                             };
                             let payload: queueItem = {
-                                source: fullPath,
                                 meta,
                                 extra: {
                                     type: 'local',
+                                    path: fullPath,
                                     meta
                                 }
                             }
@@ -208,10 +194,10 @@ export class Streamer {
                     duration: 0
                 };
                 let payload: queueItem = {
-                    source: path,
                     meta,
                     extra: {
                         type: 'local',
+                        path,
                         meta
                     }
                 }
@@ -329,13 +315,18 @@ export class Streamer {
             let upnext: queueItem | undefined;
             switch (this.cycleMode) {
                 case 'no_repeat':
+                    if (this.nowPlaying) delete this.nowPlaying.source;
                     upnext = this.queue.shift();
                     break;
                 case 'repeat_one':
-                    upnext = this.nowPlaying || this.queue.shift();
+                    if (this.nowPlaying) upnext = this.nowPlaying;
+                    else this.queue.shift();
                     break;
                 case 'repeat':
-                    if (this.nowPlaying) this.queue.push(this.nowPlaying);
+                    if (this.nowPlaying) {
+                        this.queue.push(this.nowPlaying);
+                        delete this.nowPlaying.source;
+                    }
                     upnext = this.queue.shift();
                     break;
             }
@@ -355,7 +346,7 @@ export class Streamer {
     }
 
     private async preparePayload(payload: queueItem): Promise<{
-        source: playback.source.playable,
+        source: playback.source,
         meta: playback.meta,
         extra: playback.extra
     } | undefined> {
@@ -367,7 +358,8 @@ export class Streamer {
             source = stream.source;
             meta = stream.meta;
         }
-        return { source, meta, extra: payload.extra }
+        if (source) return { source, meta, extra: payload.extra }
+        else return undefined;
     }
 
     playbackStart?: number;
