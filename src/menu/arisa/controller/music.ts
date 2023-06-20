@@ -103,7 +103,7 @@ export class Streamer {
     }
     readonly streamingServices = ['netease'];
     private isStreamingSource(payload: any): payload is playback.extra.streaming {
-        return this.streamingServices.includes(payload.type);
+        return this.streamingServices.includes(payload?.type);
     }
     private async getStreamingSource(
         input: playback.extra,
@@ -423,10 +423,9 @@ export class Streamer {
         meta: playback.meta,
         extra: playback.extra
     } | undefined> {
-        let source = payload.source, meta = payload.meta;
-        if (source instanceof Promise) source = await source;
-        if (this.isStreamingSource(source)) {
-            const stream = (await this.getStreamingSource(source, payload.meta));
+        let extra = payload.extra, meta = payload.meta, source;
+        if (this.isStreamingSource(extra)) {
+            const stream = (await this.getStreamingSource(extra, payload.meta));
             if (!stream) return undefined;
             source = stream.source;
             meta = stream.meta;
