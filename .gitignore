@@ -4,6 +4,7 @@ package-lock.json
 
 src/config/index.ts
 src/config/webui.ts
+src/config/streamer.json
 
 .DS_Store
 

@@ -5,7 +5,7 @@ import Profile from '../components/cards/Profile.vue';
 
 <template>
     <main class="container">
-        <Dashboard />
+        <Dashboard/>
         <Profile />
     </main>
 </template>

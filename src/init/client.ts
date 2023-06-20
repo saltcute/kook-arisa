@@ -10,14 +10,16 @@ if (config.useWebHook) {
         token: config.kookToken,
         verifyToken: config.kookVerifyToken,
         encryptKey: config.kookEncryptKey,
-        port: config.kookPort
+        port: config.kookPort,
+        disableSnOrderCheck: true
     }
 } else {
     botConifg = {
         type: 'websocket',
         vendor: config.useBotRootWebSocket ? 'botroot' : 'hexona',
         // vendor: 'kookts',
-        token: config.kookToken
+        token: config.kookToken,
+        disableSnOrderCheck: true
     }
 }
 

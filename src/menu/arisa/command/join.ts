@@ -13,10 +13,12 @@ class AppCommand extends BaseCommand {
             this.logger.error(err);
             return;
         }
-        let previousChannel, joinedChannel;
-        if (previousChannel = controller.getGuildChannel(session.guildId)) {
-            if (session.args.includes('\\-\\-force') || session.args.includes('--force')) await controller.abortStream(previousChannel);
-            else return session.update(msg.msg_id, new Card().addText("一个服务器中只能同时有一只 Arisa 推流，使用 `/arisa join --force` 来强制取消另一频道的推流"));
+        let previousStreamers, joinedChannel;
+        let guildLimit = 4;
+        if (previousStreamers = controller.getGuildStreamers(session.guildId)) {
+            if (previousStreamers.length >= guildLimit) {
+                return session.update(msg.msg_id, new Card().addText(`一个服务器中只能同时有 ${guildLimit} 只 Arisa 推流`));
+            }
         }
         for await (const { err, data } of client.API.channel.user.joinedChannel(session.guildId, session.authorId)) {
             if (err) {
@@ -30,19 +32,23 @@ class AppCommand extends BaseCommand {
             if (joinedChannel) break;
         }
         if (joinedChannel) {
-            let streamer;
-            if (streamer = await controller.joinChannel(session.guildId, joinedChannel.id, session.authorId)) {
-                const { err, data } = await streamer.kasumi.API.user.me();
-                if (err) {
-                    this.logger.error(err);
-                    streamer.disconnect();
-                    return session.update(msg.msg_id, new Card().addText("查询推流机器人资料失败"));
+            if (!controller.getChannelStreamer(joinedChannel.id)) {
+                let streamer;
+                if (streamer = await controller.joinChannel(session.guildId, joinedChannel.id, session.authorId)) {
+                    const { err, data } = await streamer.kasumi.API.user.me();
+                    if (err) {
+                        this.logger.error(err);
+                        streamer.disconnect();
+                        return session.update(msg.msg_id, new Card().addText("查询推流机器人资料失败"));
+                    }
+                    await session.update(msg.msg_id, new Card().addText("正在同步播放列表"));
+                    await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { this.logger.error(e) });
+                    return session.update(msg.msg_id, new Card().addText(`(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流`));
+                } else {
+                    return session.update(msg.msg_id, new Card().addText("没有更多可用推流机器人，请稍后再试"));
                 }
-                await session.update(msg.msg_id, new Card().addText("正在同步播放列表"));
-                await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { this.logger.error(e) });
-                return session.update(msg.msg_id, new Card().addText(`(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流`));
             } else {
-                return session.update(msg.msg_id, new Card().addText("没有更多可用推流机器人，请稍后再试"));
+                return session.update(msg.msg_id, new Card().addText('一个频道只能有一只 Arisa'));
             }
         } else {
             return session.update(msg.msg_id, new Card().addText('请先加入语音频道'));

@@ -1,10 +1,11 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
-import menu, { getChannelStreamer } from "..";
-import { Time } from "../controller/time";
+import { getChannelStreamer } from "../..";
+import { Time } from "../../controller/time";
+import queueMenu from ".";
 
-class AppCommand extends BaseCommand {
-    name = 'queue';
+class ListCommand extends BaseCommand {
+    name = 'list';
     description = '查看当前播放列表';
     func: CommandFunction<BaseSession, any> = async (session) => {
         if (!session.guildId) return session.reply("只能在服务器频道中使用此命令");
@@ -61,6 +62,5 @@ class AppCommand extends BaseCommand {
     }
 }
 
-const command = new AppCommand();
-export default command;
-menu.addCommand(command);
+const list = new ListCommand();
+export default list;

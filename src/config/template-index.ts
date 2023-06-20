@@ -15,7 +15,6 @@ export default {
     neteaseVIP: false,
     neteaseEmail: '',
     neteasePassword: '',
-}
 
-export const streamers: string[] = [
-]
+    globalAdmins: ['1854484583']
+}

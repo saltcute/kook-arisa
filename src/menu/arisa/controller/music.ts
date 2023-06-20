@@ -9,13 +9,16 @@ import upath from 'upath';
 import netease from '../command/netease/lib';
 import axios from 'axios';
 import { client } from 'init/client';
+import { akarin } from '../command/netease/lib/card';
+import playlist from './playlist';
 
 export namespace playback {
     export type source = source.playable;
     export interface meta {
         title: string,
         artists: string,
-        duration: number
+        duration: number,
+        cover: string
     }
     export namespace source {
         export type cache = Buffer | Readable;
@@ -67,10 +70,10 @@ export class Streamer {
     private readonly koice: Koice;
 
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
-        this.STREAMER_TOKEN = structuredClone(token);
-        this.TARGET_CHANNEL_ID = structuredClone(channelId);
-        this.TARGET_GUILD_ID = structuredClone(guildId)
-        this.INVITATION_AUTHOR_ID = structuredClone(authorId);
+        this.STREAMER_TOKEN = token;
+        this.TARGET_CHANNEL_ID = channelId;
+        this.TARGET_GUILD_ID = guildId
+        this.INVITATION_AUTHOR_ID = authorId;
         this.controller = controller;
         this.kasumi = new Kasumi({
             type: 'websocket',
@@ -82,6 +85,13 @@ export class Streamer {
         this.ensureUsage();
     }
     async connect() {
+        const { err, data } = await this.kasumi.API.channel.voiceChannelUserList(this.TARGET_CHANNEL_ID)
+        if (err) {
+            client.logger.error(err);
+        } else {
+            this.audienceIds = new Set(data.map(v => v.id));
+            this.audienceIds.delete(this.kasumi.me.userId);
+        }
         this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         await this.koice.startStream(this.stream);
         return this;
@@ -96,7 +106,8 @@ export class Streamer {
         return this.streamingServices.includes(payload.type);
     }
     private async getStreamingSource(
-        input: playback.extra
+        input: playback.extra,
+        meta?: playback.meta
     ): Promise<{
         source: playback.source.playable,
         meta: playback.meta
@@ -109,10 +120,11 @@ export class Streamer {
                     const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
                     return {
                         source: cache,
-                        meta: {
+                        meta: meta || {
                             title: song.name,
                             artists: song.ar.map(v => v.name).join(', '),
-                            duration: song.dt
+                            duration: song.dt,
+                            cover: song.al.picUrl
                         }
                     }
                 }
@@ -147,7 +159,8 @@ export class Streamer {
         meta: playback.meta = {
             title: `Unknown file`,
             artists: 'Unknown',
-            duration: 0
+            duration: 0,
+            cover: akarin
         },
         forceSwitch: boolean = false
     ) {
@@ -173,7 +186,8 @@ export class Streamer {
                             let meta = {
                                 title: `Local file: ${upath.parse(fullPath).base}`,
                                 artists: 'Unknown',
-                                duration: 0
+                                duration: 0,
+                                cover: akarin
                             };
                             let payload: queueItem = {
                                 meta,
@@ -191,7 +205,8 @@ export class Streamer {
                 let meta = {
                     title: `Local file: ${upath.parse(path).base}`,
                     artists: 'Unknown',
-                    duration: 0
+                    duration: 0,
+                    cover: akarin
                 };
                 let payload: queueItem = {
                     meta,
@@ -248,16 +263,35 @@ export class Streamer {
 
     shuffle() {
         this.queue = this._shuffle(this.queue);
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
     getQueue() {
         return this.queue;
     }
     clearQueue() {
         this.queue = [];
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
+    audienceIds: Set<string> = new Set();
+
     private paused: boolean = false;
-    pausedTime: number = 0;
+    private previousPausedTime: number = 0;
+
+    get pausedTime() {
+        if (this.pauseStart) return this.previousPausedTime + (Date.now() - this.pauseStart);
+        else return this.previousPausedTime;
+    }
+    get duration() {
+        const bytesPerSecond = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8
+        return this.currentBufferSize / bytesPerSecond;
+    }
+    get playedTime() {
+        const bytesPerSecond = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8
+        return this.currentChunkStart / bytesPerSecond;
+        // if (this.playbackStart) return (Date.now() - this.playbackStart) - this.pausedTime;
+        // else return 0;
+    }
 
     isPaused() {
         return this.paused;
@@ -269,7 +303,7 @@ export class Streamer {
     }
     resume() {
         if (this.pauseStart) {
-            this.pausedTime += Date.now() - this.pauseStart;
+            this.previousPausedTime += Date.now() - this.pauseStart;
             delete this.pauseStart;
         }
         this.paused = false;
@@ -278,8 +312,46 @@ export class Streamer {
 
     private queue: Array<queueItem> = [];
 
+    queueMoveUp(index: number) {
+        if (index) {
+            const item = this.queue[index], previous = this.queue[index - 1];
+            if (item && previous) {
+                this.queue[index] = previous;
+                this.queue[index - 1] = item;
+            }
+        } else {
+            const item = this.queue.shift();
+            if (item) {
+                this.queue.push(item);
+            }
+        }
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
+    }
+    queueMoveDown(index: number) {
+        if (index != this.queue.length - 1) {
+            const item = this.queue[index], next = this.queue[index + 1];
+            if (item && next) {
+                this.queue[index] = next;
+                this.queue[index + 1] = item;
+            }
+        } else {
+            const item = this.queue.pop();
+            if (item) {
+                this.queue.unshift(item);
+            }
+        }
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
+    }
+    queueDelete(index: number) {
+        const item = this.queue[index];
+        this.queue = this.queue.filter(v => v != item);
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
+    }
+
     setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
+        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat') payload = 'no_repeat';
         this.cycleMode = payload;
+        playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
     getCycleMode() {
         return this.cycleMode;
@@ -287,6 +359,7 @@ export class Streamer {
 
     private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
     nowPlaying?: queueItem;
+
 
     async previous(): Promise<queueItem | undefined> {
         try {
@@ -339,9 +412,9 @@ export class Streamer {
     }
 
     private async preload() {
-        if (this.queue[0]) {
-            const prepared = await this.preparePayload(this.queue[0]);
-            if (prepared) this.queue[0] = prepared;
+        let item = this.queue[0];
+        if (item) {
+            await this.preparePayload(item);
         }
     }
 
@@ -353,7 +426,7 @@ export class Streamer {
         let source = payload.source, meta = payload.meta;
         if (source instanceof Promise) source = await source;
         if (this.isStreamingSource(source)) {
-            const stream = (await this.getStreamingSource(source));
+            const stream = (await this.getStreamingSource(source, payload.meta));
             if (!stream) return undefined;
             source = stream.source;
             meta = stream.meta;
@@ -368,19 +441,30 @@ export class Streamer {
         delete this.currentMusic;
         delete this.playbackStart;
         this.previousStream = false;
-        await delay(20);
         this.ffmpegInstance?.kill("SIGSTOP");
+        await delay(this.PUSH_INTERVAL + 50);
         this.fileP?.removeAllListeners();
         this.fileP?.destroy();
         this.fileP = new PassThrough();
     }
 
+    jumpToPercentage(percent: number) {
+        if (percent >= 0 && percent <= 1) {
+            this.currentChunkStart = Math.trunc(this.currentBufferSize * percent);
+        }
+    }
+
+
+    private currentChunkStart = 0;
+    private currentBufferSize = 0;
+    private readonly OUTPUT_FREQUENCY = 48000;
+    private readonly OUTPUT_CHANNEL = 2;
+    private readonly OUTPUT_BITS = 8;
+    private readonly PUSH_INTERVAL = 50;
+    private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async playback(payload: queueItem): Promise<void> {
         try {
             this.preload();
-            this.pausedTime = 0;
-            this.playbackStart = Date.now();
-            this.lastOperation = Date.now();
             if (this.previousStream) {
                 await this.endPlayback();
             }
@@ -394,6 +478,7 @@ export class Streamer {
             }
             let file = prepared.source;
             this.currentMusic = prepared;
+            playlist.user.save(this, this.INVITATION_AUTHOR_ID);
 
             var fileC: Readable;
             if (file instanceof Buffer) fileC = Readable.from(file);
@@ -402,37 +487,63 @@ export class Streamer {
             this.ffmpegInstance = ffmpeg()
                 .input(fileC)
                 .audioCodec('pcm_u8')
-                .audioChannels(2)
-                .audioFilter('volume=0.15')
-                .audioFrequency(48000)
+                // .audioCodec('pcm_s16le')
+                .audioChannels(this.OUTPUT_CHANNEL)
+                // .audioFilter('volume=0.5')
+                .audioFrequency(this.OUTPUT_FREQUENCY)
                 .outputFormat('wav');
             this.ffmpegInstance
                 .stream(this.fileP);
+            this.ffmpegInstance.on('error', async (err) => {
+                client.logger.error(err);
+                if (this.previousStream) {
+                    await this.endPlayback();
+                    await this.next();
+                }
+                // const controller = this.controller, guildId = this.TARGET_GUILD_ID, channelId = this.TARGET_CHANNEL_ID, userId = this.INVITATION_AUTHOR_ID;
+                // await this.disconnect();
+                // await controller.joinChannel(guildId, channelId, userId);
+            })
             var bfs: any[] = [];
             this.fileP.on('data', (chunk) => {
                 bfs.push(chunk)
             })
             this.fileP.on('end', async () => {
-                var now = 0;
+                this.previousPausedTime = 0;
+                this.playbackStart = Date.now();
+                this.lastOperation = Date.now();
                 var cache = Buffer.concat(bfs);
-                // var rate = 11025;
-                // var rate = 965;
-                var rate = 975;
+                const FILE_HEADER_SIZE = 44;
+                this.currentChunkStart = 0;
+                this.currentBufferSize = cache.length;
+                /**
+                 * Rate for PCM audio 
+                 * 48000Khz * 8 bit * 2 channel = 768kbps = 96KB/s
+                 * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms
+                 */
+                // var rate = 960; // For pcm_u8;
                 while (Date.now() - this.lastRead < 20);
 
-                while (this.previousStream && now <= cache.length) {
+                this.lastRead = Date.now();
+                const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + FILE_HEADER_SIZE + 1);
+                if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
+                    this.stream.push(chunk);
+                }
+                this.currentChunkStart += FILE_HEADER_SIZE + 1;
+
+                while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     if (!this.paused) {
                         this.lastRead = Date.now();
-                        const chunk = cache.subarray(now, now + rate);
-                        if (this.previousStream && now <= cache.length) {
+                        const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE + 1);
+                        if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                             this.stream.push(chunk);
                         }
                         else {
-                            return;
+                            break;
                         }
-                        now += rate;
+                        this.currentChunkStart += this.RATE + 1;
                     }
-                    await delay(10);
+                    await delay(this.PUSH_INTERVAL);
                 }
                 if (this.previousStream) {
                     await this.endPlayback();

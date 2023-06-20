@@ -12,5 +12,6 @@ export interface streamerDetail {
     trackTotalDuration: number,
     isPaused: boolean,
     nowPlaying?: playback.extra,
-    queue: playback.extra[]
+    queue: playback.extra[],
+    cycleMode: 'repeat_one' | 'repeat' | 'no_repeat'
 }
