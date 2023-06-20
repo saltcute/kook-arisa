@@ -49,7 +49,7 @@ export default async function (keyword: string) {
             card.addTextWithImage(`(font)${song.name}(font)[body]\n(font)${song.artists.map(v => v.name).join(", ")}(font)[secondary]`, {
                 position: 'left', url
             }).addTextWithButton(`(font)添加「${song.name}」到播放列表(font)[primary]`, {
-                position: 'right', buttonContent: '添加',
+                buttonContent: '添加',
                 value: JSON.stringify({
                     action: 'netease:queue:add',
                     data: {
