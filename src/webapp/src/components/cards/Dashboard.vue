@@ -98,7 +98,7 @@ function proxiedKookImage(original: string) {
 
 const currentQueue = computed(() => {
     if (streamers.value[currentStreamerIndex]) {
-        return streamers.value[currentStreamerIndex].queue.filter(v => v.type == 'netease');
+        return streamers.value[currentStreamerIndex].queue.filter(v => v.type == 'netease' || v.type == 'bilibili');
     } else return [];
 })
 

@@ -64,6 +64,11 @@ class Playlist {
                 switch (item.type) {
                     case 'netease': {
                         await streamer.playNetease(item.data.songId, item.meta);
+                        break;
+                    }
+                    case 'bilibili': {
+                        await streamer.playBilibili(item.data.bvid, item.data.part, item.meta);
+                        break;
                     }
                 }
             }

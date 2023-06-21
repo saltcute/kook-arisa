@@ -12,6 +12,8 @@ import { client } from 'init/client';
 import { akarin } from '../command/netease/lib/card';
 import playlist from './playlist';
 
+const biliAPI = require('bili-api');
+
 export namespace playback {
     export type source = source.playable;
     export interface meta {
@@ -37,6 +39,13 @@ export namespace playback {
                 songId: number
             }
         }
+        export interface bilibili extends base {
+            type: 'bilibili',
+            data: {
+                bvid: string,
+                part: number
+            }
+        }
         export interface readable extends base {
             type: 'readable'
         }
@@ -50,7 +59,7 @@ export namespace playback {
 
         export type cache = buffer | readable;
         export type playable = local | cache;
-        export type streaming = netease;
+        export type streaming = netease | bilibili;
     }
 }
 
@@ -101,7 +110,7 @@ export class Streamer {
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
-    readonly streamingServices = ['netease'];
+    readonly streamingServices = ['netease', 'bilibili'];
     private isStreamingSource(payload: any): payload is playback.extra.streaming {
         return this.streamingServices.includes(payload?.type);
     }
@@ -128,6 +137,36 @@ export class Streamer {
                         }
                     }
                 }
+                case 'bilibili': {
+                    const { cids } = await biliAPI({ bvid: input.data.bvid }, ['cids']).catch((e: any) => { client.logger.error(e); });
+                    let part = 0;
+                    if (cids[input.data.part]) {
+                        part = input.data.part
+                    }
+                    const cid = cids[part];
+                    if (!cid) return;
+                    const { data: res } = await axios({
+                        url: "https://api.bilibili.com/x/player/playurl",
+                        params: {
+                            bvid: input.data.bvid,
+                            cid,
+                            qn: 16,
+                            fnval: 80
+                        }
+                    });
+                    const data = res.data
+                    const url = data.dash.audio[part].baseUrl;
+                    const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data;
+                    return {
+                        source: cache,
+                        meta: meta || {
+                            title: `${input.data.bvid} P${input.data.part}}`,
+                            artists: "Unknown",
+                            duration: data.timelength,
+                            cover: akarin
+                        }
+                    }
+                }
             }
         } catch (e) {
             client.logger.error(e);
@@ -139,6 +178,14 @@ export class Streamer {
         const extra: playback.extra.netease = {
             type: 'netease',
             data: { songId },
+            meta
+        }
+        return this.playStreaming(meta, extra, forceSwitch);
+    }
+    async playBilibili(bvid: string, part: number = 0, meta: playback.meta, forceSwitch: boolean = false) {
+        const extra: playback.extra.bilibili = {
+            type: 'bilibili',
+            data: { bvid, part },
             meta
         }
         return this.playStreaming(meta, extra, forceSwitch);
