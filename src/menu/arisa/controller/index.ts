@@ -79,7 +79,7 @@ export class Controller {
             this.userStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
         } {
             const streamers = (this.guildStreamers.get(streamer.TARGET_GUILD_ID) || []).filter(v => v != streamer);
-            this.guildStreamers.set(streamer.INVITATION_AUTHOR_ID, streamers);
+            this.guildStreamers.set(streamer.TARGET_GUILD_ID, streamers);
         }
         this.allStreamers.delete(streamer);
         return true;
