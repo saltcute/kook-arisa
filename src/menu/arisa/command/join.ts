@@ -34,7 +34,7 @@ class AppCommand extends BaseCommand {
         if (joinedChannel) {
             if (!controller.getChannelStreamer(joinedChannel.id)) {
                 let streamer;
-                if (streamer = await controller.joinChannel(session.guildId, joinedChannel.id, session.authorId)) {
+                if (streamer = await controller.joinChannel(session.guildId, joinedChannel.id, session.authorId, session.channelId)) {
                     const { err, data } = await streamer.kasumi.API.user.me();
                     if (err) {
                         this.logger.error(err);

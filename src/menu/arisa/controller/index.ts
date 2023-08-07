@@ -5,6 +5,7 @@ import upath from 'upath';
 import axios from "axios";
 import config from "config/index";
 import crypto from 'crypto';
+import { Card, MessageType } from "kasumi.js";
 
 
 export class Controller {
@@ -78,9 +79,8 @@ export class Controller {
                 Authorization: config.streamerMiddlemanToken
             }
         }).catch((e) => { return true; });
-        if (middlemanLeave) {
+        if (middlemanLeave === true) {
             streamer.kasumi.logger.error("Middleman cannot leave the server");
-            return false;
         }
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
@@ -112,7 +112,7 @@ export class Controller {
      * Bot token is auto assigned.
      * @param channelId ChannelID
      */
-    async joinChannel(guildId: string, channelId: string, authorId: string) {
+    async joinChannel(guildId: string, channelId: string, authorId: string, textChannelId: string) {
         const STREAMER_TOKEN = this.getNextAvailableStreamer();
         if (!STREAMER_TOKEN) return;
 
@@ -127,7 +127,7 @@ export class Controller {
                     headers: {
                         Authorization: config.streamerMiddlemanToken
                     }
-                }).catch((e) => { console.log(e); return true; }));
+                }).catch((e) => { return true; }));
                 if (res === true) throw "Middleman is not able to join the server."
             }
             const streamerId = data.id, streamerClientId = data.client_id; {
@@ -140,19 +140,21 @@ export class Controller {
             } {
                 const { err } = await client.API.guild.role.grant(guildId, tempRoleId, config.streamerMiddlemanId);
                 if (err) throw err;
-            }
-            await streamer.kasumi.API.guild.nickname(guildId).catch(async () => {
-                const data = (await axios.post(`https://www.kookapp.cn/api/oauth2/authorize?response_type=code&client_id=${streamerClientId}&state=123&scope=bot&permissions=0&guild_id=${guildId}&redirect_uri=`, {}, {
-                    headers: {
-                        Cookie: `auth=${config.streamerMiddlemanToken}`
+            } {
+                const { err } = await streamer.kasumi.API.guild.nickname(guildId, `Arisa STRMR ${this.tempStringGenerator(6)}`);
+                if (err) {
+                    const data = (await axios.post(`https://www.kookapp.cn/api/oauth2/authorize?response_type=code&client_id=${streamerClientId}&state=123&scope=bot&permissions=0&guild_id=${guildId}&redirect_uri=`, {}, {
+                        headers: {
+                            Cookie: `auth=${config.streamerMiddlemanToken}`
+                        }
+                    }).catch(() => {
+                        return true;
+                    }));
+                    if (data === true) {
+                        throw "Middleman is not able to invite streamer to the server."
                     }
-                }).catch((e) => {
-                    return true;
-                }));
-                if (data === true) {
-                    throw "Middleman is not able to invite streamer to the server."
                 }
-            });
+            }
             {
                 const { err } = await client.API.guild.role.delete(guildId, tempRoleId);
                 if (err) throw err;
@@ -182,6 +184,7 @@ export class Controller {
             }
             return streamer.connect();
         } catch (err) {
+            client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addTitle("无法加入语音频道").addText("由于近期 KOOK 的 API 变化，机器人需要拥有「管理员」权限才能正常运行。"))
             streamer.kasumi.logger.error(err);
             streamer.disconnect();
             return;
