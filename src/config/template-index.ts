@@ -16,5 +16,7 @@ export default {
     neteaseEmail: '',
     neteasePassword: '',
 
-    globalAdmins: ['1854484583']
+    globalAdmins: ['1854484583'],
+    streamerMiddlemanId: '',
+    streamerMiddlemanToken: ''
 }

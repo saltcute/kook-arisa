@@ -2,6 +2,9 @@ import { client } from "init/client";
 import { Streamer } from "./music";
 import * as fs from 'fs';
 import upath from 'upath';
+import axios from "axios";
+import config from "config/index";
+import crypto from 'crypto';
 
 
 export class Controller {
@@ -70,6 +73,15 @@ export class Controller {
             streamer.kasumi.logger.error(err);
             return false;
         }
+        const middlemanLeave = await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
+            headers: {
+                Authorization: config.streamerMiddlemanToken
+            }
+        }).catch((e) => { return true; });
+        if (middlemanLeave) {
+            streamer.kasumi.logger.error("Middleman cannot leave the server");
+            return false;
+        }
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
         if (this.streamerPool.includes(streamer.STREAMER_TOKEN)) {
@@ -85,6 +97,15 @@ export class Controller {
         return true;
     }
 
+    private tempStringGenerator(length: number) {
+        const database = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let res = "";
+        for (let i = 0; i < length; ++i) {
+            res += database[crypto.randomInt(database.length)];
+        }
+        return res;
+    }
+
     /**
      * Assign a streamer bot to a channel.
      * 
@@ -96,60 +117,75 @@ export class Controller {
         if (!STREAMER_TOKEN) return;
 
         const streamer = new Streamer(STREAMER_TOKEN, guildId, channelId, authorId, this);
-        const { err, data } = await streamer.kasumi.API.user.me();
-        if (err) {
+        try {
+            const { err, data } = await streamer.kasumi.API.user.me();
+            if (err) throw err;
+            let tempRoleId; {
+                const res: true | axios.AxiosResponse = (await axios.post('https://www.kookapp.cn/api/v2/guilds/join', {
+                    id: guildId
+                }, {
+                    headers: {
+                        Authorization: config.streamerMiddlemanToken
+                    }
+                }).catch((e) => { console.log(e); return true; }));
+                if (res === true) throw "Middleman is not able to join the server."
+            }
+            const streamerId = data.id, streamerClientId = data.client_id; {
+                const { err, data } = await client.API.guild.role.create(guildId, `Arisa TEMP Role ${this.tempStringGenerator(6)}`);
+                if (err) throw err;
+                tempRoleId = data.role_id;
+            } {
+                const { err } = await client.API.guild.role.update(guildId, tempRoleId, { permissions: 1 });
+                if (err) throw err;
+            } {
+                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, config.streamerMiddlemanId);
+                if (err) throw err;
+            }
+            await streamer.kasumi.API.guild.nickname(guildId).catch(async () => {
+                const data = (await axios.post(`https://www.kookapp.cn/api/oauth2/authorize?response_type=code&client_id=${streamerClientId}&state=123&scope=bot&permissions=0&guild_id=${guildId}&redirect_uri=`, {}, {
+                    headers: {
+                        Cookie: `auth=${config.streamerMiddlemanToken}`
+                    }
+                }).catch((e) => {
+                    return true;
+                }));
+                if (data === true) {
+                    throw "Middleman is not able to invite streamer to the server."
+                }
+            });
+            {
+                const { err } = await client.API.guild.role.delete(guildId, tempRoleId);
+                if (err) throw err;
+            } {
+                const { err } = await client.API.channel.permission.createUser(channelId, streamerId);
+                if (err) throw err;
+            } {
+                const { err } = await client.API.channel.permission.updateUser(channelId, streamerId, 1 << 15);
+                if (err) throw err;
+            } {
+                const { err } = await client.API.channel.permission.createUser(channelId, client.me.userId);
+                if (err) throw err;
+            } {
+                const { err } = await client.API.channel.permission.updateUser(channelId, client.me.userId, 1 << 11);
+                if (err) throw err;
+            }
+            this.streamerChannel.set(STREAMER_TOKEN, channelId);
+            this.allStreamers.add(streamer);
+            this.channelStreamer.set(channelId, streamer); {
+                const streamers = this.userStreamers.get(authorId) || [];
+                streamers.push(streamer);
+                this.userStreamers.set(authorId, streamers);
+            } {
+                const streamers = this.guildStreamers.get(guildId) || [];
+                streamers.push(streamer);
+                this.guildStreamers.set(guildId, streamers);
+            }
+            return streamer.connect();
+        } catch (err) {
             streamer.kasumi.logger.error(err);
             streamer.disconnect();
             return;
         }
-        const streamerId = data.id; {
-            const { err } = await streamer.kasumi.API.rest.get('/guild/join', { id: guildId });
-            if (err) {
-                streamer.kasumi.logger.error(err);
-                streamer.disconnect();
-                return;
-            }
-        } {
-            const { err } = await client.API.channel.permission.createUser(channelId, streamerId);
-            if (err) {
-                client.logger.error(err);
-                streamer.disconnect();
-                return;
-            }
-        } {
-            const { err } = await client.API.channel.permission.updateUser(channelId, streamerId, 1 << 15);
-            if (err) {
-                client.logger.error(err);
-                streamer.disconnect();
-                return;
-            }
-        } {
-            const { err } = await client.API.channel.permission.createUser(channelId, client.me.userId);
-            if (err) {
-                client.logger.error(err);
-                streamer.disconnect();
-                return;
-            }
-        } {
-            const { err } = await client.API.channel.permission.updateUser(channelId, client.me.userId, 1 << 11);
-            if (err) {
-                client.logger.error(err);
-                streamer.disconnect();
-                return;
-            }
-        }
-        this.streamerChannel.set(STREAMER_TOKEN, channelId);
-        this.allStreamers.add(streamer);
-        this.channelStreamer.set(channelId, streamer); {
-            const streamers = this.userStreamers.get(authorId) || [];
-            streamers.push(streamer);
-            this.userStreamers.set(authorId, streamers);
-        } {
-            const streamers = this.guildStreamers.get(guildId) || [];
-            streamers.push(streamer);
-            this.guildStreamers.set(guildId, streamers);
-        }
-        return streamer.connect();
     }
 
     async abortStream(channelId: string) {
