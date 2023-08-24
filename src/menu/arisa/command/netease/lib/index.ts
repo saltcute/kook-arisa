@@ -48,7 +48,8 @@ export class Netease {
     }
 }
 
-export default new Netease();
+const neteaseInstance = new Netease();
+export default neteaseInstance;
 
 
 export namespace Netease {
