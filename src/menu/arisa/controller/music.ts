@@ -461,7 +461,8 @@ export class Streamer {
     private async preload() {
         let item = this.queue[0];
         if (item) {
-            await this.preparePayload(item);
+            let prepared = await this.preparePayload(item);
+            item.source = prepared?.source;
         }
     }
 
@@ -470,6 +471,13 @@ export class Streamer {
         meta: playback.meta,
         extra: playback.extra
     } | undefined> {
+        if (payload.source instanceof Buffer) {
+            return {
+                source: payload.source,
+                meta: payload.meta,
+                extra: payload.extra
+            }
+        }
         let extra = payload.extra, meta = payload.meta, source;
         if (this.isStreamingSource(extra)) {
             const stream = (await this.getStreamingSource(extra, payload.meta));
