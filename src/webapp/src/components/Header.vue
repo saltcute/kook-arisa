@@ -46,13 +46,14 @@ callbackUrl = ref('');
     if (code) {
         await axios.get(`/api/login?code=${code}`).then(async ({ data }) => {
             const store = data.data;
-            store.expires = Date.now() + store.expire_in * 1000;
+            store.expires = Date.now() + store.expires_in * 1000;
             localStorage.setItem('auth', JSON.stringify(store));
             const userData = (await getUserMe(store.access_token)).data
             localStorage.setItem('user', JSON.stringify(userData));
             user.value = `${userData.username}`;
             location.replace('/');
-        }).catch(() => {
+        }).catch((e) => {
+            alert(e);
             location.replace('/');
         });
     } else {
