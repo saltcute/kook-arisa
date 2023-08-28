@@ -36,7 +36,7 @@ async function getUserMe(token: string): Promise<{
         }).catch((e) => { rejects(e) });
     })
 }
-let callbackUrl: Ref<string>, user: Ref<string>, auth: authType;
+let callbackUrl: Ref<string>, user: Ref<string>, auth: authType | undefined;
 user = ref('Loading...');
 callbackUrl = ref('');
 (async () => {
@@ -61,6 +61,9 @@ callbackUrl = ref('');
             localStorage.setItem('user', JSON.stringify(userData));
             user.value = `${userData.username}`
         } else {
+            console.log('No auth');
+            console.log(auth);
+            localStorage.removeItem('user');
             localStorage.removeItem('auth');
             callbackUrl.value = `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${webui.kookClientID}&redirect_uri=${encodeURIComponent(webui.dashboardUrl)}&response_type=code&scope=get_user_info%20get_user_guilds`
             user.value = '';
