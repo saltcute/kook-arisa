@@ -10,7 +10,7 @@ import webui from '../../../config/webui';
 import { Ref, onMounted, ref, } from 'vue';
 
 const props = defineProps<{
-    showNeteaseSearchDialog: () => void
+    showNeteaseSearchDialog: (() => void) | undefined
 }>()
 
 function logout() {
