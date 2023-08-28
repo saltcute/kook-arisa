@@ -69,11 +69,8 @@ export class Controller {
     }
 
     async returnStreamer(streamer: Streamer) {
-        const { err } = await streamer.kasumi.API.guild.leave(streamer.TARGET_GUILD_ID);
-        if (err) {
-            streamer.kasumi.logger.error(err);
-            return false;
-        }
+        // const { err } = await streamer.kasumi.API.guild.leave(streamer.TARGET_GUILD_ID);
+        // if (err) streamer.kasumi.logger.error(err);
         const middlemanLeave = await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
             headers: {
                 Authorization: config.streamerMiddlemanToken
