@@ -1,6 +1,6 @@
 {
   "name": "kook-arisa",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "KOOK Music Bot",
   "main": "index.js",
   "scripts": {
