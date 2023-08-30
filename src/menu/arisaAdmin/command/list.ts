@@ -5,18 +5,27 @@ import { isAdmin } from "../common";
 
 class AppCommand extends BaseCommand {
     name = 'list';
-    description = 'List all streamers';
+    description = 'List streamers in use';
     func: CommandFunction<BaseSession, any> = async (session) => {
         if (!isAdmin(session.authorId)) {
             return session.reply("You do not have the permission to use this command")
         }
         const streamers = controller.allStreamerTokens;
-        const card = new Card().addText(streamers.map((v) => {
-            return v.slice(0, 11) +
-                '###############' +
-                v.slice(26) +
-                (controller.getStreamerChannel(v) ? '(in use)' : '');
-        }).join('\n'));
+        const inUseStreamers = streamers.filter(v => controller.getStreamerChannel(v));
+        const card = new Card()
+            .addTitle(`${inUseStreamers.length}/${streamers.length} Streamer(s) in Use`)
+            .addContext(`${streamers.length - inUseStreamers.length} streamer(s) idle`)
+            .addText(inUseStreamers.map((v) => {
+                const channel = controller.getStreamerChannel(v);
+                let string = '';
+                if (channel) {
+                    const streamer = controller.getChannelStreamer(channel);
+                    if (streamer) {
+                        string = `**${streamer.kasumi.me.username}** with ${Array.from(streamer.audienceIds).length} listener(s)`
+                    }
+                }
+                return string || v.slice(26);
+            }).join('\n'));
         return session.reply(card);
     }
 }

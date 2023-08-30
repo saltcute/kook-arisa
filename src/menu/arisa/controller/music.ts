@@ -8,7 +8,6 @@ import * as fs from 'fs';
 import upath from 'upath';
 import netease from '../command/netease/lib';
 import axios from 'axios';
-import { client } from 'init/client';
 import { akarin } from '../command/netease/lib/card';
 import playlist from './playlist';
 
@@ -76,7 +75,7 @@ export class Streamer {
     readonly INVITATION_AUTHOR_ID: string;
     private controller: Controller;
     readonly kasumi: Kasumi;
-    private readonly koice: Koice;
+    private koice: Koice;
 
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
         this.STREAMER_TOKEN = token;
@@ -93,20 +92,48 @@ export class Streamer {
         this.lastOperation = Date.now();
         this.ensureUsage();
     }
+    async initKoice() {
+        await this.endPlayback();
+        await this.koice.close();
+        this.koice = new Koice(this.STREAMER_TOKEN);
+        this.stream = new Readable({
+            read(size) {
+                return true;
+            },
+        })
+
+        this.koice.onclose = () => {
+            this.kasumi.logger.warn(`Koice.js closed on ${this.TARGET_CHANNEL_ID}/${this.TARGET_GUILD_ID}`);
+            this.checkKoice();
+        }
+        this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
+        await this.koice.startStream(this.stream);
+        if (this.nowPlaying) {
+            await this.playback(this.nowPlaying);
+        } else {
+            await this.next();
+        }
+        return this;
+    }
     async connect() {
         const { err, data } = await this.kasumi.API.channel.voiceChannelUserList(this.TARGET_CHANNEL_ID)
         if (err) {
-            client.logger.error(err);
+            this.kasumi.logger.error(err);
         } else {
             this.audienceIds = new Set(data.map(v => v.id));
             this.audienceIds.delete(this.kasumi.me.userId);
         }
-        this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
-        await this.koice.startStream(this.stream);
-        return this;
+        return this.initKoice();
+    }
+
+    async reconnect() {
+        return this.initKoice();
     }
 
     async disconnect(): Promise<boolean> {
+        this.koice.onclose = () => {
+            this.kasumi.logger.warn(`Koice.js closed on ${this.TARGET_CHANNEL_ID}/${this.TARGET_GUILD_ID}`);
+        };
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
@@ -138,7 +165,7 @@ export class Streamer {
                     }
                 }
                 case 'bilibili': {
-                    const { cids } = await biliAPI({ bvid: input.data.bvid }, ['cids']).catch((e: any) => { client.logger.error(e); });
+                    const { cids } = await biliAPI({ bvid: input.data.bvid }, ['cids']).catch((e: any) => { this.kasumi.logger.error(e); });
                     let part = 0;
                     if (cids[input.data.part]) {
                         part = input.data.part
@@ -169,7 +196,7 @@ export class Streamer {
                 }
             }
         } catch (e) {
-            client.logger.error(e);
+            this.kasumi.logger.error(e);
             return undefined;
         }
     }
@@ -291,7 +318,7 @@ export class Streamer {
     currentMusic?: queueItem;
     private lastRead: number = -1;
 
-    readonly stream = new Readable({
+    private stream = new Readable({
         read(size) {
             return true;
         },
@@ -492,10 +519,12 @@ export class Streamer {
     playbackStart?: number;
 
     async endPlayback() {
+        let lastFfmpegInstance = this.ffmpegInstance;
+        delete this.ffmpegInstance;
         delete this.currentMusic;
         delete this.playbackStart;
         this.previousStream = false;
-        this.ffmpegInstance?.kill("SIGSTOP");
+        lastFfmpegInstance?.kill("SIGINT");
         await delay(this.PUSH_INTERVAL + 50);
         this.fileP?.removeAllListeners();
         this.fileP?.destroy();
@@ -508,16 +537,23 @@ export class Streamer {
         }
     }
 
+    async checkKoice() {
+        if (this.koice.isClose) {
+            return this.reconnect();
+        }
+    }
+
 
     private currentChunkStart = 0;
     private currentBufferSize = 0;
     private readonly OUTPUT_FREQUENCY = 48000;
     private readonly OUTPUT_CHANNEL = 2;
     private readonly OUTPUT_BITS = 8;
-    private readonly PUSH_INTERVAL = 50;
+    private readonly PUSH_INTERVAL = 20;
     private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async playback(payload: queueItem): Promise<void> {
         try {
+            await this.checkKoice();
             this.preload();
             if (this.previousStream) {
                 await this.endPlayback();
@@ -545,19 +581,19 @@ export class Streamer {
                 .audioChannels(this.OUTPUT_CHANNEL)
                 // .audioFilter('volume=0.5')
                 .audioFrequency(this.OUTPUT_FREQUENCY)
-                .outputFormat('wav');
-            this.ffmpegInstance
-                .stream(this.fileP);
-            this.ffmpegInstance.on('error', async (err) => {
-                client.logger.error(err);
-                if (this.previousStream) {
-                    await this.endPlayback();
-                    await this.next();
-                }
-                // const controller = this.controller, guildId = this.TARGET_GUILD_ID, channelId = this.TARGET_CHANNEL_ID, userId = this.INVITATION_AUTHOR_ID;
-                // await this.disconnect();
-                // await controller.joinChannel(guildId, channelId, userId);
-            })
+                .outputFormat('wav')
+                .removeAllListeners('error')
+                .on('error', async (err) => {
+                    this.kasumi.logger.error(err);
+                    if (this.previousStream) {
+                        await this.endPlayback();
+                        await this.next();
+                    }
+                    // const controller = this.controller, guildId = this.TARGET_GUILD_ID, channelId = this.TARGET_CHANNEL_ID, userId = this.INVITATION_AUTHOR_ID;
+                    // await this.disconnect();
+                    // await controller.joinChannel(guildId, channelId, userId);
+                });
+            this.ffmpegInstance.stream(this.fileP);
             var bfs: any[] = [];
             this.fileP.on('data', (chunk) => {
                 bfs.push(chunk)
@@ -570,7 +606,7 @@ export class Streamer {
                 const FILE_HEADER_SIZE = 44;
                 this.currentChunkStart = 0;
                 this.currentBufferSize = cache.length;
-                /**
+                /** 
                  * Rate for PCM audio 
                  * 48000Khz * 8 bit * 2 channel = 768kbps = 96KB/s
                  * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms

@@ -71,14 +71,14 @@ export class Controller {
     async returnStreamer(streamer: Streamer) {
         // const { err } = await streamer.kasumi.API.guild.leave(streamer.TARGET_GUILD_ID);
         // if (err) streamer.kasumi.logger.error(err);
-        const middlemanLeave = await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
+        await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
             headers: {
                 Authorization: config.streamerMiddlemanToken
             }
-        }).catch((e) => { return true; });
-        if (middlemanLeave === true) {
+        }).catch((e) => {
             streamer.kasumi.logger.error("Middleman cannot leave the server");
-        }
+            streamer.kasumi.logger.error(e);
+        });
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
         if (this.streamerPool.includes(streamer.STREAMER_TOKEN)) {
