@@ -1,6 +1,7 @@
 import config from "config";
 import Kasumi from "kasumi.js";
-import { KasumiConfig } from "kasumi.js/dist/type";
+import { KasumiConfig } from "kasumi.js";
+import upath from 'upath';
 
 let botConifg: KasumiConfig;
 
@@ -25,3 +26,5 @@ if (config.useWebHook) {
 
 
 export const client = new Kasumi(botConifg);
+
+client.config.loadConfigFile(upath.join(__dirname, '..', 'config', 'config.json'));

@@ -2,9 +2,10 @@ node_modules/
 
 package-lock.json
 
-src/config/index.ts
-src/config/webui.ts
-src/config/streamer.json
+src/config/*.*
+!src/config/template-index.ts
+!src/config/template-webui.ts
+!src/config/template-streamer.json
 
 .DS_Store
 

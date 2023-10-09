@@ -5,7 +5,11 @@ import { client } from 'init/client'
 
 
 export class Netease {
-    constructor() { this.init() };
+    readonly REAL_IP?;
+    constructor(realIP?: string) {
+        this.REAL_IP = realIP;
+        this.init()
+    };
     private cookie?: string;
     async init() {
         try {
@@ -13,7 +17,7 @@ export class Netease {
                 this.cookie = (await netease.login({
                     email: config.neteaseEmail,
                     password: config.neteasePassword,
-                    realIP: '106.11.249.99'
+                    realIP: this.REAL_IP
                 })).body.cookie;
             }
         } catch (e) {
@@ -22,7 +26,7 @@ export class Netease {
         }
     }
     async search(keywords: string): Promise<Netease.song[]> {
-        const res = await netease.search({ keywords, cookie: this.cookie, realIP: '106.11.249.99' });
+        const res = await netease.search({ keywords, cookie: this.cookie, realIP: this.REAL_IP });
         return (res.body.result as any).songs;
     }
     async getAlbum(id: number): Promise<{
@@ -30,7 +34,7 @@ export class Netease {
         album: Netease.album,
         artist: Netease.artist
     }> {
-        const res = await netease.album({ id, cookie: this.cookie, realIP: '106.11.249.99' });
+        const res = await netease.album({ id, cookie: this.cookie, realIP: this.REAL_IP });
         return {
             songs: (res.body as any).songs,
             album: (res.body as any).album,
@@ -38,17 +42,17 @@ export class Netease {
         }
     }
     async getSong(id: number): Promise<Netease.songDetail> {
-        return ((await netease.song_detail({ ids: id.toString(), cookie: this.cookie, realIP: '106.11.249.99' })).body.songs as any)[0];
+        return ((await netease.song_detail({ ids: id.toString(), cookie: this.cookie, realIP: this.REAL_IP })).body.songs as any)[0];
     }
     async getSongMultiple(ids: string): Promise<Netease.songDetail[]> {
-        return ((await netease.song_detail({ ids, cookie: this.cookie, realIP: '106.11.249.99' })).body.songs as any);
+        return ((await netease.song_detail({ ids, cookie: this.cookie, realIP: this.REAL_IP })).body.songs as any);
     }
     async getSongUrl(id: number) {
-        return ((await netease.song_url({ id, cookie: this.cookie, realIP: '106.11.249.99' })).body.data as any)[0].url
+        return ((await netease.song_url({ id, cookie: this.cookie, realIP: this.REAL_IP })).body.data as any)[0].url
     }
 }
 
-const neteaseInstance = new Netease();
+const neteaseInstance = new Netease(client.config.has("realIP") ? client.config.get("realIP") : undefined);
 export default neteaseInstance;
 
 
