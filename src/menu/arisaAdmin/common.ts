@@ -1,5 +1,5 @@
-import config from "config";
+import { client } from "init/client";
 
 export function isAdmin(id: string) {
-    return (config.globalAdmins as string[]).includes(id);
+    return (client.config.get("globalAdmins")).includes(id);
 }

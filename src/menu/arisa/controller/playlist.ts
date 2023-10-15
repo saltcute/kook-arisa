@@ -1,6 +1,6 @@
-import config from "config";
 import { Streamer, playback, queueItem } from "./music";
 import { MongoClient, ServerApiVersion } from "mongodb";
+import { client } from "init/client";
 
 namespace Playlist {
     export interface collectionItem {
@@ -13,7 +13,7 @@ namespace Playlist {
 
 class Playlist {
     name: string;
-    private mongodb = new MongoClient(config.mongoDBURI, {
+    private mongodb = new MongoClient(client.config.get("mongoDBURI"), {
         serverApi: {
             version: ServerApiVersion.v1,
             strict: true,

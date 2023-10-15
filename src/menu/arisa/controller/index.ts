@@ -3,7 +3,6 @@ import { Streamer } from "./music";
 import * as fs from 'fs';
 import upath from 'upath';
 import axios from "axios";
-import config from "config/index";
 import crypto from 'crypto';
 import { Card, MessageType } from "kasumi.js";
 
@@ -73,7 +72,7 @@ export class Controller {
         // if (err) streamer.kasumi.logger.error(err);
         await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
             headers: {
-                Authorization: config.streamerMiddlemanToken
+                Authorization: client.config.get("streamerMiddlemanToken")
             }
         }).catch((e) => {
             streamer.kasumi.logger.error("Middleman cannot leave the server");
@@ -122,7 +121,7 @@ export class Controller {
                     id: guildId
                 }, {
                     headers: {
-                        Authorization: config.streamerMiddlemanToken
+                        Authorization: client.config.get("streamerMiddlemanToken")
                     }
                 }).catch((e) => { return true; }));
                 if (res === true) throw "Middleman is not able to join the server."
@@ -135,14 +134,14 @@ export class Controller {
                 const { err } = await client.API.guild.role.update(guildId, tempRoleId, { permissions: 1 });
                 if (err) throw err;
             } {
-                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, config.streamerMiddlemanId);
+                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, client.config.get("streamerMiddlemanToken"));
                 if (err) throw err;
             } {
                 const { err } = await streamer.kasumi.API.guild.nickname(guildId, `Arisa STRMR ${this.tempStringGenerator(6)}`);
                 if (err) {
                     const data = (await axios.post(`https://www.kookapp.cn/api/oauth2/authorize?response_type=code&client_id=${streamerClientId}&state=123&scope=bot&permissions=0&guild_id=${guildId}&redirect_uri=`, {}, {
                         headers: {
-                            Cookie: `auth=${config.streamerMiddlemanToken}`
+                            Cookie: `auth=${client.config.get("streamerMiddlemanToken")}`
                         }
                     }).catch(() => {
                         return true;

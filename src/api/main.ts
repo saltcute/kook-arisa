@@ -1,14 +1,12 @@
 import express from 'express';
 import expressWs from 'express-ws';
-import config from '../config';
 import { client } from 'init/client';
 import upath from 'upath';
 import axios from 'axios';
 import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
-import { controller, getChannelStreamer } from 'menu/arisa';
-import { Streamer, playback } from 'menu/arisa/controller/music';
-import webui from 'config/webui';
+import { controller } from 'menu/arisa';
+import { playback } from 'menu/arisa/controller/music';
 import { streamerDetail } from 'webapp/src/components/cards/types';
 import api from './api';
 import netease from './netease';
@@ -28,7 +26,7 @@ app.ws('/', (ws: WebSocket) => {
         }> {
             return new Promise((resolve, rejects) => {
                 axios({
-                    baseURL: webui.dashboardUrl,
+                    baseURL: client.config.get("dashboardUrl"),
                     url: '/api/me',
                     method: 'POST',
                     data: {
@@ -199,11 +197,14 @@ app.ws('/', (ws: WebSocket) => {
 app.use(bodyParser.json());
 
 app.use('/', express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
+app.get('/login', (req, res) => {
+    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${client.config.get("kookClientID")}&redirect_uri=${encodeURIComponent(client.config.get("dashboardUrl"))}&response_type=code&scope=get_user_info%20get_user_guilds`);
+})
 
 app.use('/api', api)
 app.use('/netease', netease);
 
-app.listen(config.webDashboardPort, () => {
-    client.logger.info(`Webui start listening on port ${config.webDashboardPort}`);
-    client.logger.info(`Access webui at http://localhost:${config.webDashboardPort}`)
+app.listen(client.config.get("internalWebuiPort"), () => {
+    client.logger.info(`Webui start listening on port ${client.config.get("internalWebuiPort")}`);
+    client.logger.info(`Access webui at http://localhost:${client.config.get("internalWebuiPort")}`)
 })

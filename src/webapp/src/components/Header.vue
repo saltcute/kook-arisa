@@ -6,7 +6,6 @@ library.add(faSun, faMoon, faMagnifyingGlass);
 
 import type { auth as authType } from './cards/common';
 import axios from 'axios';
-import webui from '../../../config/webui';
 import { Ref, onMounted, ref, } from 'vue';
 
 const props = defineProps<{
@@ -66,7 +65,7 @@ callbackUrl = ref('');
             console.log(auth);
             localStorage.removeItem('user');
             localStorage.removeItem('auth');
-            callbackUrl.value = `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${webui.kookClientID}&redirect_uri=${encodeURIComponent(webui.dashboardUrl)}&response_type=code&scope=get_user_info%20get_user_guilds`
+            callbackUrl.value = "/login"
             user.value = '';
         }
     }

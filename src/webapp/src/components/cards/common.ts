@@ -1,5 +1,4 @@
 import { playback } from "menu/arisa/controller/music";
-import webui from "../../../../config/webui";
 import { streamerDetail } from "./types";
 import { ref } from 'vue';
 export let ws: WebSocket;
@@ -15,7 +14,7 @@ export let auth: auth, streamers = ref<streamerDetail[]>([]);
 const authRaw = localStorage.getItem('auth');
 if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
     function connect() {
-        ws = new WebSocket(webui.websocketUrl);
+        ws = new WebSocket('/');
         ws.onopen = function () {
             ws.send(JSON.stringify({
                 t: 0,

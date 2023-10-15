@@ -1,4 +1,3 @@
-import config from 'config';
 import netease from 'NeteaseCloudMusicApi';
 import { client } from 'init/client'
 
@@ -13,10 +12,10 @@ export class Netease {
     private cookie?: string;
     async init() {
         try {
-            if (config.neteaseVIP) {
+            if (client.config.get("neteaseVIP")) {
                 this.cookie = (await netease.login({
-                    email: config.neteaseEmail,
-                    password: config.neteasePassword,
+                    email: client.config.get("neteaseEmail"),
+                    password: client.config.get("neteasePassword"),
                     realIP: this.REAL_IP
                 })).body.cookie;
             }

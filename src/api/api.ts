@@ -1,7 +1,6 @@
-import config from "config";
 import axios, { isAxiosError } from "axios";
-import webui from "config/webui";
 import { Router } from "express";
+import { client } from "init/client";
 
 const router = Router();
 
@@ -89,10 +88,10 @@ router.get('/login', (req, res) => {
             method: 'POST',
             data: {
                 grant_type: 'authorization_code',
-                client_id: webui.kookClientID,
-                client_secret: config.kookClientSecret,
+                client_id: client.config.get('kookClientId'),
+                client_secret: client.config.get('kookClientSecret'),
                 code,
-                redirect_uri: webui.dashboardUrl
+                redirect_uri: client.config.get('dashboardUrl')
             }
         }).then(({ data }) => {
             res.send({
