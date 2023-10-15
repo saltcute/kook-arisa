@@ -14,7 +14,7 @@ export let auth: auth, streamers = ref<streamerDetail[]>([]);
 const authRaw = localStorage.getItem('auth');
 if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
     function connect() {
-        ws = new WebSocket('/');
+        ws = new WebSocket('ws://' + location.hostname);
         ws.onopen = function () {
             ws.send(JSON.stringify({
                 t: 0,
@@ -34,8 +34,8 @@ if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 
         };
 
         ws.onclose = function (e) {
-            console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
-            setTimeout(connect, 1000);
+            console.log('Socket is closed. Reconnect will be attempted in 5 second.', e.reason);
+            setTimeout(connect, 5000);
         };
 
         ws.onerror = function (err) {

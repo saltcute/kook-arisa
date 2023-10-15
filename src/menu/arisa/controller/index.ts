@@ -134,7 +134,7 @@ export class Controller {
                 const { err } = await client.API.guild.role.update(guildId, tempRoleId, { permissions: 1 });
                 if (err) throw err;
             } {
-                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, client.config.get("streamerMiddlemanToken"));
+                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, client.config.get("streamerMiddlemanID"));
                 if (err) throw err;
             } {
                 const { err } = await streamer.kasumi.API.guild.nickname(guildId, `Arisa STRMR ${this.tempStringGenerator(6)}`);

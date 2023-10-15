@@ -88,10 +88,10 @@ router.get('/login', (req, res) => {
             method: 'POST',
             data: {
                 grant_type: 'authorization_code',
-                client_id: client.config.get('kookClientId'),
+                client_id: client.config.get('kookClientID'),
                 client_secret: client.config.get('kookClientSecret'),
                 code,
-                redirect_uri: client.config.get('dashboardUrl')
+                redirect_uri: client.config.get('webuiUrl')
             }
         }).then(({ data }) => {
             res.send({

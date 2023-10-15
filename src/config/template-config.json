@@ -1,0 +1,28 @@
+{
+    "token": "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
+    "connection": "webhook",
+    "webhookVerifyToken": "",
+    "webhookEncryptKey": "",
+    "webhookPort": 8888,
+
+    "kookClientSecret": "",
+    "kookClientID": "",
+
+    "internalWebuiPort": 80,
+    "webuiUrl": "http://localhost",
+
+    "mongoDBURI": "mongodb://localhost:27017",
+
+    "neteaseVIP": false,
+    "neteaseEmail": "",
+    "neteasePassword": "",
+
+    "globalAdmins": [
+        "1854484583"
+    ],
+
+    "streamerMiddlemanId": "",
+    "streamerMiddlemanToken": "",
+
+    "realIP": ""
+}

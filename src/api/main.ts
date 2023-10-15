@@ -26,7 +26,7 @@ app.ws('/', (ws: WebSocket) => {
         }> {
             return new Promise((resolve, rejects) => {
                 axios({
-                    baseURL: client.config.get("dashboardUrl"),
+                    baseURL: client.config.get("webuiUrl"),
                     url: '/api/me',
                     method: 'POST',
                     data: {
@@ -198,7 +198,7 @@ app.use(bodyParser.json());
 
 app.use('/', express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
 app.get('/login', (req, res) => {
-    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${client.config.get("kookClientID")}&redirect_uri=${encodeURIComponent(client.config.get("dashboardUrl"))}&response_type=code&scope=get_user_info%20get_user_guilds`);
+    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${client.config.get("kookClientID")}&redirect_uri=${encodeURIComponent(client.config.get("webuiUrl"))}&response_type=code&scope=get_user_info%20get_user_guilds`);
 })
 
 app.use('/api', api)

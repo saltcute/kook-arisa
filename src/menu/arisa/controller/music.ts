@@ -132,7 +132,7 @@ export class Streamer {
 
     async disconnect(): Promise<boolean> {
         this.koice.onclose = () => {
-            this.kasumi.logger.warn(`Koice.js closed on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
+            this.kasumi.logger.warn(`Koice.js closed per user request on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
         };
         await this.koice.close();
         return this.controller.returnStreamer(this);
