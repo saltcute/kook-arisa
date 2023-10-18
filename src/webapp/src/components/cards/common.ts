@@ -14,7 +14,7 @@ export let auth: auth, streamers = ref<streamerDetail[]>([]);
 const authRaw = localStorage.getItem('auth');
 if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
     function connect() {
-        ws = new WebSocket('ws://' + location.hostname);
+        ws = new WebSocket(window.location.protocol.replace('http', 'ws') + location.hostname);
         ws.onopen = function () {
             ws.send(JSON.stringify({
                 t: 0,
