@@ -24,9 +24,10 @@ app.ws('/', (ws: WebSocket) => {
             message: string,
             data: any
         }> {
+            const webuiUrl = (await client.config.get("webuiUrl")).webuiUrl;
             return new Promise((resolve, rejects) => {
                 axios({
-                    baseURL: client.config.get("webuiUrl"),
+                    baseURL: webuiUrl.toString(),
                     url: '/api/me',
                     method: 'POST',
                     data: {
@@ -197,14 +198,16 @@ app.ws('/', (ws: WebSocket) => {
 app.use(bodyParser.json());
 
 app.use('/', express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
-app.get('/login', (req, res) => {
-    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${client.config.get("kookClientID")}&redirect_uri=${encodeURIComponent(client.config.get("webuiUrl"))}&response_type=code&scope=get_user_info%20get_user_guilds`);
+app.get('/login', async (req, res) => {
+    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${(await client.config.get("kookClientID")).kookClientID}&redirect_uri=${encodeURIComponent((await client.config.get("webuiUrl")).webuiUrl.toString())}&response_type=code&scope=get_user_info%20get_user_guilds`);
 })
 
 app.use('/api', api)
 app.use('/netease', netease);
 
-app.listen(client.config.get("internalWebuiPort"), () => {
-    client.logger.info(`Webui start listening on port ${client.config.get("internalWebuiPort")}`);
-    client.logger.info(`Access webui at http://localhost:${client.config.get("internalWebuiPort")}`)
-})
+client.config.get("internalWebuiPort").then(({ internalWebuiPort }) => {
+    app.listen(internalWebuiPort, async () => {
+        client.logger.info(`Webui start listening on port ${(await client.config.get("internalWebuiPort")).internalWebuiPort}`);
+        client.logger.info(`Access webui at http://localhost:${(await client.config.get("internalWebuiPort")).internalWebuiPort}`)
+    })
+});

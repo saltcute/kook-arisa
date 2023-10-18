@@ -77,6 +77,8 @@ export class Streamer {
     readonly kasumi: Kasumi;
     private koice: Koice;
 
+    private isClosed = false;
+
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
         this.STREAMER_TOKEN = token;
         this.TARGET_CHANNEL_ID = channelId;
@@ -86,7 +88,7 @@ export class Streamer {
         this.kasumi = new Kasumi({
             type: 'websocket',
             token: this.STREAMER_TOKEN
-        });
+        }, false, false);
         this.kasumi.fetchMe();
         this.koice = new Koice(this.STREAMER_TOKEN);
         this.lastOperation = Date.now();
@@ -131,6 +133,7 @@ export class Streamer {
     }
 
     async disconnect(): Promise<boolean> {
+        this.isClosed = true;
         this.koice.onclose = () => {
             this.kasumi.logger.warn(`Koice.js closed per user request on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
         };
@@ -538,8 +541,10 @@ export class Streamer {
     }
 
     async checkKoice() {
-        if (this.koice.isClose) {
-            return this.reconnect();
+        if (!this.isClosed) {
+            if (this.koice.isClose) {
+                return this.reconnect();
+            }
         }
     }
 

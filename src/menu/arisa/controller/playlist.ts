@@ -13,17 +13,21 @@ namespace Playlist {
 
 class Playlist {
     name: string;
-    private mongodb = new MongoClient(client.config.get("mongoDBURI"), {
-        serverApi: {
-            version: ServerApiVersion.v1,
-            strict: true,
-            deprecationErrors: true,
-        }
-    });
-    private database = this.mongodb.db("playlist");
+    private mongodb;
+    private database;
     private colletion;
     constructor(name: string) {
         this.name = name;
+        if (client.config.hasSync("kasumi::config.mongoConnectionString")) {
+            this.mongodb = new MongoClient(client.config.getSync("kasumi::config.mongoConnectionString").toString(), {
+                serverApi: {
+                    version: ServerApiVersion.v1,
+                    strict: true,
+                    deprecationErrors: true,
+                }
+            });
+        } else throw new Error("kasumi::config.mongoConnectionString does not exist in config");
+        this.database = this.mongodb.db("playlist");
         this.colletion = this.database.collection<Playlist.collectionItem>(this.name);
     }
     private map: Map<string, Playlist.collectionItem> = new Map();

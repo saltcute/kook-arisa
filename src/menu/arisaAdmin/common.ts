@@ -1,5 +1,6 @@
 import { client } from "init/client";
 
-export function isAdmin(id: string) {
-    return (client.config.get("globalAdmins")).includes(id);
+type adminList = Array<string>
+export async function isAdmin(id: string) {
+    return ((await client.config.get("globalAdmins")).globalAdmins as adminList).includes(id);
 }

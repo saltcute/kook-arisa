@@ -72,7 +72,7 @@ export class Controller {
         // if (err) streamer.kasumi.logger.error(err);
         await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
             headers: {
-                Authorization: client.config.get("streamerMiddlemanToken")
+                Authorization: (await client.config.get("streamerMiddlemanToken")).streamerMiddlemanToken.toString()
             }
         }).catch((e) => {
             streamer.kasumi.logger.error("Middleman cannot leave the server");
@@ -121,7 +121,7 @@ export class Controller {
                     id: guildId
                 }, {
                     headers: {
-                        Authorization: client.config.get("streamerMiddlemanToken")
+                        Authorization: (await client.config.get("streamerMiddlemanToken")).streamerMiddlemanToken.toString()
                     }
                 }).catch((e) => { return true; }));
                 if (res === true) throw "Middleman is not able to join the server."
@@ -134,14 +134,14 @@ export class Controller {
                 const { err } = await client.API.guild.role.update(guildId, tempRoleId, { permissions: 1 });
                 if (err) throw err;
             } {
-                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, client.config.get("streamerMiddlemanID"));
+                const { err } = await client.API.guild.role.grant(guildId, tempRoleId, (await client.config.get("streamerMiddlemanID")).streamerMiddlemanID.toString());
                 if (err) throw err;
             } {
                 const { err } = await streamer.kasumi.API.guild.nickname(guildId, `Arisa STRMR ${this.tempStringGenerator(6)}`);
                 if (err) {
                     const data = (await axios.post(`https://www.kookapp.cn/api/oauth2/authorize?response_type=code&client_id=${streamerClientId}&state=123&scope=bot&permissions=0&guild_id=${guildId}&redirect_uri=`, {}, {
                         headers: {
-                            Cookie: `auth=${client.config.get("streamerMiddlemanToken")}`
+                            Cookie: `auth=${(await client.config.get("streamerMiddlemanToken")).streamerMiddlemanToken}`
                         }
                     }).catch(() => {
                         return true;

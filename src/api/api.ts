@@ -80,7 +80,7 @@ router.post('/me', (req, res) => {
     }
 })
 
-router.get('/login', (req, res) => {
+router.get('/login', async (req, res) => {
     const code = req.query.code;
     if (code) {
         axios({
@@ -88,10 +88,10 @@ router.get('/login', (req, res) => {
             method: 'POST',
             data: {
                 grant_type: 'authorization_code',
-                client_id: client.config.get('kookClientID'),
-                client_secret: client.config.get('kookClientSecret'),
+                client_id: (await client.config.get('kookClientID')).kookClientID,
+                client_secret: (await client.config.get('kookClientSecret')).kookClientSecret,
                 code,
-                redirect_uri: client.config.get('webuiUrl')
+                redirect_uri: (await client.config.get('webuiUrl')).webuiUrl
             }
         }).then(({ data }) => {
             res.send({

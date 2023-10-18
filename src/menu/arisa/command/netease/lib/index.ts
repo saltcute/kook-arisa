@@ -12,10 +12,10 @@ export class Netease {
     private cookie?: string;
     async init() {
         try {
-            if (client.config.get("neteaseVIP")) {
+            if ((await client.config.get("neteaseVIP")).neteaseVIP) {
                 this.cookie = (await netease.login({
-                    email: client.config.get("neteaseEmail"),
-                    password: client.config.get("neteasePassword"),
+                    email: (await client.config.get("neteaseEmail")).neteaseEmail.toString(),
+                    password: (await client.config.get("neteasePassword")).neteasePassword.toString(),
                     realIP: this.REAL_IP
                 })).body.cookie;
             }
@@ -51,7 +51,7 @@ export class Netease {
     }
 }
 
-const neteaseInstance = new Netease(client.config.has("realIP") ? client.config.get("realIP") : undefined);
+const neteaseInstance = new Netease(client.config.hasSync("realIP") ? client.config.getSync("realIP").toString() : undefined);
 export default neteaseInstance;
 
 
