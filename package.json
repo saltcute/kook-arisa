@@ -43,7 +43,7 @@
     "koice": "^0.2.3",
     "memory-cache": "^0.2.0",
     "mongodb": "^5.3.0",
-    "NeteaseCloudMusicApi": "^4.8.9",
+    "NeteaseCloudMusicApi": "=4.8.9",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2",
     "upath": "^2.0.1",
