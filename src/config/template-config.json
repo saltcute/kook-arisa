@@ -1,17 +1,21 @@
 {
-    "token": "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
-    "connection": "webhook",
-    "webhookVerifyToken": "",
-    "webhookEncryptKey": "",
-    "webhookPort": 8888,
+    "kasumi::config.disableSnOrderCheck": true,
+    "kasumi::config.token": "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
+    "kasumi::config.connection": "kookts",
+    "kasumi::config.webhookVerifyToken": "",
+    "kasumi::config.webhookEncryptKey": "",
+    "kasumi::config.webhookPort": 11451,
 
-    "kookClientSecret": "",
+    "kasumi::config.database": "mongodb",
+    "kasumi::config.mongoConnectionString": "mongodb://localhost:27017",
+    "kasumi::config.mongoDatabaseName": "kasumi",
+    "kasumi::config.mongoCollectionName": "config",
+
     "kookClientID": "",
+    "kookClientSecret": "",
 
     "internalWebuiPort": 80,
     "webuiUrl": "http://localhost",
-
-    "mongoDBURI": "mongodb://localhost:27017",
 
     "neteaseVIP": false,
     "neteaseEmail": "",
@@ -21,8 +25,8 @@
         "1854484583"
     ],
 
-    "streamerMiddlemanId": "",
+    "streamerMiddlemanID": "",
     "streamerMiddlemanToken": "",
 
-    "realIP": ""
+    "realIP": "106.11.249.99"
 }
