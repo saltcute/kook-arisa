@@ -4,7 +4,7 @@ import upath from 'upath';
 import 'api/main'
 
 (async () => {
-    await client.connect()
+    await client.connect();
     const basicPath = upath.join(__dirname, 'menu');
     const menus = fs.readdirSync(basicPath);
     for (const menu of menus) {

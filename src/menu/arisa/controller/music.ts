@@ -22,6 +22,7 @@ export namespace playback {
         cover: string
     }
     export namespace source {
+        export type none = null;
         export type cache = Buffer | Readable;
         export type playable = cache;
     }
@@ -64,7 +65,7 @@ export namespace playback {
 
 
 export type queueItem = {
-    source?: playback.source.cache,
+    source?: playback.source.cache | playback.source.none,
     meta: playback.meta,
     extra: playback.extra
 };
@@ -523,8 +524,11 @@ export class Streamer {
 
     async endPlayback() {
         let lastFfmpegInstance = this.ffmpegInstance;
+        if (this.currentMusic) {
+            this.currentMusic.source = null;
+            delete this.currentMusic;
+        }
         delete this.ffmpegInstance;
-        delete this.currentMusic;
         delete this.playbackStart;
         this.previousStream = false;
         lastFfmpegInstance?.kill("SIGINT");

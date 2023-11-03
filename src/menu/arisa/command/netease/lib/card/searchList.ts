@@ -46,21 +46,21 @@ export default async function (keyword: string) {
         }
         const awaiteds = (await Promise.all(promises)).sort((a, b) => { return a.order - b.order; });
         for (const { url, song, songId } of awaiteds) {
+            const sessionId = client.events.button.createSession('netease.queue.add', {
+                songId,
+                meta: {
+                    title: song.name,
+                    artists: song.artists.map(v => v.name).join(", "),
+                    duration: song.duration,
+                    cover: url || akarin
+                }
+            })
             card.addTextWithImage(`(font)${song.name}(font)[body]\n(font)${song.artists.map(v => v.name).join(", ")}(font)[secondary]`, {
                 position: 'left', url
             }).addTextWithButton(`(font)添加「${song.name}」到播放列表(font)[primary]`, {
                 buttonContent: '添加',
                 value: JSON.stringify({
-                    action: 'netease:queue:add',
-                    data: {
-                        songId,
-                        meta: {
-                            title: song.name,
-                            artists: song.artists.map(v => v.name).join(", "),
-                            duration: song.duration,
-                            cover: url || akarin
-                        }
-                    } as data
+                    sessionId
                 }),
                 click: 'return-val'
             })

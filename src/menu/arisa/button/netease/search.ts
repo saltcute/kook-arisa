@@ -3,7 +3,7 @@ import { BaseSession, ButtonClickedEvent, Card } from "kasumi.js";
 import { data } from "menu/arisa/command/netease/lib/card/searchList";
 import { getChannelStreamer } from "menu/arisa";
 
-export default async function (event: ButtonClickedEvent, action: string[], data: data) {
+client.events.button.registerActivator('netease.queue.add', (event: ButtonClickedEvent, data: data) => {
     let session = new BaseSession([], event, client), songId = data.songId;
 
     if (!session.guildId || !songId) return;
@@ -20,4 +20,4 @@ export default async function (event: ButtonClickedEvent, action: string[], data
                 client.logger.error(e);
         }
     });
-}
+});
