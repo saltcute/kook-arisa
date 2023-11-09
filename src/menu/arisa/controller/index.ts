@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import upath from 'upath';
 import axios from "axios";
 import crypto from 'crypto';
-import { Card, MessageType } from "kasumi.js";
+import Kasumi, { Card, MessageType } from "kasumi.js";
 
 
 export class Controller {
@@ -15,6 +15,7 @@ export class Controller {
     private allStreamers: Set<Streamer> = new Set();
 
     private controllerToken: string;
+    client: Kasumi;
 
     private streamerPool: string[] = [];
     get allStreamerTokens() {
@@ -25,8 +26,9 @@ export class Controller {
         return this.availableStreamers;
     }
 
-    constructor(token: string) {
-        this.controllerToken = structuredClone(token);
+    constructor(client: Kasumi) {
+        this.controllerToken = client.TOKEN
+        this.client = client;
 
         this.loadStreamer();
     }

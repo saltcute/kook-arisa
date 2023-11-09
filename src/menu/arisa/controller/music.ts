@@ -88,7 +88,9 @@ export class Streamer {
         this.controller = controller;
         this.kasumi = new Kasumi({
             type: 'websocket',
-            token: this.STREAMER_TOKEN
+            token: this.STREAMER_TOKEN,
+            disableSnOrderCheck: true,
+            customEnpoint: controller.client.config.getSync('kasumi::config.customEndpoint')
         }, false, false);
         this.kasumi.fetchMe();
         this.koice = new Koice(this.STREAMER_TOKEN);

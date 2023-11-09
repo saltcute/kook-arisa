@@ -26,7 +26,7 @@ for (const command of commands) {
         menu.logger.error(e);
     }
 }
-export const controller = new Controller(client.TOKEN);
+export const controller = new Controller(client);
 
 
 export async function getChannelStreamer(guildId: string, authorId: string): Promise<Streamer> {
