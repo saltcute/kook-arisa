@@ -2,16 +2,18 @@ import axios from "axios";
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import { getChannelStreamer } from "menu/arisa";
-import { Streamer } from "menu/arisa/controller/music";
 import { getVideoDetail } from "./lib/index";
 
 const biliAPI = require('bili-api');
 
-class SearchCommand extends BaseCommand {
+class SearchCommand extends BaseCommand<typeof client> {
     name = 'play';
     description = '播放B站视频';
     pattern = /(?:https?:\/\/(?:www|m).bilibili.com\/video\/)?(BV[0-9A-Za-z]{10})/gm;
     func: CommandFunction<BaseSession, any> = async (session) => {
+        if (!(await this.client.config.getOne("globalAdmins")).includes(session.author.id)) {
+            return session.reply("Bilibili 视频播放由于可能的内存泄漏问题被暂时关闭，目前尚未有具体恢复时间。");
+        }
         if (!session.guildId) return session.reply("只能在服务器频道中使用此命令");
         const bvid = this.pattern.exec(session.args.join(" "))?.[1]
         let video: Awaited<ReturnType<typeof getVideoDetail>>

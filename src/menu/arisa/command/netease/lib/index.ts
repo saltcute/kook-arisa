@@ -14,8 +14,8 @@ export class Netease {
         try {
             if ((await client.config.get("neteaseVIP")).neteaseVIP) {
                 this.cookie = (await netease.login({
-                    email: (await client.config.get("neteaseEmail")).neteaseEmail.toString(),
-                    password: (await client.config.get("neteasePassword")).neteasePassword.toString(),
+                    email: (await client.config.getOne("neteaseEmail")).toString(),
+                    password: (await client.config.getOne("neteasePassword")).toString(),
                     realIP: this.REAL_IP
                 })).body.cookie;
             }

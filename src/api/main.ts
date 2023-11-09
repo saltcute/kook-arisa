@@ -24,7 +24,7 @@ app.ws('/', (ws: WebSocket) => {
             message: string,
             data: any
         }> {
-            const webuiUrl = (await client.config.get("webuiUrl")).webuiUrl;
+            const webuiUrl = await client.config.getOne("webuiUrl");
             return new Promise((resolve, rejects) => {
                 axios({
                     baseURL: webuiUrl.toString(),
@@ -199,7 +199,7 @@ app.use(bodyParser.json());
 
 app.use('/', express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
 app.get('/login', async (req, res) => {
-    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${(await client.config.get("kookClientID")).kookClientID}&redirect_uri=${encodeURIComponent((await client.config.get("webuiUrl")).webuiUrl.toString())}&response_type=code&scope=get_user_info%20get_user_guilds`);
+    res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${(await client.config.getOne("kookClientID"))}&redirect_uri=${encodeURIComponent((await client.config.getOne("webuiUrl")).toString())}&response_type=code&scope=get_user_info%20get_user_guilds`);
 })
 
 app.use('/api', api)
