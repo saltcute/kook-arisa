@@ -15,7 +15,7 @@ export class Controller {
     private allStreamers: Set<Streamer> = new Set();
 
     private controllerToken: string;
-    client: Kasumi;
+    client: Kasumi<any>;
 
     private streamerPool: string[] = [];
     get allStreamerTokens() {
@@ -26,7 +26,7 @@ export class Controller {
         return this.availableStreamers;
     }
 
-    constructor(client: Kasumi) {
+    constructor(client: Kasumi<any>) {
         this.controllerToken = client.TOKEN
         this.client = client;
 

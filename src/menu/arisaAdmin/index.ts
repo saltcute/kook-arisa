@@ -3,12 +3,10 @@ import { BaseMenu } from "kasumi.js";
 import upath from 'upath';
 import * as fs from 'fs';
 
-class AppMenu extends BaseMenu {
-    name = 'arisaadmin';
-    prefix = './!。！';
-}
+import EssentialMenu from '@saltcute/kasumi-essential';
 
-const menu = new AppMenu();
+// const menu = new AppMenu();
+const menu = new EssentialMenu("arisaadmin");
 export default menu;
 client.plugin.load(menu);
 

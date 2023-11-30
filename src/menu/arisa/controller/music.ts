@@ -75,7 +75,7 @@ export class Streamer {
     readonly TARGET_GUILD_ID: string;
     readonly INVITATION_AUTHOR_ID: string;
     private controller: Controller;
-    readonly kasumi: Kasumi;
+    readonly kasumi: Kasumi<any>;
     private koice: Koice;
 
     private isClosed = false;
