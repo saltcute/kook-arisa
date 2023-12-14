@@ -1,12 +1,13 @@
 import { client } from "init/client";
-import { BaseMenu } from "kasumi.js";
 import upath from 'upath';
 import * as fs from 'fs';
 
 import EssentialMenu from '@saltcute/kasumi-essential';
 
-// const menu = new AppMenu();
 const menu = new EssentialMenu("arisaadmin");
+menu.on('ready', () => {
+    menu.client.middlewares.AccessControl.global.group.setCommandLevel(menu, 2333);
+})
 export default menu;
 client.plugin.load(menu);
 
