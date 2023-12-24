@@ -1,6 +1,8 @@
 import { ArisaStorage } from 'init/type';
 import Kasumi from 'kasumi.js';
 import { Readable } from 'stream';
+import EventEmitter2 from 'eventemitter2';
+import { ButtonControlPanel } from './lib/panel';
 
 export namespace playback {
     export type source = source.playable;
@@ -58,14 +60,37 @@ export type queueItem = {
     meta: playback.meta,
     extra: playback.extra
 };
-export abstract class Streamer {
+
+
+interface StreamerEmisions {
+    connect: () => void;
+    disconnect: () => void;
+    pause: () => void;
+    resume: () => void;
+    play: (payload: queueItem) => void;
+}
+export interface Streamer extends EventEmitter2 {
+    on<T extends keyof StreamerEmisions>(event: T, listener: StreamerEmisions[T]): this;
+    emit<T extends keyof StreamerEmisions>(event: T, ...args: Parameters<StreamerEmisions[T]>): boolean;
+}
+export abstract class Streamer extends EventEmitter2 {
     readonly STREAMER_TOKEN: string;
     readonly TARGET_CHANNEL_ID: string;
     readonly TARGET_GUILD_ID: string;
     readonly INVITATION_AUTHOR_ID: string;
     readonly kasumi: Kasumi<any>;
 
+    private static writable(value: boolean) {
+        return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+            descriptor.writable = value;
+        };
+    }
+
+    panel?: ButtonControlPanel;
+
+
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
+        super({ wildcard: true });
         this.STREAMER_TOKEN = token;
         this.TARGET_CHANNEL_ID = channelId;
         this.TARGET_GUILD_ID = guildId
@@ -82,11 +107,31 @@ export abstract class Streamer {
     /**
      * Connect the streamer to KOOK server.
      */
-    abstract connect(): Promise<this>;
+    protected abstract doConnect(): Promise<this>;
+
+    /**
+     * Connect the streamer to KOOK server.
+     */
+    @Streamer.writable(false)
+    async connect(): Promise<this> {
+        const res = this.doConnect();
+        this.emit('connect');
+        return res;
+    }
     /**
      * Disconnect the stream. End playback.
      */
-    abstract disconnect(): Promise<boolean>;
+    protected abstract doDisconnect(): Promise<boolean>;
+
+    /**
+     * Disconnect the stream. End playback.
+     */
+    @Streamer.writable(false)
+    async disconnect(): Promise<boolean> {
+        const res = await this.doDisconnect();
+        this.emit('disconnect');
+        return res;
+    }
 
     /**
      * Available streaming services.
@@ -149,40 +194,96 @@ export abstract class Streamer {
      * If the playback is paused currently.
      */
     abstract isPaused(): boolean;
+
     /**
      * Pause the playback. Does nothing when already paused.
      */
-    abstract pause(): void
+    protected abstract doPause(): void;
+    /**
+     * Pause the playback. Does nothing when already paused.
+     */
+    @Streamer.writable(false)
+    pause(): void {
+        this.doPause();
+        this.emit('pause');
+    }
+
     /**
      * Resueme the playback. Does nothing when already playing.
      */
-    abstract resume(): void
+    protected abstract doResume(): void
+    /**
+     * Resueme the playback. Does nothing when already playing.
+     */
+    @Streamer.writable(false)
+    resume(): void {
+        this.doResume();
+        this.emit('resume');
+    }
+
+    protected queue: Array<queueItem> = [];
 
     /**
      * Move a item up one level
      * @param index Index of the item in the queue
      */
-    abstract queueMoveUp(index: number): void;
+    queueMoveUp(index: number): void {
+
+        if (index) {
+            const item = this.queue[index], previous = this.queue[index - 1];
+            if (item && previous) {
+                this.queue[index] = previous;
+                this.queue[index - 1] = item;
+            }
+        } else {
+            const item = this.queue.shift();
+            if (item) {
+                this.queue.push(item);
+            }
+        }
+    }
     /**
      * Move a item down one level
      * @param index Index of the item in the queue
      */
-    abstract queueMoveDown(index: number): void;
+    queueMoveDown(index: number): void {
+        if (index != this.queue.length - 1) {
+            const item = this.queue[index], next = this.queue[index + 1];
+            if (item && next) {
+                this.queue[index] = next;
+                this.queue[index + 1] = item;
+            }
+        } else {
+            const item = this.queue.pop();
+            if (item) {
+                this.queue.unshift(item);
+            }
+        }
+    }
     /**
      * Delete an item from the queue
      * @param index Index of the item in the queue
      */
-    abstract queueDelete(index: number): void;
+    queueDelete(index: number): void {
+        const item = this.queue[index];
+        this.queue = this.queue.filter(v => v != item);
+    }
 
+    protected cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
     /**
      * Set the cycle mode for the current user.
      * @param payload Desired cycle mode.
      */
-    abstract setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat'): void;
+    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat'): void {
+        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat') payload = 'no_repeat';
+        this.cycleMode = payload;
+    }
     /**
      * Get the cycle mode of the current channel.
      */
-    abstract getCycleMode(): 'repeat_one' | 'repeat' | 'no_repeat';
+    getCycleMode(): 'repeat_one' | 'repeat' | 'no_repeat' {
+        return this.cycleMode;
+    }
 
     /**
      * The sound that is playing at the moment.
@@ -220,16 +321,25 @@ export abstract class Streamer {
      * Play a item.
      * @param payload The item to be played.
      */
-    abstract playback(payload: queueItem): Promise<void>
+    abstract doPlayback(payload: queueItem): Promise<void>
+    /**
+     * Resueme the playback. Does nothing when already playing.
+     */
+    @Streamer.writable(false)
+    playback(payload: queueItem): void {
+        this.doPlayback(payload);
+        this.emit('play', payload);
+    }
 }
 
 
-export abstract class Controller {
+export abstract class Controller extends EventEmitter2 {
     client: Kasumi<ArisaStorage>;
 
     protected controllerToken: string;
 
     constructor(client: Kasumi<any>) {
+        super({ wildcard: true });
         this.controllerToken = client.TOKEN
         this.client = client;
     }

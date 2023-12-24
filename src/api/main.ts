@@ -209,7 +209,7 @@ app.use('/netease', netease);
 
 client.config.get("internalWebuiPort").then(({ internalWebuiPort }) => {
     app.listen(internalWebuiPort, async () => {
-        client.logger.info(`Webui start listening on port ${(await client.config.get("internalWebuiPort")).internalWebuiPort}`);
-        client.logger.info(`Access webui at http://localhost:${(await client.config.get("internalWebuiPort")).internalWebuiPort}`)
+        client.logger.info(`Webui start listening on port ${(await client.config.getOne("internalWebuiPort"))}`);
+        client.logger.info(`Access webui at ${await client.config.getOne('webuiUrl')} or http://localhost:${(await client.config.getOne("internalWebuiPort"))}`)
     })
 });

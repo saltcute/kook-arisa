@@ -31,4 +31,14 @@ export class Time {
         if (s) res += `${s}秒`;
         return res;
     }
+
+    static timeToShortString(time: number) {
+        let res = "";
+        const [d, h, m, s] = this.timeDivision(time);
+        if (d) res += `${d}d,`;
+        if (h) res += `${h.toString().padStart(2, "0")}:`;
+        res += `${m.toString().padStart(2, "0")}:`;
+        res += `${s.toString().padStart(2, "0")}`;
+        return res;
+    }
 }

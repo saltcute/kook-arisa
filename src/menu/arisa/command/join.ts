@@ -1,6 +1,7 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import menu, { controller } from "..";
+import { ButtonControlPanel } from "../playback/lib/panel/index";
 import playlist from "../playback/lib/playlist";
 
 class AppCommand extends BaseCommand {
@@ -43,7 +44,10 @@ class AppCommand extends BaseCommand {
                     }
                     await session.update(msg.msg_id, new Card().addText("正在同步播放列表"));
                     await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { this.logger.error(e) });
-                    return session.update(msg.msg_id, new Card().addText(`(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流`));
+                    await session.update(msg.msg_id, new Card().addText(`(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流`));
+
+                    streamer.panel = new ButtonControlPanel(controller, streamer, controller.client)
+                    return streamer.panel?.newPanel(session.channelId);
                 } else {
                     return session.update(msg.msg_id, new Card().addText("没有更多可用推流机器人，请稍后再试"));
                 }

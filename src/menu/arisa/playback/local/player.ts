@@ -51,7 +51,7 @@ export class LocalStreamer extends Streamer {
         }
         return this;
     }
-    async connect() {
+    async doConnect() {
         const { err, data } = await this.kasumi.API.channel.voiceChannelUserList(this.TARGET_CHANNEL_ID)
         if (err) {
             this.kasumi.logger.error(err);
@@ -66,7 +66,7 @@ export class LocalStreamer extends Streamer {
         return this.initKoice();
     }
 
-    async disconnect(): Promise<boolean> {
+    async doDisconnect(): Promise<boolean> {
         this.isClosed = true;
         this.koice.onclose = () => {
             this.kasumi.logger.warn(`Koice.js closed per user request on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
@@ -308,11 +308,11 @@ export class LocalStreamer extends Streamer {
         return this.paused;
     }
     private pauseStart?: number;
-    pause() {
+    doPause() {
         this.pauseStart = Date.now();
         this.paused = true;
     }
-    resume() {
+    doResume() {
         if (this.pauseStart) {
             this.previousPausedTime += Date.now() - this.pauseStart;
             delete this.pauseStart;
@@ -320,55 +320,23 @@ export class LocalStreamer extends Streamer {
         this.paused = false;
     }
 
-
-    private queue: Array<queueItem> = [];
-
     queueMoveUp(index: number) {
-        if (index) {
-            const item = this.queue[index], previous = this.queue[index - 1];
-            if (item && previous) {
-                this.queue[index] = previous;
-                this.queue[index - 1] = item;
-            }
-        } else {
-            const item = this.queue.shift();
-            if (item) {
-                this.queue.push(item);
-            }
-        }
+        super.queueMoveUp(index);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
     queueMoveDown(index: number) {
-        if (index != this.queue.length - 1) {
-            const item = this.queue[index], next = this.queue[index + 1];
-            if (item && next) {
-                this.queue[index] = next;
-                this.queue[index + 1] = item;
-            }
-        } else {
-            const item = this.queue.pop();
-            if (item) {
-                this.queue.unshift(item);
-            }
-        }
+        super.queueMoveDown(index);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
     queueDelete(index: number) {
-        const item = this.queue[index];
-        this.queue = this.queue.filter(v => v != item);
+        super.queueDelete(index);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
     setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
-        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat') payload = 'no_repeat';
-        this.cycleMode = payload;
+        super.setCycleMode(payload);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
-    getCycleMode() {
-        return this.cycleMode;
-    }
-
-    private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
 
 
     async previous(): Promise<queueItem | undefined> {
@@ -490,7 +458,7 @@ export class LocalStreamer extends Streamer {
     private readonly OUTPUT_BITS = 8;
     private readonly PUSH_INTERVAL = 20;
     private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
-    async playback(payload: queueItem): Promise<void> {
+    async doPlayback(payload: queueItem): Promise<void> {
         try {
             await this.checkKoice();
             this.preload();
