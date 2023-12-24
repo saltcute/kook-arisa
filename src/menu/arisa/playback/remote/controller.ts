@@ -1,21 +1,20 @@
 import { client } from "init/client";
-import { Streamer } from "./music";
 import * as fs from 'fs';
 import upath from 'upath';
 import axios from "axios";
 import crypto from 'crypto';
 import Kasumi, { Card, MessageType } from "kasumi.js";
+import { Streamer } from "../type";
+import { LocalStreamer } from "../local/player";
+import { Controller } from "../type";
 
 
-export class Controller {
+export class RemoteController extends Controller {
     private userStreamers: Map<string, Streamer[]> = new Map();
     private guildStreamers: Map<string, Streamer[]> = new Map();
     private streamerChannel: Map<string, string> = new Map();
     private channelStreamer: Map<string, Streamer> = new Map();
     private allStreamers: Set<Streamer> = new Set();
-
-    private controllerToken: string;
-    client: Kasumi<any>;
 
     private streamerPool: string[] = [];
     get allStreamerTokens() {
@@ -24,13 +23,6 @@ export class Controller {
     private availableStreamers: string[] = [];
     get allAvailableStreamersTokens() {
         return this.availableStreamers;
-    }
-
-    constructor(client: Kasumi<any>) {
-        this.controllerToken = client.TOKEN
-        this.client = client;
-
-        this.loadStreamer();
     }
 
     get getAllStreamers() {
@@ -114,7 +106,7 @@ export class Controller {
         const STREAMER_TOKEN = this.getNextAvailableStreamer();
         if (!STREAMER_TOKEN) return;
 
-        const streamer = new Streamer(STREAMER_TOKEN, guildId, channelId, authorId, this);
+        const streamer: Streamer = new LocalStreamer(STREAMER_TOKEN, guildId, channelId, authorId, this);
         try {
             const { err, data } = await streamer.kasumi.API.user.me();
             if (err) throw err;

@@ -1,6 +1,7 @@
-import { Streamer, playback, queueItem } from "./music";
+import { Streamer, playback } from "../type";
 import { MongoClient, ServerApiVersion } from "mongodb";
 import { client } from "init/client";
+import { LocalStreamer } from "../local/player";
 
 namespace Playlist {
     export interface collectionItem {
@@ -67,11 +68,13 @@ class Playlist {
             for (const item of array) {
                 switch (item.type) {
                     case 'netease': {
-                        await streamer.playNetease(item.data.songId, item.meta);
+                        if (streamer instanceof LocalStreamer)
+                            await streamer.playNetease(item.data.songId, item.meta);
                         break;
                     }
                     case 'bilibili': {
-                        await streamer.playBilibili(item.data.bvid, item.data.part, item.meta);
+                        if (streamer instanceof LocalStreamer)
+                            await streamer.playBilibili(item.data.bvid, item.data.part, item.meta);
                         break;
                     }
                 }

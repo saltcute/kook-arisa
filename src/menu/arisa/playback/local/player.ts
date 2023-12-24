@@ -1,103 +1,34 @@
 import Kasumi from 'kasumi.js';
 import Koice from 'koice';
-import { Controller } from '.';
+import { Controller } from '../type';
 import { PassThrough, Readable } from 'stream';
 import ffmpeg, { ffprobe } from 'fluent-ffmpeg';
 import delay from 'delay';
 import * as fs from 'fs';
 import upath from 'upath';
-import netease from '../command/netease/lib';
+import netease from '../../command/netease/lib';
 import axios from 'axios';
-import { akarin } from '../command/netease/lib/card';
-import playlist from './playlist';
+import { akarin } from '../../command/netease/lib/card';
+import playlist from '../lib/playlist';
+import { Streamer, playback, queueItem } from '../type';
 
 const biliAPI = require('bili-api');
 
-export namespace playback {
-    export type source = source.playable;
-    export interface meta {
-        title: string,
-        artists: string,
-        duration: number,
-        cover: string
-    }
-    export namespace source {
-        export type none = null;
-        export type cache = Buffer | Readable;
-        export type playable = cache;
-    }
-    export type extra = extra.playable | extra.streaming;
-    export namespace extra {
-        export interface base {
-            type: string,
-            data?: any
-            meta: meta
-        }
-        export interface netease extends base {
-            type: 'netease',
-            data: {
-                songId: number
-            }
-        }
-        export interface bilibili extends base {
-            type: 'bilibili',
-            data: {
-                bvid: string,
-                part: number
-            }
-        }
-        export interface readable extends base {
-            type: 'readable'
-        }
-        export interface buffer extends base {
-            type: 'buffer'
-        }
-        export interface local extends base {
-            type: 'local',
-            path: string
-        }
 
-        export type cache = buffer | readable;
-        export type playable = local | cache;
-        export type streaming = netease | bilibili;
-    }
-}
-
-
-export type queueItem = {
-    source?: playback.source.cache | playback.source.none,
-    meta: playback.meta,
-    extra: playback.extra
-};
-export class Streamer {
-    readonly STREAMER_TOKEN: string;
-    readonly TARGET_CHANNEL_ID: string;
-    readonly TARGET_GUILD_ID: string;
-    readonly INVITATION_AUTHOR_ID: string;
+export class LocalStreamer extends Streamer {
     private controller: Controller;
-    readonly kasumi: Kasumi<any>;
     private koice: Koice;
 
     private isClosed = false;
 
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
-        this.STREAMER_TOKEN = token;
-        this.TARGET_CHANNEL_ID = channelId;
-        this.TARGET_GUILD_ID = guildId
-        this.INVITATION_AUTHOR_ID = authorId;
+        super(token, guildId, channelId, authorId, controller);
         this.controller = controller;
-        this.kasumi = new Kasumi({
-            type: 'websocket',
-            token: this.STREAMER_TOKEN,
-            disableSnOrderCheck: true,
-            customEnpoint: controller.client.config.getSync('kasumi::config.customEndpoint')
-        }, false, false);
-        this.kasumi.fetchMe();
         this.koice = new Koice(this.STREAMER_TOKEN);
         this.lastOperation = Date.now();
         this.ensureUsage();
     }
-    async initKoice() {
+    private async initKoice() {
         await this.endPlayback();
         await this.koice.close();
         this.koice = new Koice(this.STREAMER_TOKEN);
@@ -438,7 +369,6 @@ export class Streamer {
     }
 
     private cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
-    nowPlaying?: queueItem;
 
 
     async previous(): Promise<queueItem | undefined> {
@@ -522,8 +452,6 @@ export class Streamer {
         else return undefined;
     }
 
-    playbackStart?: number;
-
     async endPlayback() {
         let lastFfmpegInstance = this.ffmpegInstance;
         if (this.currentMusic) {
@@ -578,7 +506,7 @@ export class Streamer {
                 return;
             }
             let file = prepared.source;
-            this.currentMusic = prepared;
+            this.nowPlaying = this.currentMusic = prepared;
             playlist.user.save(this, this.INVITATION_AUTHOR_ID);
 
             var fileC: Readable;

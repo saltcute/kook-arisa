@@ -1,7 +1,7 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import { getChannelStreamer } from "../..";
-import { Time } from "../../controller/time";
+import { Time } from "../../playback/lib/time";
 import queueMenu from ".";
 
 class ListCommand extends BaseCommand {
@@ -13,9 +13,9 @@ class ListCommand extends BaseCommand {
             const card = new Card()
                 .addTitle("Now Playing");
             const queue = streamer.getQueue();
-            if (streamer.currentMusic) {
-                card.addText(`${streamer.currentMusic.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.currentMusic.meta.duration / 1000)}(font)[secondary]`)
-                    .addContext(streamer.currentMusic.meta.artists)
+            if (streamer.nowPlaying) {
+                card.addText(`${streamer.nowPlaying.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.nowPlaying.meta.duration / 1000)}(font)[secondary]`)
+                    .addContext(streamer.nowPlaying.meta.artists)
             } else {
                 card.addText("None");
             }

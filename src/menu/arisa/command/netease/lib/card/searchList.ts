@@ -3,7 +3,7 @@ import { Card } from "kasumi.js";
 import netease, { Netease } from "..";
 import axios from 'axios';
 import { akarin } from ".";
-import { playback } from "menu/arisa/controller/music";
+import { playback } from "menu/arisa/playback/type";
 
 export type data = {
     songId: number

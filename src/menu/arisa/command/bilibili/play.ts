@@ -2,6 +2,7 @@ import axios from "axios";
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import { getChannelStreamer } from "menu/arisa";
+import { LocalStreamer } from "menu/arisa/playback/local/player";
 import { getVideoDetail } from "./lib/index";
 
 const biliAPI = require('bili-api');
@@ -44,12 +45,13 @@ class SearchCommand extends BaseCommand<typeof client> {
             });
             const data = res.data
             session.sendTemp(new Card().addText(`已将「${video.title}」添加到播放列表！`));
-            streamer.playBilibili(bvid, 0, {
-                title: video.title,
-                artists: video.owner.name,
-                duration: data.timelength,
-                cover: video.pic.replace(/(i[0-9].hdslb.com)/, "hdslb.lolicon.ac.cn")
-            });
+            if (streamer instanceof LocalStreamer)
+                streamer.playBilibili(bvid, 0, {
+                    title: video.title,
+                    artists: video.owner.name,
+                    duration: data.timelength,
+                    cover: video.pic.replace(/(i[0-9].hdslb.com)/, "hdslb.lolicon.ac.cn")
+                });
         } else {
             session.sendTemp("没有找到视频的 BV 号");
         }

@@ -6,10 +6,11 @@ import axios from 'axios';
 import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
 import { controller } from 'menu/arisa';
-import { playback } from 'menu/arisa/controller/music';
+import { playback } from 'menu/arisa/playback/type';
 import { streamerDetail } from 'webapp/src/components/cards/types';
 import api from './api';
 import netease from './netease';
+import { LocalStreamer } from 'menu/arisa/playback/local/player';
 const { app } = expressWs(express());
 
 interface payload {
@@ -107,7 +108,8 @@ app.ws('/', (ws: WebSocket) => {
                         const data = payload.d.data as playback.extra.streaming;
                         switch (data.type) {
                             case 'netease': {
-                                streamer.playNetease(data.data.songId, data.meta);
+                                if (streamer instanceof LocalStreamer)
+                                    streamer.playNetease(data.data.songId, data.meta);
                                 break;
                             }
                         }

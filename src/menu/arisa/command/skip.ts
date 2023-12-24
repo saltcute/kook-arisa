@@ -1,7 +1,7 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import menu, { getChannelStreamer } from "..";
-import { Time } from "../controller/time";
+import { Time } from "../playback/lib/time";
 
 class AppCommand extends BaseCommand {
     name = 'skip';

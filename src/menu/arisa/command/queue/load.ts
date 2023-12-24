@@ -1,6 +1,6 @@
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import { getChannelStreamer } from "../..";
-import playlist from "../../controller/playlist";
+import playlist from "../../playback/lib/playlist";
 import queueMenu from ".";
 
 class LoadCommand extends BaseCommand {

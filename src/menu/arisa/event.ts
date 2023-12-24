@@ -1,6 +1,6 @@
 import { client } from "init/client";
 import { controller } from ".";
-import playlist from "./controller/playlist";
+import playlist from "./playback/lib/playlist";
 
 interface userLeaveVoiceChannelEventExtra {
     type: 'exited_channel',

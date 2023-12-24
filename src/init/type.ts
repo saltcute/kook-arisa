@@ -14,5 +14,7 @@ export interface ArisaStorage {
     "streamerMiddlemanID": string,
     "streamerMiddlemanToken": string,
 
-    "realIP"?: string
+    "realIP"?: string,
+
+    "streamers": string[]
 }

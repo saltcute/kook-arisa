@@ -4,8 +4,8 @@ import upath from 'upath';
 import * as fs from 'fs';
 import './event';
 import './button';
-import { Controller } from "./controller";
-import { Streamer } from "./controller/music";
+import { LocalController } from "./playback/local/controller";
+import { Streamer } from "./playback/type";
 
 class AppMenu extends BaseMenu {
     name = 'arisa';
@@ -26,7 +26,7 @@ for (const command of commands) {
         menu.logger.error(e);
     }
 }
-export const controller = new Controller(client);
+export const controller = new LocalController(client);
 
 
 export async function getChannelStreamer(guildId: string, authorId: string): Promise<Streamer> {
