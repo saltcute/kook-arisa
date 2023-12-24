@@ -131,11 +131,11 @@ export class ButtonControlPanel {
     private resumeButton;
     private showqueueButton;
     toCard(): Card {
-        const upNext = this.streamer.getQueue()[0];
+        const upNext = this.streamer.getQueue().at(0);
         const card = new Card();
         card.addText("正在播放")
             .addTitle(this.streamer.nowPlaying?.meta.title || "无")
-            .addContext(`下一首：${`${upNext.meta.title} - ${upNext.meta.artists}` || "无"}`)
+            .addContext(`下一首：${`${upNext?.meta.title} - ${upNext?.meta.artists}` || "无"}`)
             .addText(`${Time.timeToShortString(this.streamer.playedTime)}/${Time.timeToShortString(this.streamer.duration)}`);
 
         card.addModule({
