@@ -4,12 +4,35 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle);
 
-import { playback } from 'menu/arisa/controller/music';
-import { ws, setPlayback, changeTrack, changeQueueEntry, sendShuffleQueue, sendChangeCycleMode, currentStreamerIndex, setStreamerIndex, jumpToPercentage, streamers } from './common';
-import { computed, ref } from 'vue';
-import { RawGuildListResponseItem } from 'kasumi.js/dist/api/guild/type';
+import { playback } from '../../../../menu/arisa/playback/type';
+import backend from './common';
+import { computed, getCurrentInstance, reactive, ref } from 'vue';
 import axios from 'axios';
+import { Netease } from '../../../../menu/arisa/command/netease/lib';
+import { lyric } from 'NeteaseCloudMusicApi';
 const proxy = "img.kookapp.lolicon.ac.cn";
+
+export declare enum NotificationSetting {
+    Default = 0,
+    All = 1,
+    MentionOnly = 2,
+    Block = 3
+}
+interface RawGuildListResponseItem {
+    id: string;
+    name: string;
+    topic: string;
+    user_id: string;
+    icon: string;
+    notify_type: NotificationSetting;
+    region: string;
+    enable_open: string;
+    open_id: string;
+    default_channel_id: string;
+    welcome_channel_id: string;
+    boost_num: number;
+    level: number;
+}
 
 async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> {
     return new Promise((resolve, rejects) => {
@@ -25,116 +48,64 @@ async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> 
     })
 }
 
-const busy = ref(true);
+async function getSongLyrics(id: number): Promise<Netease.lyric> {
+    return new Promise((resolve, rejects) => {
+        axios({
+            url: '/netease/lyric',
+            method: 'GET',
+            params: {
+                id
+            }
+        }).then(({ data }) => {
+            resolve(data.data);
+        }).catch((e) => { rejects(e) });
+    })
+}
+
+function parseLRC(rawLyric: string) {
+    const lineByLineLyric = rawLyric.split('\n');
+    const lyrics: [number, string][] = [];
+    for (const line of lineByLineLyric) {
+        if (!line) continue;
+        const [_, rawTimecode, lyric] = /(?:\[([0-9:.]+)\])(.+)?/.exec(line) || ["00:00.000", ""];
+        const [__, m, s, ms] = /([0-9]+):([0-9]+).([0-9]+)/.exec(rawTimecode) || ["0", "0", "0"];
+        const timecode = parseInt(m) * 60 * 1000 + parseInt(s) * 1000 + parseInt(ms);
+        if (!isNaN(timecode) && timecode && lyric) lyrics.push([timecode, lyric || ""]);
+    }
+    return lyrics;
+}
+
+function parseLyric(data: Netease.lyric) {
+    const rawLyric = data.lrc?.lyric;
+    const rawKLyric = data.klyric?.lyric;
+    const rawTranslate = data.tlyric?.lyric;
+    const rawRomaji = data.romalrc?.lyric;
+
+    let lyric: [number, string][] | undefined,
+        kLyric: any[] | undefined,
+        translate: [number, string][] | undefined,
+        romaji: [number, string][] | undefined;
+    if (rawLyric) lyric = parseLRC(rawLyric);
+    if (rawKLyric) kLyric = [];
+    if (rawTranslate) translate = parseLRC(rawTranslate);
+    if (rawRomaji) romaji = parseLRC(rawRomaji);
+
+    return { lyric, kLyric, translate, romaji };
+}
+
+const waitingForWSConnection = ref(true);
+const loadingLyrics = ref(true);
 const userDataRaw = localStorage.getItem('user');
-if (userDataRaw && ws) {
+if (userDataRaw && backend.ws) {
     const auth = JSON.parse(localStorage.getItem('auth') || "{}");
     const token = auth.access_token;
 
-    ws.addEventListener('open', () => {
-        busy.value = false;
+    backend.ws.addEventListener('open', () => {
+        waitingForWSConnection.value = false;
     })
 
 }
 
-function selectedStreamerName() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        return `${streamer.name}#${streamer.identifyNum}`;
-    } else {
-        return "Select a Streamer";
-    }
-}
-
-function selectStreamer(event: Event) {
-    const value = (event.target as HTMLElement).getAttribute('index');
-    if (value) {
-        const index = parseInt(value);
-        setStreamerIndex(index);
-        (event.target as HTMLInputElement).parentElement?.parentElement?.removeAttribute('open');
-    }
-}
-
-function selectedStreamer() {
-    return streamers.value[currentStreamerIndex];
-}
-function nowPlaying() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        // console.log(streamer.nowPlaying);
-        return streamer.nowPlaying;
-    } else return undefined;
-}
-
-function switchPlayback() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        if (streamer.isPaused) {
-            setPlayback(false);
-        } else {
-            setPlayback(true);
-        }
-    }
-}
-
-function playPrevious() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        changeTrack(false);
-    }
-}
-
-function playNext() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        changeTrack(true);
-    }
-}
-
-function proxiedKookImage(original: string) {
-    return original.replace('img.kaiheila.cn', proxy).replace('img.kookapp.cn', proxy);
-}
-
-
-const currentQueue = computed(() => {
-    if (streamers.value[currentStreamerIndex]) {
-        return streamers.value[currentStreamerIndex].queue.filter(v => v.type == 'netease' || v.type == 'bilibili');
-    } else return [];
-})
-
-
-function queueMoveEntryUp(index: number) {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        return changeQueueEntry(index, 'up');
-    }
-}
-function queueMoveEntryDown(index: number) {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        return changeQueueEntry(index, 'down');
-    }
-}
-function queueDeleteEntry(index: number) {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        return changeQueueEntry(index, 'delete');
-    }
-}
-
-function shuffleQueue() {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        return sendShuffleQueue();
-    }
-}
-
-function switchCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
-    const streamer = selectedStreamer();
-    if (streamer) {
-        return sendChangeCycleMode(mode);
-    }
-}
 
 function getQueueBackground(queue: playback.extra) {
     return `background-image: url("${proxiedKookImage(queue.meta.cover)}")`
@@ -164,15 +135,24 @@ window.addEventListener('mousedown', (event) => {
 window.addEventListener('mouseup', () => {
     if (keep) {
         keep = false;
-        jumpToPercentage(percent);
+        backend.jumpToPercentage(percent);
     }
 })
+
+
+function proxiedKookImage(original: string) {
+    return original.replace('img.kaiheila.cn', proxy).replace('img.kookapp.cn', proxy);
+}
+
+function currentQueue() {
+    return backend.currentStreamer?.queue || [];
+}
 
 function getPlaybackProgress() {
     if (keep) {
         return percent;
     } else {
-        const streamer = selectedStreamer();
+        const streamer = backend.currentStreamer
         if (streamer) {
             const played = streamer.trackPlayedTime
             const duration = streamer.trackTotalDuration
@@ -181,43 +161,140 @@ function getPlaybackProgress() {
         } else return 0;
     }
 }
+
+function parseBilingual() {
+    let array: any[] = [];
+    if (currentLyric.lyric)
+        array = currentLyric.lyric;
+    if (currentLyric.translate)
+        array.concat(currentLyric.translate)
+    array = array.sort(((a, b) => {
+        return a[0] - b[0];
+    }))
+    return array;
+}
+
+backend.on('newTrack', (nowPlaying?: playback.extra) => {
+    console.log(nowPlaying);
+    percent = 0;
+    if (nowPlaying?.data?.songId) {
+        nowPlaying = nowPlaying as playback.extra.netease;
+        getSongLyrics(nowPlaying.data.songId).then((data) => {
+            const lyrics = parseLyric(data);
+            currentLyric = lyrics
+            bilingualLyric = parseBilingual()
+            currentLyricIndexCache = undefined;
+            loadingLyrics.value = false;
+        })
+    }
+})
+
+backend.on('wsEvent', () => {
+    forceRender();
+    let element: Element | null = document.getElementById(currentLyricIndex()[1].toString())
+    if (!element) {
+        const children = document.getElementsByClassName(currentLyricIndex()[1].toString());
+        element = children[1] || children[0];
+    }
+    if (!element) {
+        const children = document.getElementsByClassName("lyric")[0]?.children;
+        if (children) element = children[children.length - 1];
+    }
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+})
+
+let currentLyric: ReturnType<typeof parseLyric>;
+
+let bilingualLyric: [number, string][] = [];
+
+let currentLyricIndexCache: [number, number] | undefined;
+function currentLyricIndex() {
+    if (currentLyricIndexCache) return currentLyricIndexCache;
+    const currentTrackTime = (backend.currentStreamer?.trackPlayedTime || 0) * 1000;
+    if (!currentTrackTime) return [0, 0];
+    let flg = false;
+    for (let i = 0; i < bilingualLyric.length; ++i) {
+        const [timecode, lyric] = bilingualLyric[i];
+        if (currentTrackTime < timecode) {
+            flg = true;
+            if (currentLyric.translate?.length) {
+                if (i <= 1) currentLyricIndexCache = [0, timecode];
+                else currentLyricIndexCache = [i - 2, bilingualLyric[i - 2][0]];
+            } else {
+                if (i <= 0) currentLyricIndexCache = [0, timecode];
+                else currentLyricIndexCache = [i - 1, bilingualLyric[i - 1][0]];
+            }
+            break;
+        }
+    }
+    if (flg) return currentLyricIndexCache || [0, 0];
+    else return bilingualLyric.at(-1) || [0, 0];
+}
+
+const componentKey = ref(0);
+function forceRender() {
+    componentKey.value++;
+}
+
+function getLyricStyle(index: number, timecode: number) {
+    const [curIndex, curTimecode] = currentLyricIndex();
+    let properties: any = {};
+    if (index == bilingualLyric.length - 1) currentLyricIndexCache = undefined;
+    if (index == curIndex || timecode == curTimecode) {
+        properties.color = 'orange';
+    } else {
+        properties.filter = "blur(1px)";
+    }
+    if (index > 0 && bilingualLyric[index - 1][0] == timecode) {
+        properties.fontSize = "0.75em";
+        if (properties.color) properties.color = "#916b00"
+        else properties.color = "grey";
+        properties.verticalAlign = "top";
+    }
+    return reactive(properties);
+}
+
+function getRandomKaomoji() {
+    const library = [`(;-;)`, `(='X'=)`, `(>_<)`, `\\(^Д^)/`, `(˚Δ˚)b`, `(^-^*)`, `(·_·)`, `(o^^)o`, `(≥o≤)`]
+    return library.at((backend.currentNowPlaying?.data.songId || 114514) * 19260817 % library.length);
+}
 </script>
 
 <template>
-    <article :aria-busy="busy" class="dashboard">
-        <h4 v-if="userDataRaw">Dashboard</h4>
-        <article v-if="userDataRaw">
+    <article :aria-busy="waitingForWSConnection" class="dashboard">
+        <h4 v-if="userDataRaw" class="title">Dashboard</h4>
+        <article v-if="userDataRaw" class="control">
             <div class="song-title">{{
-                (nowPlaying() as playback.extra.netease)?.meta?.title || "Not Playing"
+                backend.currentNowPlaying?.meta?.title || "Not Playing"
             }}</div>
             <div class="song-artists">{{
-                (nowPlaying() as playback.extra.netease)?.meta?.artists || ""
+                backend.currentNowPlaying?.meta?.artists
             }}</div>
-            <progress id="playback-progress" :value="getPlaybackProgress()"></progress>
-            <div v-if="selectedStreamer()" class="playback-control grid">
-                <i data-tooltip="Click to Shuffle Playlist" @click="shuffleQueue">
+            <progress :key="componentKey" id="playback-progress" :value="getPlaybackProgress()"></progress>
+            <div v-if="backend.currentStreamer" class="playback-control grid">
+                <i data-tooltip="Click to Shuffle Playlist" @click="backend.shuffleQueue">
                     <font-awesome-icon :icon="['fas', 'shuffle']" />
                 </i>
-                <i @click="playPrevious">
+                <i @click="() => { backend.playPrevious() }">
                     <font-awesome-icon :icon="['fas', 'backward']" />
                 </i>
-                <i @click="switchPlayback">
-                    <font-awesome-icon v-if="selectedStreamer()?.isPaused" :icon="['fas', 'play']" />
+                <i @click="backend.switchPlayback">
+                    <font-awesome-icon v-if="backend.currentStreamer.isPaused" :icon="['fas', 'play']" />
                     <font-awesome-icon v-else :icon="['fas', 'pause']" />
                 </i>
-                <i @click="playNext">
+                <i @click="backend.playNext">
                     <font-awesome-icon :icon="['fas', 'forward']" />
                 </i>
-                <i data-tooltip="No Repeat" v-if="selectedStreamer()?.cycleMode == 'no_repeat'"
-                    @click="switchCycleMode('repeat')">
+                <i data-tooltip="No Repeat" v-if="backend.currentStreamer.cycleMode == 'no_repeat'"
+                    @click="backend.switchCycleMode('repeat')">
                     <font-awesome-icon :icon="['fas', 'circle-xmark']" />
                 </i>
-                <i data-tooltip="Repeat" v-else-if="selectedStreamer()?.cycleMode == 'repeat'"
-                    @click="switchCycleMode('repeat_one')">
+                <i data-tooltip="Repeat" v-else-if="backend.currentStreamer.cycleMode == 'repeat'"
+                    @click="backend.switchCycleMode('repeat_one')">
                     <font-awesome-icon :icon="['fas', 'repeat']" />
                 </i>
-                <i data-tooltip="Repeat One" v-else-if="selectedStreamer()?.cycleMode == 'repeat_one'"
-                    @click="switchCycleMode('no_repeat')">
+                <i data-tooltip="Repeat One" v-else-if="backend.currentStreamer.cycleMode == 'repeat_one'"
+                    @click="backend.switchCycleMode('no_repeat')">
                     <font-awesome-icon :icon="['fas', 'repeat']" fade />
                 </i>
             </div>
@@ -240,34 +317,48 @@ function getPlaybackProgress() {
             </div>
         </article>
         <details v-if="userDataRaw" role="list" id="streamerselector">
-            <summary aria-haspopup="listbox">{{ selectedStreamerName() }}</summary>
+            <summary aria-haspopup="listbox">{{ backend.currentStreamerName }}</summary>
             <ul role="listbox" class="dropdown">
-                <li v-if="!streamers.length">
+                <li v-if="!backend.streamers.length">
                     No Streamers
                 </li>
-                <li v-else class="grid" v-for="(   streamer, index   ) in  streamers " :index="index"
-                    @click="selectStreamer">
+                <li v-else class="grid" v-for="(streamer, index) in backend.streamers" :index="index"
+                    @click="backend.selectStreamer">
                     <img :src="proxiedKookImage(streamer.avatar)" />
                     {{ streamer.name }}#{{ streamer.identifyNum }}
                 </li>
             </ul>
         </details>
+        <!-- <article v-if="userDataRaw && (nowPlaying() as playback.extra.netease)?.data.songId"> -->
+        <article v-if="userDataRaw">
+            <h5 style="margin: 0px;">Lyrics</h5>
+            <div id="lyricTextarea" :aria-busy="loadingLyrics">
+                <div class="lyric" v-if="bilingualLyric.length > 0">
+                    <div class="line" :class="timecode.toString()" v-for="([timecode, lyric], index) in bilingualLyric">
+                        <i v-if="index > 0 && bilingualLyric[index - 1][0] == timecode" :id="timecode.toString()"></i>
+                        <span :style="getLyricStyle(index, timecode)"> {{ lyric }}</span><br>
+                    </div>
+                </div>
+                <div class="lyric" v-else-if="!loadingLyrics">
+                    Lyric went missing! {{ getRandomKaomoji() }} </div>
+            </div>
+        </article>
     </article>
-    <article :aria-busy="busy" class="playlist">
+    <article :aria-busy="waitingForWSConnection" class="playlist">
         <h4 v-if="userDataRaw">Playlist</h4>
-        <article v-if="userDataRaw" v-for="(queue, index) in currentQueue" :class="index == 0 ? 'now-playing-sign' : ''"
-            :style="getQueueBackground(queue)">
-            <div>
+        <article :key="componentKey" v-if="userDataRaw" v-for="(queue, index) in currentQueue()"
+            :class="index == 0 ? 'now-playing-sign' : ''" :style="getQueueBackground(queue)">
+            <div v-if="queue.meta">
                 <span class="now-playing-sign" v-if="index == 0">Now Playing:</span>
                 <span class="title">{{ queue.meta.title }}</span>
                 <span class="artists">{{ queue.meta.artists }}</span>
-                <i @click="queueMoveEntryUp(index)" class="up-button">
+                <i @click="backend.queueMoveEntryUp(index)" class="up-button">
                     <font-awesome-icon :icon="['fas', 'arrow-up']" />
                 </i>
-                <i @click="queueMoveEntryDown(index)" class="down-button">
+                <i @click="backend.queueMoveEntryDown(index)" class="down-button">
                     <font-awesome-icon :icon="['fas', 'arrow-down']" />
                 </i>
-                <i @click="queueDeleteEntry(index)" class="trash-button">
+                <i @click="backend.queueDeleteEntry(index)" class="trash-button">
                     <font-awesome-icon :icon="['fas', 'trash']" />
                 </i>
             </div>
@@ -277,7 +368,7 @@ function getPlaybackProgress() {
 
 <style scoped>
 @property --playlist-card-top {
-    syntax: '<color>';
+    syntax: '<co`lo`r>';
     initial-value: rgb(0, 0, 0, 91%);
     inherits: false;
 }
@@ -287,6 +378,7 @@ function getPlaybackProgress() {
     initial-value: rgb(255, 255, 255, 16%);
     inherits: false;
 }
+
 
 .playlist>article>div {
     background-image: linear-gradient(var(--playlist-card-top), 75%, var(--playlist-card-bottom));
@@ -307,11 +399,19 @@ div:hover {
         --playlist-card-top: rgb(0, 0, 0, 91%);
         --playlist-card-bottom: rgb(255, 255, 255, 16%);
     }
+
+    :root:not([data-theme]) .dashboard>article {
+        background-color: var(--card-panel-background-color-dark);
+    }
 }
 
 :root[data-theme="dark"] .playlist>article>div {
     --playlist-card-top: rgb(0, 0, 0, 91%);
     --playlist-card-bottom: rgb(255, 255, 255, 16%);
+}
+
+:root[data-theme="dark"] .dashboard>article {
+    background-color: var(--card-panel-background-color-dark);
 }
 
 
@@ -320,11 +420,19 @@ div:hover {
         --playlist-card-top: rgb(255, 255, 255, 91%);
         --playlist-card-bottom: rgb(0, 0, 0, 20%);
     }
+
+    :root:not([data-theme]) .dashboard>article {
+        background-color: var(--card-panel-background-color-light);
+    }
 }
 
 :root[data-theme="light"] .playlist>article>div {
     --playlist-card-top: rgb(255, 255, 255, 91%);
     --playlist-card-bottom: rgb(0, 0, 0, 20%);
+}
+
+:root[data-theme="light"] .dashboard>article {
+    background-color: var(--card-panel-background-color-light);
 }
 
 .playlist>article>div>i {
@@ -414,6 +522,7 @@ div:hover {
 
 .playback-control {
     justify-items: center;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
 }
 
 .playback-control>i {
@@ -489,5 +598,50 @@ h4 {
     justify-items: start;
     align-items: center;
     cursor: pointer;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-rows: min-content min-content min-content auto;
+    grid-template-areas:
+        "title"
+        "control"
+        "selector"
+        "lyric";
+
+    align-items: center;
+}
+
+.dashboard>.title {
+    grid-area: title;
+}
+
+.dashboard>.controls {
+    grid-area: control;
+}
+
+#streamerSelector {
+    grid-area: selector;
+}
+
+#lyricTextarea {
+    height: 100%;
+    text-align: center;
+    font-size: 1.5em;
+    overflow-y: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+#lyricTextarea::-webkit-scrollbar {
+    display: none;
+}
+
+article:has(>#lyricTextarea) {
+    overflow: hidden;
+    display: grid;
+    grid-area: lyric;
+    grid-template-rows: min-content auto;
+    height: 100%;
 }
 </style>

@@ -1,7 +1,7 @@
-import { playback } from "menu/arisa/controller/music";
+import { playback } from "menu/arisa/playback/type";
 import { streamerDetail } from "./types";
-import { ref } from 'vue';
-export let ws: WebSocket;
+import EventEmitter2 from "eventemitter2";
+import { computed } from "vue";
 export interface auth {
     access_token: string,
     expires_in: number,
@@ -10,13 +10,40 @@ export interface auth {
     expires: number
 }
 
-export let auth: auth, streamers = ref<streamerDetail[]>([]);
-const authRaw = localStorage.getItem('auth');
-if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
-    function connect() {
-        ws = new WebSocket(window.location.protocol.replace('http', 'ws') + location.hostname);
-        ws.onopen = function () {
-            ws.send(JSON.stringify({
+class Backend extends EventEmitter2 {
+    streamers: streamerDetail[] = []
+    ws?: WebSocket;
+    nowPlaying?: playback.extra;
+    currentStreamerIndex = 0;
+
+    set streamerIndex(index: number) {
+        this.currentStreamerIndex = index;
+    }
+    get streamerIndex() {
+        return this.currentStreamerIndex;
+    }
+    get currentStreamer() {
+        return this.streamers.at(this.streamerIndex);
+    }
+
+    static getNowPlayingHash(payload?: playback.extra) {
+        if (!payload) return undefined;
+        return payload.meta.title + payload.meta.artists + payload.meta.duration;
+    }
+
+    get currentNowPlaying() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return streamer.nowPlaying;
+        } else return undefined;
+    }
+
+
+    connect() {
+        const self = this;
+        this.ws = new WebSocket(window.location.protocol.replace('http', 'ws') + location.hostname);
+        this.ws.onopen = function () {
+            self.ws?.send(JSON.stringify({
                 t: 0,
                 d: {
                     access_token: auth.access_token
@@ -24,109 +51,195 @@ if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 
             }));
         };
 
-        ws.onmessage = function (data) {
+        this.ws.onmessage = function (data) {
             try {
+                self.emit("wsEvent");
                 if (data.data) {
-                    streamers.value = JSON.parse(data.data.toString());
+                    self.streamers = JSON.parse(data.data.toString());
+                    if (Backend.getNowPlayingHash(self.nowPlaying) != Backend.getNowPlayingHash(self.currentStreamer?.nowPlaying)) {
+                        self.nowPlaying = self.currentStreamer?.nowPlaying;
+                        self.emit("newTrack", self.currentNowPlaying);
+                    }
                     // console.log(streamers.value[currentStreamerIndex].nowPlaying);
                 }
             } catch (e) { console.error(e) }
         };
 
-        ws.onclose = function (e) {
-            console.log('Socket is closed. Reconnect will be attempted in 5 second.', e.reason);
-            setTimeout(connect, 5000);
+        this.ws.onclose = function (e) {
+            console.log('Socket is closed. Attempting to reconnect in 5 second.', e.reason);
+            setTimeout(self.connect, 5000);
         };
 
-        ws.onerror = function (err) {
+        this.ws.onerror = function (err) {
             console.error('Socket encountered error: ', err, 'Closing socket');
-            ws.close();
+            self.ws?.close();
         };
     }
 
-    connect();
-}
+    setPlayback(paused: boolean) {
+        this.ws?.send(JSON.stringify({
+            t: 1,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+                paused,
+            }
+        }))
+    }
 
-export let currentStreamerIndex = 0;
-export function setStreamerIndex(index: number) {
-    currentStreamerIndex = index;
-}
+    changeTrack(next: boolean) {
+        this.ws?.send(JSON.stringify({
+            t: 2,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+                next
+            }
+        }))
+    }
 
-export function setPlayback(paused: boolean) {
-    ws.send(JSON.stringify({
-        t: 1,
-        d: {
-            streamerIndex: currentStreamerIndex,
-            paused,
+    changeQueueEntry(index: number, action: 'up' | 'down' | 'delete') {
+        this.ws?.send(JSON.stringify({
+            t: 3,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+                queueIndex: index - 1,
+                action
+            }
+        }))
+    }
+
+    sendShuffleQueue() {
+        this.ws?.send(JSON.stringify({
+            t: 4,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+            }
+        }))
+    }
+
+    sendChangeCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
+        this.ws?.send(JSON.stringify({
+            t: 5,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+                cycleMode: mode
+            }
+        }))
+    }
+
+    public addTrack(data: playback.extra.streaming) {
+        this.ws?.send(JSON.stringify({
+            t: 6,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+                data
+            }
+        }))
+    }
+
+    jumpToPercentage(percent: number) {
+        this.ws?.send(JSON.stringify({
+            t: 7,
+            d: {
+                streamerIndex: this.currentStreamerIndex,
+                percent
+            }
+        }))
+    }
+
+
+    get currentStreamerName() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return `${streamer.name}#${streamer.identifyNum}`;
+        } else {
+            return "Select a Streamer";
         }
-    }))
-}
+    }
 
-export function changeTrack(next: boolean) {
-    ws.send(JSON.stringify({
-        t: 2,
-        d: {
-            streamerIndex: currentStreamerIndex,
-            next
+    selectStreamer(event: Event) {
+        const value = (event.target as HTMLElement).getAttribute('index');
+        if (value) {
+            const index = parseInt(value);
+            backend.streamerIndex = index;
+            (event.target as HTMLInputElement).parentElement?.parentElement?.removeAttribute('open');
         }
-    }))
-}
+    }
 
-export function changeQueueEntry(index: number, action: 'up' | 'down' | 'delete') {
-    ws.send(JSON.stringify({
-        t: 3,
-        d: {
-            streamerIndex: currentStreamerIndex,
-            queueIndex: index - 1,
-            action
+    switchPlayback() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            if (streamer.isPaused) {
+                this.setPlayback(false);
+            } else {
+                this.setPlayback(true);
+            }
         }
-    }))
-}
+    }
 
-export function sendShuffleQueue() {
-    ws.send(JSON.stringify({
-        t: 4,
-        d: {
-            streamerIndex: currentStreamerIndex,
+    playPrevious() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            this.changeTrack(false);
         }
-    }))
-}
+    }
 
-export function sendChangeCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
-    ws.send(JSON.stringify({
-        t: 5,
-        d: {
-            streamerIndex: currentStreamerIndex,
-            cycleMode: mode
+    playNext() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            this.changeTrack(true);
         }
-    }))
-}
+    }
 
-export function addTrack(data: playback.extra.streaming) {
-    ws.send(JSON.stringify({
-        t: 6,
-        d: {
-            streamerIndex: currentStreamerIndex,
-            data
+    queueMoveEntryUp(index: number) {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return this.changeQueueEntry(index, 'up');
         }
-    }))
-}
-
-export function jumpToPercentage(percent: number) {
-    ws.send(JSON.stringify({
-        t: 7,
-        d: {
-            streamerIndex: currentStreamerIndex,
-            percent
+    }
+    queueMoveEntryDown(index: number) {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return this.changeQueueEntry(index, 'down');
         }
-    }))
+    }
+    queueDeleteEntry(index: number) {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return this.changeQueueEntry(index, 'delete');
+        }
+    }
+
+    shuffleQueue() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return this.sendShuffleQueue();
+        }
+    }
+
+    switchCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return this.sendChangeCycleMode(mode);
+        }
+    }
+
+
+    // sendSelectServer(guildId: string) {
+    //    this.ws?.send(JSON.stringify({
+    //         t: 8,
+    //         d: {
+    //             guildId
+    //         }
+    //     }))
+    // }
 }
 
-// export function sendSelectServer(guildId: string) {
-//     ws.send(JSON.stringify({
-//         t: 8,
-//         d: {
-//             guildId
-//         }
-//     }))
-// }
+export let auth: auth;
+const authRaw = localStorage.getItem('auth');
+
+const backend = new Backend();
+if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
+    backend.connect();
+}
+
+export default backend

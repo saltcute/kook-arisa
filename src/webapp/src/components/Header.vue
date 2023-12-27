@@ -136,10 +136,13 @@ onMounted(() => {
 
 <style scoped>
 .title {
-    font-family: "Secular One", sans-serif;
+    font-family: var(--header-font);
+    font-weight: var(--header-weight);
+    font-size: 1.25em;
 }
 
 header {
+    height: 3em;
     padding-left: 2em;
     padding-right: 2em;
 }

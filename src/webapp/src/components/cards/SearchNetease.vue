@@ -7,7 +7,7 @@ library.add(faPlus);
 import { nextTick, ref, getCurrentInstance } from 'vue';
 import axios from 'axios';
 import { Netease } from 'menu/arisa/command/netease/lib';
-import { addTrack } from './common'
+import backend from './common'
 
 // @ts-ignore
 import { useNotification } from "@kyvg/vue3-notification";
@@ -89,7 +89,7 @@ function search() {
 }
 
 function addNeteaseTrack(song: Netease.songDetail) {
-    addTrack({
+    backend.addTrack({
         type: 'netease',
         data: {
             songId: song.id,
@@ -100,12 +100,21 @@ function addNeteaseTrack(song: Netease.songDetail) {
             duration: song.dt,
             cover: song.al.picUrl
         }
-    })
-    notify({
-        group: "search",
-        title: "Success",
-        text: `Added "${song.name}" to playlist`,
     });
+    if (backend.currentStreamer) {
+        notify({
+            group: "search",
+            title: "Success",
+            text: `Added "${song.name}" to playlist`,
+        });
+    } else {
+
+        notify({
+            group: "search",
+            title: "Warning",
+            text: `No streamer active! Attempted to add "${song.name}" to playlist, but may fail to reflect.`,
+        });
+    }
 }
 
 defineExpose({

@@ -1,4 +1,4 @@
-import { playback } from "menu/arisa/controller/music"
+import { playback } from "menu/arisa/playback/type"
 
 export interface payload {
     t: number,

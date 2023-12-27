@@ -16,7 +16,11 @@ if (userDataRaw) {
         <article class="avatar">
             <img :src="avatar">
         </article>
-        <div class="username">{{ username }}</div>
+        <div class="username">
+            <span>{{ username.split("#")[0] }}</span>
+            <span style="font-size: 0.75rem; font-weight: var(--header-weight); color: gray;">#{{ username.split("#")[1]
+            }}</span>
+        </div>
     </article>
 </template>
 
