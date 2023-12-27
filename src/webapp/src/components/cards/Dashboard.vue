@@ -167,7 +167,7 @@ function parseBilingual() {
     if (currentLyric.lyric)
         array = currentLyric.lyric;
     if (currentLyric.translate)
-        array.concat(currentLyric.translate)
+        array = array.concat(currentLyric.translate)
     array = array.sort(((a, b) => {
         return a[0] - b[0];
     }))
