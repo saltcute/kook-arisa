@@ -68,7 +68,10 @@ function parseLRC(rawLyric: string) {
         if (!line) continue;
         const [_, rawTimecode, lyric] = /(?:\[([0-9:.]+)\])+(.+)?/.exec(line) || ["00:00.000", ""];
         const [__, m, s, ms] = /([0-9]+):([0-9]+).([0-9]+)/.exec(rawTimecode) || ["0", "0", "0"];
-        const timecode = parseInt(m) * 60 * 1000 + parseInt(s) * 1000 + parseInt(ms);
+        if (!(m && s && ms)) continue;
+        const numberMs = parseInt(ms);
+        const realMs = ms.length == 1 ? numberMs * 100 : (ms.length == 2 ? numberMs * 10 : numberMs);
+        const timecode = parseInt(m) * 60 * 1000 + parseInt(s) * 1000 + realMs;
         if (!isNaN(timecode) && timecode && lyric) lyrics.push([timecode, lyric]);
     }
     return lyrics;
@@ -298,7 +301,6 @@ function switchRomaji() {
     })
 }
 function switchTranslate() {
-    console.log("1");
     enableTranslate.value = !enableTranslate.value;
     localStorage.setItem('showTranslate', enableTranslate.value.toString());
     nextTick().then(() => {
@@ -406,7 +408,7 @@ onMounted(() => {
             <div id="lyricTextarea" :aria-busy="loadingLyrics">
                 <div class="lyric" v-if="Object.keys(bilingualLyric).length">
                     <div class="line" :class="timecode.toString()"
-                        v-for="([timecode, lyric], index) in  getBilingualLyricEntry() ">
+                        v-for="([timecode, lyric], index) in getBilingualLyricEntry() ">
                         <span v-if="lyric.romaji && enableRomaji" :style="getLyricStyle(index, timecode, 'top')">
                             {{ lyric.romaji }}<br>
                         </span>
