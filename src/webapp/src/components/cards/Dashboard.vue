@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
-library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle);
+import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage } from '@fortawesome/free-solid-svg-icons'
+library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage);
 
 import { playback } from '../../../../menu/arisa/playback/type';
 import backend from './common';
-import { computed, getCurrentInstance, reactive, ref } from 'vue';
+import { nextTick, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import { Netease } from '../../../../menu/arisa/command/netease/lib';
-import { lyric } from 'NeteaseCloudMusicApi';
 const proxy = "img.kookapp.lolicon.ac.cn";
 
 export declare enum NotificationSetting {
@@ -67,10 +66,10 @@ function parseLRC(rawLyric: string) {
     const lyrics: [number, string][] = [];
     for (const line of lineByLineLyric) {
         if (!line) continue;
-        const [_, rawTimecode, lyric] = /(?:\[([0-9:.]+)\])(.+)?/.exec(line) || ["00:00.000", ""];
+        const [_, rawTimecode, lyric] = /(?:\[([0-9:.]+)\])+(.+)?/.exec(line) || ["00:00.000", ""];
         const [__, m, s, ms] = /([0-9]+):([0-9]+).([0-9]+)/.exec(rawTimecode) || ["0", "0", "0"];
         const timecode = parseInt(m) * 60 * 1000 + parseInt(s) * 1000 + parseInt(ms);
-        if (!isNaN(timecode) && timecode && lyric) lyrics.push([timecode, lyric || ""]);
+        if (!isNaN(timecode) && timecode && lyric) lyrics.push([timecode, lyric]);
     }
     return lyrics;
 }
@@ -177,8 +176,7 @@ backend.on('newTrack', (nowPlaying?: playback.extra) => {
     }
 })
 
-backend.on('wsEvent', () => {
-    forceRender();
+function scrollToActiveLyric(arg?: boolean | ScrollIntoViewOptions) {
     let element: Element | null = document.getElementById(currentLyricIndex()[1].toString())
     if (!element) {
         const children = document.getElementsByClassName(currentLyricIndex()[1].toString());
@@ -188,15 +186,26 @@ backend.on('wsEvent', () => {
         const children = document.getElementsByClassName("lyric")[0]?.children;
         if (children) element = children[children.length - 1];
     }
-    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element?.scrollIntoView(arg);
+}
+
+backend.on('wsEvent', () => {
+    forceRender();
+    if (Date.now() - lastScroll > 1.75 * 1000) scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
 })
+
+let lastScroll = 0;
+function onScrollLyric(event: Event) {
+    lastScroll = Date.now();
+}
 
 let currentLyric: ReturnType<typeof parseLyric>;
 
 interface BilingualLyric {
     [timecode: number]: {
         original: string,
-        translate?: string
+        translate?: string,
+        romaji?: string
     }
 }
 
@@ -209,6 +218,13 @@ function parseBilingual(): BilingualLyric {
         for (const [timecode, lyric] of currentLyric.translate) {
             if (obj[timecode] != undefined) {
                 obj[timecode].translate = lyric;
+            }
+        }
+    }
+    if (currentLyric.romaji) {
+        for (const [timecode, lyric] of currentLyric.romaji) {
+            if (obj[timecode] != undefined) {
+                obj[timecode].romaji = lyric;
             }
         }
     }
@@ -231,7 +247,8 @@ function currentLyricIndex() {
         const [timecode, lyric] = entries[i];
         if (currentTrackTime < timecode) {
             flg = true;
-            currentLyricIndexCache = [i, timecode];
+            if (i > 0) currentLyricIndexCache = [i - 1, entries[i - 1][0]];
+            else currentLyricIndexCache = [i, timecode];
             break;
         }
     }
@@ -247,7 +264,7 @@ function forceRender() {
     componentKey.value++;
 }
 
-function getLyricStyle(index: number, timecode: number, isMain: boolean) {
+function getLyricStyle(index: number, timecode: number, position: "main" | "top" | "bottom") {
     const [curIndex, curTimecode] = currentLyricIndex();
     let properties: any = {};
     if (index == Object.entries(bilingualLyric).length - 1) currentLyricIndexCache = undefined;
@@ -256,11 +273,12 @@ function getLyricStyle(index: number, timecode: number, isMain: boolean) {
     } else {
         properties.filter = "blur(1px)";
     }
-    if (index > 0 && !isMain) {
+    if (index > 0 && position != "main") {
         properties.fontSize = "0.75em";
         if (properties.color) properties.color = "#916b00"
         else properties.color = "grey";
-        properties.verticalAlign = "top";
+        if (position == "bottom") properties.verticalAlign = "top";
+        else properties.verticalAlign = "bottom";
     }
     return reactive(properties);
 }
@@ -269,6 +287,34 @@ function getRandomKaomoji() {
     const library = [`(;-;)`, `(='X'=)`, `(>_<)`, `\\(^Д^)/`, `(˚Δ˚)b`, `(^-^*)`, `(·_·)`, `(o^^)o`, `(≥o≤)`]
     return library.at((backend.currentNowPlaying?.data.songId || 114514) * 19260817 % library.length);
 }
+
+const enableRomaji = ref(false), enableTranslate = ref(true);
+
+function switchRomaji() {
+    enableRomaji.value = !enableRomaji.value;
+    localStorage.setItem('showRomaji', enableRomaji.value.toString());
+    nextTick().then(() => {
+        scrollToActiveLyric({ behavior: 'instant', block: 'center' });
+    })
+}
+function switchTranslate() {
+    console.log("1");
+    enableTranslate.value = !enableTranslate.value;
+    localStorage.setItem('showTranslate', enableTranslate.value.toString());
+    nextTick().then(() => {
+        scrollToActiveLyric({ behavior: 'instant', block: 'center' });
+    })
+}
+
+onMounted(() => {
+    enableRomaji.value = localStorage.getItem('showRomaji') == "true" ? true : false;
+    enableTranslate.value = localStorage.getItem('showTranslate') == "true" ? true : false;
+
+    const lyricTextarea = document.getElementById("lyricTextarea")
+    if (lyricTextarea) {
+        lyricTextarea.addEventListener('scroll', onScrollLyric)
+    }
+});
 </script>
 
 <template>
@@ -342,15 +388,37 @@ function getRandomKaomoji() {
         </details>
         <!-- <article v-if="userDataRaw && (nowPlaying() as playback.extra.netease)?.data.songId"> -->
         <article v-if="userDataRaw">
-            <h5 style="margin: 0px;">Lyrics</h5>
+            <h5 style="margin: 0px;">
+                Lyrics
+                &nbsp<span v-if="currentLyric?.translate" @click="switchTranslate">
+                    <i class="click-cursor" v-if="enableTranslate" data-tooltip="Hide translation"><font-awesome-icon
+                            :icon="['fas', 'language']" /></i>
+                    <i class="click-cursor" v-else data-tooltip="Show translation"><font-awesome-icon
+                            :icon="['fas', 'language']" /></i>
+                </span>
+                &nbsp<span v-if="currentLyric?.romaji" @click="switchRomaji">
+                    <i class="click-cursor" v-if="enableRomaji" data-tooltip="Hide Romaji"><font-awesome-icon
+                            :icon="['fas', 'globe']" /></i>
+                    <i class="click-cursor" v-else data-tooltip="Show Romaji"><font-awesome-icon
+                            :icon="['fas', 'globe']" /></i>
+                </span>
+            </h5>
             <div id="lyricTextarea" :aria-busy="loadingLyrics">
                 <div class="lyric" v-if="Object.keys(bilingualLyric).length">
                     <div class="line" :class="timecode.toString()"
-                        v-for="([timecode, lyric], index) in getBilingualLyricEntry()">
-                        <span :style="getLyricStyle(index, timecode, true)"> {{ lyric.original }}</span><br>
-                        <i :id="timecode.toString()"></i>
-                        <span v-if="lyric.translate" :style="getLyricStyle(index, timecode, false)"> {{ lyric.translate
-                        }}</span>
+                        v-for="([timecode, lyric], index) in  getBilingualLyricEntry() ">
+                        <span v-if="lyric.romaji && enableRomaji" :style="getLyricStyle(index, timecode, 'top')">
+                            {{ lyric.romaji }}<br>
+                        </span>
+                        <i v-if="enableRomaji && !enableTranslate" :id="timecode.toString()"></i>
+                        <span :style="getLyricStyle(index, timecode, 'main')">
+                            <i v-if="!enableRomaji && !enableTranslate" :id="timecode.toString()"></i>
+                            {{ lyric.original }}<br>
+                        </span>
+                        <i v-if="!enableRomaji && enableTranslate" :id="timecode.toString()"></i>
+                        <span v-if="lyric.translate && enableTranslate" :style="getLyricStyle(index, timecode, 'bottom')">
+                            {{ lyric.translate }}
+                        </span>
                     </div>
                 </div>
                 <div class="lyric" v-else-if="!loadingLyrics">
@@ -360,7 +428,7 @@ function getRandomKaomoji() {
     </article>
     <article :aria-busy="waitingForWSConnection" class="playlist">
         <h4 v-if="userDataRaw">Playlist</h4>
-        <article :key="componentKey" v-if="userDataRaw" v-for="(queue, index) in currentQueue()"
+        <article :key="componentKey" v-if="userDataRaw" v-for="( queue, index ) in  currentQueue() "
             :class="index == 0 ? 'now-playing-sign' : ''" :style="getQueueBackground(queue)">
             <div v-if="queue.meta">
                 <span class="now-playing-sign" v-if="index == 0">Now Playing:</span>
@@ -521,6 +589,10 @@ div:hover {
 
 .song-artists {
     grid-area: song-artists;
+}
+
+.click-cursor {
+    cursor: pointer;
 }
 
 .song-title {
