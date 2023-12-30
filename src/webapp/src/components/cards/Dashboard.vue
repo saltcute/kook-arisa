@@ -162,18 +162,6 @@ function getPlaybackProgress() {
     }
 }
 
-function parseBilingual() {
-    let array: any[] = [];
-    if (currentLyric.lyric)
-        array = currentLyric.lyric;
-    if (currentLyric.translate)
-        array = array.concat(currentLyric.translate)
-    array = array.sort(((a, b) => {
-        return a[0] - b[0];
-    }))
-    return array;
-}
-
 backend.on('newTrack', (nowPlaying?: playback.extra) => {
     console.log(nowPlaying);
     percent = 0;
@@ -205,30 +193,53 @@ backend.on('wsEvent', () => {
 
 let currentLyric: ReturnType<typeof parseLyric>;
 
-let bilingualLyric: [number, string][] = [];
+interface BilingualLyric {
+    [timecode: number]: {
+        original: string,
+        translate?: string
+    }
+}
+
+function parseBilingual(): BilingualLyric {
+    let obj: BilingualLyric = {};
+    if (currentLyric.lyric) {
+        obj = Object.fromEntries(currentLyric.lyric.map(v => [v[0], { original: v[1] }]));
+    }
+    if (currentLyric.translate) {
+        for (const [timecode, lyric] of currentLyric.translate) {
+            if (obj[timecode] != undefined) {
+                obj[timecode].translate = lyric;
+            }
+        }
+    }
+    return obj;
+}
+let bilingualLyric: BilingualLyric = {};
+
+function getBilingualLyricEntry(): [number, BilingualLyric[number]][] {
+    return Object.entries(bilingualLyric) as any;
+}
 
 let currentLyricIndexCache: [number, number] | undefined;
 function currentLyricIndex() {
     if (currentLyricIndexCache) return currentLyricIndexCache;
     const currentTrackTime = (backend.currentStreamer?.trackPlayedTime || 0) * 1000;
     if (!currentTrackTime) return [0, 0];
+    const entries: [number, BilingualLyric[number]][] = Object.entries(bilingualLyric).map(v => [parseInt(v[0]), v[1]]);
     let flg = false;
-    for (let i = 0; i < bilingualLyric.length; ++i) {
-        const [timecode, lyric] = bilingualLyric[i];
+    for (let i = 0; i < entries.length; ++i) {
+        const [timecode, lyric] = entries[i];
         if (currentTrackTime < timecode) {
             flg = true;
-            if (currentLyric.translate?.length) {
-                if (i <= 1) currentLyricIndexCache = [0, timecode];
-                else currentLyricIndexCache = [i - 2, bilingualLyric[i - 2][0]];
-            } else {
-                if (i <= 0) currentLyricIndexCache = [0, timecode];
-                else currentLyricIndexCache = [i - 1, bilingualLyric[i - 1][0]];
-            }
+            currentLyricIndexCache = [i, timecode];
             break;
         }
     }
-    if (flg) return currentLyricIndexCache || [0, 0];
-    else return bilingualLyric.at(-1) || [0, 0];
+    if (flg && currentLyricIndexCache) return currentLyricIndexCache;
+    else {
+        const last = entries.at(-1);
+        return last ? [entries.length - 1, last[0]] : [0, 0]
+    }
 }
 
 const componentKey = ref(0);
@@ -236,16 +247,16 @@ function forceRender() {
     componentKey.value++;
 }
 
-function getLyricStyle(index: number, timecode: number) {
+function getLyricStyle(index: number, timecode: number, isMain: boolean) {
     const [curIndex, curTimecode] = currentLyricIndex();
     let properties: any = {};
-    if (index == bilingualLyric.length - 1) currentLyricIndexCache = undefined;
+    if (index == Object.entries(bilingualLyric).length - 1) currentLyricIndexCache = undefined;
     if (index == curIndex || timecode == curTimecode) {
         properties.color = 'orange';
     } else {
         properties.filter = "blur(1px)";
     }
-    if (index > 0 && bilingualLyric[index - 1][0] == timecode) {
+    if (index > 0 && !isMain) {
         properties.fontSize = "0.75em";
         if (properties.color) properties.color = "#916b00"
         else properties.color = "grey";
@@ -333,10 +344,13 @@ function getRandomKaomoji() {
         <article v-if="userDataRaw">
             <h5 style="margin: 0px;">Lyrics</h5>
             <div id="lyricTextarea" :aria-busy="loadingLyrics">
-                <div class="lyric" v-if="bilingualLyric.length > 0">
-                    <div class="line" :class="timecode.toString()" v-for="([timecode, lyric], index) in bilingualLyric">
-                        <i v-if="index > 0 && bilingualLyric[index - 1][0] == timecode" :id="timecode.toString()"></i>
-                        <span :style="getLyricStyle(index, timecode)"> {{ lyric }}</span><br>
+                <div class="lyric" v-if="Object.keys(bilingualLyric).length">
+                    <div class="line" :class="timecode.toString()"
+                        v-for="([timecode, lyric], index) in getBilingualLyricEntry()">
+                        <span :style="getLyricStyle(index, timecode, true)"> {{ lyric.original }}</span><br>
+                        <i :id="timecode.toString()"></i>
+                        <span v-if="lyric.translate" :style="getLyricStyle(index, timecode, false)"> {{ lyric.translate
+                        }}</span>
                     </div>
                 </div>
                 <div class="lyric" v-else-if="!loadingLyrics">
