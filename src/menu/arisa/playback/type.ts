@@ -401,4 +401,9 @@ export abstract class Controller extends EventEmitter2 {
      * @param token Token of the target streamer.
      */
     abstract getStreamerChannel(token: string): string | undefined;
+    /**
+     * Get the streamer instance by user id. Can only get active streamers.
+     * @param id User id of the streamer.
+     */
+    abstract getStreamerById(id: string): Streamer | undefined;
 }

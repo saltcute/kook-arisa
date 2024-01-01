@@ -12,6 +12,7 @@ export class LocalController extends Controller {
     private userStreamers: Map<string, Streamer[]> = new Map();
     private guildStreamers: Map<string, Streamer[]> = new Map();
     private streamerChannel: Map<string, string> = new Map();
+    private streamerIdToInstance: Map<string, Streamer> = new Map();
     private channelStreamer: Map<string, Streamer> = new Map();
     private allStreamers: Set<Streamer> = new Set();
 
@@ -77,6 +78,7 @@ export class LocalController extends Controller {
             streamer.kasumi.logger.error("Middleman cannot leave the server");
             streamer.kasumi.logger.error(e);
         });
+        this.streamerIdToInstance.delete(streamer.kasumi.me.userId);
         this.streamerChannel.delete(streamer.STREAMER_TOKEN);
         this.channelStreamer.delete(streamer.TARGET_CHANNEL_ID);
         if (this.streamerPool.includes(streamer.STREAMER_TOKEN)) {
@@ -166,6 +168,7 @@ export class LocalController extends Controller {
                 const { err } = await client.API.channel.permission.updateUser(channelId, client.me.userId, 1 << 11);
                 if (err) throw err;
             }
+            this.streamerIdToInstance.set(streamerId, streamer);
             this.streamerChannel.set(STREAMER_TOKEN, channelId);
             this.allStreamers.add(streamer);
             this.channelStreamer.set(channelId, streamer); {
@@ -207,5 +210,9 @@ export class LocalController extends Controller {
 
     getStreamerChannel(token: string): string | undefined {
         return this.streamerChannel.get(token);
+    }
+
+    getStreamerById(id: string): Streamer | undefined {
+        return this.streamerIdToInstance.get(id);
     }
 }

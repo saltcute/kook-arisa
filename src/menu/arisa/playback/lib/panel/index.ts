@@ -11,9 +11,14 @@ export class ButtonControlPanel {
     sessionId: string;
 
     private panelMessageIds: Set<string> = new Set();
+    private panelChannelIds: Set<string> = new Set();
     private readonly MAX_CONCURRENT_PANEL_NUMBER = 5;
-    private get panelMessageArray() {
+    get panelMessageArray() {
         const array = [...this.panelMessageIds];
+        return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
+    }
+    get panelChannelArray() {
+        const array = [...this.panelChannelIds];
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
 
@@ -86,11 +91,7 @@ export class ButtonControlPanel {
         this.maintainPanel();
 
         this.streamer.on('disconnect', () => {
-            this.client.events.button.removeActivator(`/control/${this.sessionId}/previous`);
-            this.client.events.button.removeActivator(`/control/${this.sessionId}/next`);
-            this.client.events.button.removeActivator(`/control/${this.sessionId}/pause`);
-            this.client.events.button.removeActivator(`/control/${this.sessionId}/resume`);
-            this.client.events.button.removeActivator(`/control/${this.sessionId}/showqueue`);
+            this.close();
         })
         this.streamer.on('play', () => { this.maintainPanel(); });
         this.streamer.on('connect', () => { this.maintainPanel(); });
@@ -108,6 +109,7 @@ export class ButtonControlPanel {
             return false;
         }
         this.addPanel(data.msg_id);
+        this.panelChannelIds.add(targetChannel);
         this.maintainPanel();
         return true;
     }
@@ -123,7 +125,20 @@ export class ButtonControlPanel {
     }
     maintainCounter?: NodeJS.Timeout;
 
+    async close() {
+        clearTimeout(this.maintainCounter);
 
+        const promises = this.panelMessageArray.map(id => this.client.API.message.delete(id));
+        await Promise.all(promises);
+
+        this.panelMessageIds.clear();
+
+        this.client.events.button.removeActivator(`/control/${this.sessionId}/previous`);
+        this.client.events.button.removeActivator(`/control/${this.sessionId}/next`);
+        this.client.events.button.removeActivator(`/control/${this.sessionId}/pause`);
+        this.client.events.button.removeActivator(`/control/${this.sessionId}/resume`);
+        this.client.events.button.removeActivator(`/control/${this.sessionId}/showqueue`);
+    }
 
     private previousButton;
     private nextButton;

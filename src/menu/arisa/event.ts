@@ -1,6 +1,7 @@
 import { client } from "init/client";
 import { controller } from ".";
 import playlist from "./playback/lib/playlist";
+import { Card, MessageType } from "kasumi.js";
 
 interface userLeaveVoiceChannelEventExtra {
     type: 'exited_channel',
@@ -18,17 +19,25 @@ interface userJoinVoiceChannelEventExtra {
         joined_at: number
     }
 }
-client.message.on('systemMessages', async (event) => {
+client.on('event.system', async (event) => {
     if (event.rawEvent.extra.type == 'exited_channel') { // User leaves voice channel
         const extra: userLeaveVoiceChannelEventExtra = event.rawEvent.extra;
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) { // has arisa
-            streamer.audienceIds.delete(extra.body.user_id);
-            if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
-                playlist.user.save(streamer, extra.body.user_id);
-            }
-            if (!streamer.audienceIds.size) { // No audiences left
+            if (extra.body.user_id == streamer.kasumi.me.userId) {
+                if (streamer.panel) {
+                    const promises = streamer.panel.panelChannelArray.map(id => client.API.message.create(MessageType.CardMessage, id, new Card().addTitle("Tips | 请注意").addText("请使用指令 `/arisa leave` 停止点歌，不要将机器人直接踢出语音频道")));
+                    await Promise.all(promises);
+                }
                 streamer.disconnect();
+            } else {
+                streamer.audienceIds.delete(extra.body.user_id);
+                if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
+                    playlist.user.save(streamer, extra.body.user_id);
+                }
+                if (!streamer.audienceIds.size) { // No audiences left
+                    streamer.disconnect();
+                }
             }
         }
     } else if (event.rawEvent.extra.type == 'joined_channel') { // User joins voice channel
