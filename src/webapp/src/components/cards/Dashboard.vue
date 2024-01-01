@@ -192,14 +192,23 @@ function scrollToActiveLyric(arg?: boolean | ScrollIntoViewOptions) {
     element?.scrollIntoView(arg);
 }
 
+var isAutoScroll = false;
+
 backend.on('wsEvent', () => {
-    forceRender();
-    if (Date.now() - lastScroll > 1.75 * 1000) scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
+    forceRender().then(() => {
+        forceRender();
+        if (Date.now() - lastScroll > 1.75 * 1000) {
+            scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
+            isAutoScroll = true;
+        }
+    })
 })
 
 let lastScroll = 0;
 function onScrollLyric(event: Event) {
-    lastScroll = Date.now();
+    console.log(isAutoScroll);
+    if (isAutoScroll) isAutoScroll = false;
+    else lastScroll = Date.now();
 }
 
 let currentLyric: ReturnType<typeof parseLyric>;
@@ -265,6 +274,7 @@ function currentLyricIndex() {
 const componentKey = ref(0);
 function forceRender() {
     componentKey.value++;
+    return nextTick();
 }
 
 function getLyricStyle(index: number, timecode: number, position: "main" | "top" | "bottom") {
