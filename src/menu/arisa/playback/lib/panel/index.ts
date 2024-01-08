@@ -12,7 +12,7 @@ export class ButtonControlPanel {
 
     private panelMessageIds: Set<string> = new Set();
     private panelChannelIds: Set<string> = new Set();
-    private readonly MAX_CONCURRENT_PANEL_NUMBER = 5;
+    private readonly MAX_CONCURRENT_PANEL_NUMBER = 2;
     get panelMessageArray() {
         const array = [...this.panelMessageIds];
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
@@ -99,6 +99,7 @@ export class ButtonControlPanel {
         this.streamer.on('resume', () => { this.maintainPanel(); });
     }
 
+    
     addPanel(id: string) {
         this.panelMessageIds.add(id);
     }
@@ -207,6 +208,9 @@ export class ButtonControlPanel {
                 }
             ]
         })
+        card.addDivider()
+            .addContext("也可使用[网页面板](https://arisa.lolicon.ac.cn)，功能更加完善")
+            .addContext("© 2023-2024 saltcute, the source code is release under the [MIT License](https://github.com/saltcute/kook-arisa/blob/main/LICENSE)")
         return card;
     }
 }
