@@ -99,7 +99,7 @@ export class ButtonControlPanel {
         this.streamer.on('resume', () => { this.maintainPanel(); });
     }
 
-    
+
     addPanel(id: string) {
         this.panelMessageIds.add(id);
     }
@@ -209,8 +209,10 @@ export class ButtonControlPanel {
             ]
         })
         card.addDivider()
-            .addContext("也可使用[网页面板](https://arisa.lolicon.ac.cn)，功能更加完善")
-            .addContext("© 2023-2024 saltcute, the source code is release under the [MIT License](https://github.com/saltcute/kook-arisa/blob/main/LICENSE)")
+            .addContext(
+                "也可使用[网页面板](https://arisa.lolicon.ac.cn)，功能更加完善\n" +
+                "© 2023-2024 saltcute, the source code is distributed under the [MIT License](https://github.com/saltcute/kook-arisa/blob/main/LICENSE)"
+            )
         return card;
     }
 }
