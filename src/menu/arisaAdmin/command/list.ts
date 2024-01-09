@@ -1,7 +1,6 @@
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import menu from "..";
 import { controller } from "menu/arisa";
-import { isAdmin } from "../common";
 
 class AppCommand extends BaseCommand {
     name = 'list';
