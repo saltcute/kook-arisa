@@ -1,4 +1,3 @@
-import Kasumi from 'kasumi.js';
 import Koice from 'koice';
 import { Controller } from '../type';
 import { PassThrough, Readable } from 'stream';
@@ -71,6 +70,10 @@ export class LocalStreamer extends Streamer {
         this.koice.onclose = () => {
             this.kasumi.logger.warn(`Koice.js closed per user request on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
         };
+        this.endPlayback();
+        for (const item of this.queue) {
+            delete item.source
+        }
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
@@ -393,7 +396,7 @@ export class LocalStreamer extends Streamer {
         let item = this.queue[0];
         if (item) {
             let prepared = await this.preparePayload(item);
-            item.source = prepared?.source;
+            if (prepared) this.queue[0] = prepared;
         }
     }
 
@@ -403,11 +406,8 @@ export class LocalStreamer extends Streamer {
         extra: playback.extra
     } | undefined> {
         if (payload.source instanceof Buffer) {
-            return {
-                source: payload.source,
-                meta: payload.meta,
-                extra: payload.extra
-            }
+            // @ts-ignore
+            return payload;
         }
         let extra = payload.extra, meta = payload.meta, source;
         if (this.isStreamingSource(extra)) {
@@ -416,14 +416,18 @@ export class LocalStreamer extends Streamer {
             source = stream.source;
             meta = stream.meta;
         }
-        if (source) return { source, meta, extra: payload.extra }
-        else return undefined;
+        if (source) {
+            payload.source = source;
+            // @ts-ignore
+            return payload;
+        } else return undefined;
+
     }
 
     async endPlayback() {
         let lastFfmpegInstance = this.ffmpegInstance;
         if (this.currentMusic) {
-            this.currentMusic.source = null;
+            delete this.currentMusic.source;
             delete this.currentMusic;
         }
         delete this.ffmpegInstance;

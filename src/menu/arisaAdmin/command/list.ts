@@ -7,9 +7,6 @@ class AppCommand extends BaseCommand {
     name = 'list';
     description = 'List streamers in use';
     func: CommandFunction<BaseSession, any> = async (session) => {
-        if (!isAdmin(session.authorId)) {
-            return session.reply("You do not have the permission to use this command")
-        }
         const streamers = controller.allStreamerTokens;
         const inUseStreamers = streamers.filter(v => controller.getStreamerChannel(v));
         const card = new Card()
