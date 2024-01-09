@@ -17,12 +17,15 @@ export class ButtonControlPanel {
 
     private panels: Set<PanelDetail> = new Set();
     private readonly MAX_CONCURRENT_PANEL_NUMBER = 2;
+    get panelArray() {
+        return [...this.panels];
+    }
     get panelMessageArray() {
-        const array = [...this.panels].map(v => v.id);
+        const array = this.panelArray.map(v => v.id);
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
     get panelChannelArray() {
-        const array = [...new Set([...this.panels].map(v => v.channelId))];
+        const array = [...new Set(this.panelArray.map(v => v.channelId))];
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
 
@@ -108,6 +111,9 @@ export class ButtonControlPanel {
         this.panels.add({ id, channelId });
     }
     async newPanel(targetChannel: string): Promise<boolean> {
+        if (this.panelChannelArray.includes(targetChannel)) {
+            await Promise.all(this.panelArray.filter(v => v.channelId == targetChannel).map(v => this.deletePanel(v.id)));
+        }
         const { err, data } = await this.client.API.message.create(MessageType.CardMessage, targetChannel, new Card());
         if (err) {
             this.client.logger.error(err);
@@ -116,6 +122,13 @@ export class ButtonControlPanel {
         this.addPanel(data.msg_id, targetChannel);
         this.maintainPanel();
         return true;
+    }
+    async deletePanel(id: string) {
+        const panel = this.panelArray.find(v => v.id == id);
+        if (panel) {
+            this.panels.delete(panel);
+            await this.client.API.message.delete(panel.id);
+        }
     }
 
     readonly MAINTAIN_INTERVAL = 5 * 1000;

@@ -11,7 +11,7 @@ interface KillDetail {
 
 class AddCommand extends BaseCommand {
     name = 'kill';
-    description = '停止播放';
+    description = 'Kill a stream session';
     func: CommandFunction<BaseSession, any> = async (session) => {
         const card = new Card();
         for (const streamer of controller.activeStreamersArray) {
@@ -38,11 +38,16 @@ kill.on('ready', () => {
         const user = await kill.client.middlewares.AccessControl.global.group.getUser(event.author);
         if (user.level > 2333) {
             const streamer = controller.getStreamerById(data.id);
+            if (!streamer) {
+                await kill.client.API.message.create(MessageType.MarkdownMessage, event.channelId, "Cannot find a streamer");
+                await kill.client.API.message.update(event.targetMsgId, new Card().addText("Operation failed."))
+                return;
+            }
             await kill.client.API.message.create(MessageType.MarkdownMessage, event.channelId, "Enter note: ", undefined, event.authorId);
             const message = await kill.client.events.callback
                 .createAsyncCallback("message.text", e => e.authorId == event.authorId, e => e.content, 15 * 1000)
                 .catch(_ => undefined);
-            if (streamer) await streamer.disconnect(`被管理员手动停止。${message ? `管理员附言：${message}` : ""}`);
+            await streamer.disconnect(`被管理员手动停止。${message ? `管理员附言：${message}` : ""}`);
             await kill.client.API.message.update(event.targetMsgId, new Card().addText("Operation completed."))
         } else {
             await kill.client.API.message.create(MessageType.MarkdownMessage, event.channelId, `Your user group (${user.name}) is not permitted to do this!`, undefined, event.authorId);

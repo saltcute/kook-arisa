@@ -3,7 +3,7 @@ import menu from "menu/arisaAdmin";
 import kill from './kill';
 class AppMenu extends BaseMenu {
     name = 'control';
-    description = '全局播放控制';
+    description = 'Admin playback control';
 }
 
 const controlMenu = new AppMenu(kill);
