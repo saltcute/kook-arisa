@@ -4,21 +4,25 @@ import { Controller, Streamer } from "menu/arisa/playback/type";
 import { Time } from "menu/arisa/playback/lib/time";
 import hash from 'object-hash';
 
+interface PanelDetail {
+    id: string,
+    channelId: string
+}
+
 export class ButtonControlPanel {
     controller: Controller;
     streamer: Streamer;
     client: Kasumi<ArisaStorage>;
     sessionId: string;
 
-    private panelMessageIds: Set<string> = new Set();
-    private panelChannelIds: Set<string> = new Set();
+    private panels: Set<PanelDetail> = new Set();
     private readonly MAX_CONCURRENT_PANEL_NUMBER = 2;
     get panelMessageArray() {
-        const array = [...this.panelMessageIds];
+        const array = [...this.panels].map(v => v.id);
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
     get panelChannelArray() {
-        const array = [...this.panelChannelIds];
+        const array = [...new Set([...this.panels].map(v => v.channelId))];
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
 
@@ -100,8 +104,8 @@ export class ButtonControlPanel {
     }
 
 
-    addPanel(id: string) {
-        this.panelMessageIds.add(id);
+    addPanel(id: string, channelId: string) {
+        this.panels.add({ id, channelId });
     }
     async newPanel(targetChannel: string): Promise<boolean> {
         const { err, data } = await this.client.API.message.create(MessageType.CardMessage, targetChannel, new Card());
@@ -109,8 +113,7 @@ export class ButtonControlPanel {
             this.client.logger.error(err);
             return false;
         }
-        this.addPanel(data.msg_id);
-        this.panelChannelIds.add(targetChannel);
+        this.addPanel(data.msg_id, targetChannel);
         this.maintainPanel();
         return true;
     }
@@ -132,7 +135,7 @@ export class ButtonControlPanel {
         const promises = this.panelMessageArray.map(id => this.client.API.message.delete(id));
         await Promise.all(promises);
 
-        this.panelMessageIds.clear();
+        this.panels.clear();
 
         this.client.events.button.removeActivator(`/control/${this.sessionId}/previous`);
         this.client.events.button.removeActivator(`/control/${this.sessionId}/next`);

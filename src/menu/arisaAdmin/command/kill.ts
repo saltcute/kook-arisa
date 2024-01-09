@@ -1,9 +1,10 @@
-import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
+import { BaseCommand, BaseSession, CommandFunction } from "kasumi.js";
 import menu from "..";
 
 class AppCommand extends BaseCommand {
     name = 'kill';
     func: CommandFunction<BaseSession, any> = async (session) => {
+        await session.send("Shutting down...");
         process.exit(0);
     }
 }

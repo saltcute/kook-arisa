@@ -14,7 +14,7 @@ export class LocalController extends Controller {
     private streamerChannel: Map<string, string> = new Map();
     private streamerIdToInstance: Map<string, Streamer> = new Map();
     private channelStreamer: Map<string, Streamer> = new Map();
-    private allStreamers: Set<Streamer> = new Set();
+    private allActiveStreamers: Set<Streamer> = new Set();
 
     constructor(client: Kasumi<any>) {
         super(client);
@@ -31,8 +31,8 @@ export class LocalController extends Controller {
         return this.availableStreamers;
     }
 
-    get getAllStreamers() {
-        return [...this.allStreamers];
+    get activeStreamersArray() {
+        return [...this.allActiveStreamers];
     }
 
     loadStreamer() {
@@ -90,7 +90,7 @@ export class LocalController extends Controller {
             const streamers = (this.guildStreamers.get(streamer.TARGET_GUILD_ID) || []).filter(v => v != streamer);
             this.guildStreamers.set(streamer.TARGET_GUILD_ID, streamers);
         }
-        this.allStreamers.delete(streamer);
+        this.allActiveStreamers.delete(streamer);
         return true;
     }
 
@@ -170,7 +170,7 @@ export class LocalController extends Controller {
             }
             this.streamerIdToInstance.set(streamerId, streamer);
             this.streamerChannel.set(STREAMER_TOKEN, channelId);
-            this.allStreamers.add(streamer);
+            this.allActiveStreamers.add(streamer);
             this.channelStreamer.set(channelId, streamer); {
                 const streamers = this.userStreamers.get(authorId) || [];
                 streamers.push(streamer);
@@ -184,7 +184,7 @@ export class LocalController extends Controller {
         } catch (err) {
             client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addTitle("无法加入语音频道").addText("由于近期 KOOK 的 API 变化，机器人需要拥有「管理员」权限才能正常运行。"))
             streamer.kasumi.logger.error(err);
-            streamer.disconnect();
+            streamer.disconnect(null);
             return;
         }
     }
@@ -192,7 +192,7 @@ export class LocalController extends Controller {
     async abortStream(channelId: string) {
         const streamer = this.getChannelStreamer(channelId);
         if (!streamer) return false;
-        await streamer.disconnect();
+        await streamer.disconnect(null);
         return true;
     }
 

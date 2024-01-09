@@ -17,7 +17,7 @@ class AppCommand extends BaseCommand {
             const userIDList = channelUserList.map(v => v.id);
             if (streamer.INVITATION_AUTHOR_ID == session.authorId || !(userIDList.includes(streamer.INVITATION_AUTHOR_ID))) {
                 playlist.user.save(streamer, streamer.INVITATION_AUTHOR_ID);
-                await streamer.disconnect();
+                await streamer.disconnect("用户请求");
                 return session.reply(new Card().addText("已停止推流"));
             } else {
                 return session.reply(new Card().addText("只有开始推流的用户或ta不在这个语音频道时才能停止推流"));

@@ -10,10 +10,10 @@ export class RemoteStreamer extends Streamer {
         super(token, guildId, channelId, authorId, controller);
     }
 
-    connect(): Promise<this> {
+    doConnect(): Promise<this> {
         throw new Error('Method not implemented.');
     }
-    disconnect(): Promise<boolean> {
+    doDisconnect(message?: string | null): Promise<boolean> {
         throw new Error('Method not implemented.');
     }
     streamingServices = ['netease', 'bilibili'];
@@ -48,10 +48,10 @@ export class RemoteStreamer extends Streamer {
     isPaused(): boolean {
         throw new Error('Method not implemented.');
     }
-    pause(): void {
+    doPause(): void {
         throw new Error('Method not implemented.');
     }
-    resume(): void {
+    doResume(): void {
         throw new Error('Method not implemented.');
     }
     queueMoveUp(index: number): void {
@@ -81,7 +81,7 @@ export class RemoteStreamer extends Streamer {
     jumpToPercentage(percent: number): void {
         throw new Error('Method not implemented.');
     }
-    playback(payload: queueItem): Promise<void> {
+    doPlayback(payload: queueItem): Promise<void> {
         throw new Error('Method not implemented.');
     }
 }

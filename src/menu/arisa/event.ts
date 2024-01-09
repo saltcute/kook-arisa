@@ -29,14 +29,14 @@ client.on('event.system', async (event) => {
                     const promises = streamer.panel.panelChannelArray.map(id => client.API.message.create(MessageType.CardMessage, id, new Card().addTitle("Tips | 请注意").addText("请使用指令 `/arisa leave` 停止点歌，不要将机器人直接踢出语音频道")));
                     await Promise.all(promises);
                 }
-                streamer.disconnect();
+                streamer.disconnect("机器人被踢出语音频道");
             } else {
                 streamer.audienceIds.delete(extra.body.user_id);
                 if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
                     playlist.user.save(streamer, extra.body.user_id);
                 }
                 if (!streamer.audienceIds.size) { // No audiences left
-                    streamer.disconnect();
+                    streamer.disconnect("语音频道内无用户");
                 }
             }
         }

@@ -80,6 +80,10 @@ export abstract class Streamer extends EventEmitter2 {
     readonly INVITATION_AUTHOR_ID: string;
     readonly kasumi: Kasumi<any>;
 
+    /**
+     * Decorator function to set if a method is overridable
+     * @param value Boolean
+     */
     private static writable(value: boolean) {
         return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
             descriptor.writable = value;
@@ -88,6 +92,9 @@ export abstract class Streamer extends EventEmitter2 {
 
     panel?: ButtonControlPanel;
 
+    private _streamStart = 0;
+    public get streamStart() { return this._streamStart; }
+    protected set streamStart(payload: number) { this._streamStart = payload };
 
     constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
         super({ wildcard: true });
@@ -102,6 +109,7 @@ export abstract class Streamer extends EventEmitter2 {
             customEnpoint: controller.client.config.getSync('kasumi::config.customEndpoint')
         }, false, false);
         this.kasumi.fetchMe();
+        this.streamStart = Date.now();
     }
 
     /**
@@ -121,14 +129,14 @@ export abstract class Streamer extends EventEmitter2 {
     /**
      * Disconnect the stream. End playback.
      */
-    protected abstract doDisconnect(): Promise<boolean>;
+    protected abstract doDisconnect(message?: string | null): Promise<boolean>;
 
     /**
      * Disconnect the stream. End playback.
      */
     @Streamer.writable(false)
-    async disconnect(): Promise<boolean> {
-        const res = await this.doDisconnect();
+    async disconnect(message?: string | null): Promise<boolean> {
+        const res = await this.doDisconnect(message);
         this.emit('disconnect');
         return res;
     }

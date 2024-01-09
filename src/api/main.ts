@@ -189,7 +189,7 @@ app.ws('/', (ws: WebSocket) => {
     }
 
     function getChannelStreamer() {
-        return controller.getAllStreamers.filter(v => v.audienceIds.has(userId))
+        return controller.activeStreamersArray.filter(v => v.audienceIds.has(userId))
     }
 
     sendStatus();

@@ -10,6 +10,8 @@ import axios from 'axios';
 import { akarin } from '../../command/netease/lib/card';
 import playlist from '../lib/playlist';
 import { Streamer, playback, queueItem } from '../type';
+import { MessageType } from 'kasumi.js';
+import { Time } from '../lib/time';
 
 const biliAPI = require('bili-api');
 
@@ -65,7 +67,12 @@ export class LocalStreamer extends Streamer {
         return this.initKoice();
     }
 
-    async doDisconnect(): Promise<boolean> {
+    async doDisconnect(message?: string | null): Promise<boolean> {
+        if (this.panel && message !== null) {
+            await Promise.all(this.panel?.panelChannelArray.map(v => {
+                return this.panel?.client.API.message.create(MessageType.MarkdownMessage, v, `播放结束，总时长 ${Time.timeToShortString((Date.now() - this.streamStart) / 1000)}，原因：${message ? message : "无"}`);
+            }))
+        }
         this.isClosed = true;
         this.koice.onclose = () => {
             this.kasumi.logger.warn(`Koice.js closed per user request on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
@@ -243,7 +250,7 @@ export class LocalStreamer extends Streamer {
     private lastOperation: number;
     private ensureUsage() {
         if (Date.now() - this.lastOperation > 30 * 60 * 1000) {
-            this.disconnect();
+            this.disconnect("机器人闲置");
         } else {
             this.lastOperation = Date.now();
         }
@@ -532,9 +539,6 @@ export class LocalStreamer extends Streamer {
                     this.stream.push(chunk);
                 }
                 this.currentChunkStart += FILE_HEADER_SIZE + 1;
-
-                console.log(bfs);
-                console.log(chunk);
 
                 while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     if (!this.paused) {

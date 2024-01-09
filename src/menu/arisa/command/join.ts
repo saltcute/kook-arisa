@@ -39,7 +39,7 @@ class AppCommand extends BaseCommand {
                     const { err, data } = await streamer.kasumi.API.user.me();
                     if (err) {
                         this.logger.error(err);
-                        streamer.disconnect();
+                        streamer.disconnect(null);
                         return session.update(msg.msg_id, new Card().addText("查询推流机器人资料失败"));
                     }
                     await session.update(msg.msg_id, new Card().addText("正在同步播放列表"));

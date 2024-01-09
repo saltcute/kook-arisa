@@ -176,7 +176,7 @@ export class RemoteController extends Controller {
         } catch (err) {
             client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addTitle("无法加入语音频道").addText("由于近期 KOOK 的 API 变化，机器人需要拥有「管理员」权限才能正常运行。"))
             streamer.kasumi.logger.error(err);
-            streamer.disconnect();
+            streamer.disconnect(null);
             return;
         }
     }
@@ -184,7 +184,7 @@ export class RemoteController extends Controller {
     async abortStream(channelId: string) {
         const streamer = this.getChannelStreamer(channelId);
         if (!streamer) return false;
-        await streamer.disconnect();
+        await streamer.disconnect(null);
         return true;
     }
 
@@ -202,5 +202,8 @@ export class RemoteController extends Controller {
 
     getStreamerChannel(token: string): string | undefined {
         return this.streamerChannel.get(token);
+    }
+    getStreamerById(id: string): Streamer | undefined {
+        return undefined
     }
 }
