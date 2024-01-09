@@ -514,12 +514,13 @@ export class LocalStreamer extends Streamer {
                 this.playbackStart = Date.now();
                 this.lastOperation = Date.now();
                 var cache = Buffer.concat(bfs);
+                bfs = [];
                 const FILE_HEADER_SIZE = 44;
                 this.currentChunkStart = 0;
                 this.currentBufferSize = cache.length;
                 /** 
                  * Rate for PCM audio 
-                 * 48000Khz * 8 bit * 2 channel = 768kbps = 96KB/s
+                 * 48000hz * 8 bit * 2 channel = 768kbps = 96KB/s
                  * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms
                  */
                 // var rate = 960; // For pcm_u8;
@@ -531,6 +532,9 @@ export class LocalStreamer extends Streamer {
                     this.stream.push(chunk);
                 }
                 this.currentChunkStart += FILE_HEADER_SIZE + 1;
+
+                console.log(bfs);
+                console.log(chunk);
 
                 while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     if (!this.paused) {
