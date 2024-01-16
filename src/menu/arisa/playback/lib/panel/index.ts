@@ -226,7 +226,7 @@ export class ButtonControlPanel {
         })
         card.addDivider()
             .addContext(
-                "也可使用[网页面板](https://arisa.lolicon.ac.cn)，功能更加完善\n" +
+                `也可使用[网页面板](${this.client.config.getSync("webuiUrl")})，功能更加完善\n` +
                 "© 2023-2024 saltcute, the source code is distributed under the [MIT License](https://github.com/saltcute/kook-arisa/blob/main/LICENSE)"
             )
         return card;
