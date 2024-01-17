@@ -193,9 +193,11 @@ function scrollToActiveLyric(arg?: boolean | ScrollIntoViewOptions) {
 }
 
 backend.on('wsEvent', () => {
-    if (Date.now() - lastScroll > 2 * 1000) {
-        scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
-    }
+    forceRender().then(() => {
+        if (Date.now() - lastScroll > 2 * 1000) {
+            scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
+        }
+    })
 })
 
 let lastScroll = 0;
