@@ -4,6 +4,12 @@ import upath from 'upath';
 import 'api/main';
 
 (async () => {
+    /** Use a different prefix if is DEV */
+    if (process.env.ENV?.toLowerCase() == 'DEV') {
+        client.plugin.removePrefix('/', '.', '!');
+        client.plugin.primaryPrefix = '/dev';
+    }
+
     await client.connect();
     const basicPath = upath.join(__dirname, 'menu');
     const menus = fs.readdirSync(basicPath);

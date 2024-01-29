@@ -9,7 +9,6 @@ import { Streamer } from "./playback/type";
 
 class AppMenu extends BaseMenu {
     name = 'arisa';
-    prefix = './!。！';
 }
 
 const menu = new AppMenu();
