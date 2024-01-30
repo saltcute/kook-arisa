@@ -5,7 +5,7 @@ import 'api/main';
 
 (async () => {
     /** Use a different prefix if is DEV */
-    if (process.env.ENV?.toLowerCase() == 'DEV') {
+    if (process.env.ENV?.toLowerCase() == 'dev') {
         client.plugin.removePrefix('/', '.', '!');
         client.plugin.primaryPrefix = '/dev';
     }
