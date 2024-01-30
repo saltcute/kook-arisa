@@ -4,7 +4,7 @@
   "description": "KOOK Music Bot",
   "main": "index.js",
   "scripts": {
-    "test": "ENV=DEV LOG_LEVEL=DEBUG npm run web-build && npm run serve",
+    "test": "export ENV=DEV && export LOG_LEVEL=DEBUG && npm run web-build && npm run serve | bunyan",
     "web-dev": "vite",
     "web-build": "vite build",
     "serve": "node --nolazy -r ts-node/register -r tsconfig-paths/register src/index.ts",

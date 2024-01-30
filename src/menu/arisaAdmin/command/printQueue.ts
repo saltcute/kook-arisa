@@ -5,6 +5,7 @@ import util from 'util';
 
 class AppCommand extends BaseCommand {
     name = 'printQueue';
+    description = 'Print out the current playlist in the channel.'
     func: CommandFunction<BaseSession, any> = async (session) => {
         if (!session.guildId) return session.reply("只能在服务器频道中使用此命令");
         getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {

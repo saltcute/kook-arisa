@@ -5,7 +5,7 @@ import { controller } from "menu/arisa";
 
 class AppCommand extends BaseCommand {
     name = 'reload';
-    description = 'Reload streamer token pool';
+    description = 'Reload streamer token pool.';
     func: CommandFunction<BaseSession, any> = async (session) => {
         controller.loadStreamer();
         return session.reply("Reloaded");

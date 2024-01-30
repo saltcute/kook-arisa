@@ -5,7 +5,7 @@ import { Time } from "menu/arisa/playback/lib/time";
 
 class MessageCommand extends BaseCommand {
     name = 'single';
-    description = 'To a streamer';
+    description = 'Send a message to a streamer (and its users).';
     func: CommandFunction<BaseSession, any> = async (session) => {
         const card = new Card();
         for (const streamer of controller.activeStreamersArray) {

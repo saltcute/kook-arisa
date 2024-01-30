@@ -4,7 +4,7 @@ import broadcast from './broadcast';
 import message from './single';
 class AppMenu extends BaseMenu {
     name = 'message';
-    description = 'Send a message';
+    description = 'Send a message to users.';
 }
 
 const controlMenu = new AppMenu(broadcast, message);

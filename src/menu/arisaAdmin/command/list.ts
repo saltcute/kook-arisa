@@ -5,7 +5,7 @@ import { Time } from "menu/arisa/playback/lib/time";
 
 class AppCommand extends BaseCommand {
     name = 'list';
-    description = 'List streamers in use';
+    description = 'List all streamers in use.';
     func: CommandFunction<BaseSession, any> = async (session) => {
         const streamers = controller.allStreamerTokens;
         const inUseStreamers = controller.activeStreamersArray

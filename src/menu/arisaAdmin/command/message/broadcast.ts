@@ -3,7 +3,7 @@ import { controller } from "menu/arisa";
 
 class AddCommand extends BaseCommand {
     name = 'broadcast';
-    description = 'Broadcast';
+    description = 'Broadcast a message to all streamers (and their users)';
     func: CommandFunction<BaseSession, any> = async (session) => {
         await session.sendTemp("Enter message:")
         const message = await broadcast.client.events.callback

@@ -4,6 +4,7 @@ import { controller } from "menu/arisa";
 
 class AppCommand extends BaseCommand {
     name = 'kill';
+    description = '(font)Danger(font)[danger] (Somewhat) gracefully terminate the main process.';
     func: CommandFunction<BaseSession, any> = async (session) => {
         await session.send("Shutting down...");
         for (const streamer of controller.activeStreamersArray) {

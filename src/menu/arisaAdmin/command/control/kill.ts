@@ -11,7 +11,7 @@ interface KillDetail {
 
 class AddCommand extends BaseCommand {
     name = 'kill';
-    description = 'Kill a stream session';
+    description = 'Kill a stream session.';
     func: CommandFunction<BaseSession, any> = async (session) => {
         const card = new Card();
         for (const streamer of controller.activeStreamersArray) {
