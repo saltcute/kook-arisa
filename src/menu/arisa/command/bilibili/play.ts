@@ -12,14 +12,15 @@ class SearchCommand extends BaseCommand<typeof client> {
     description = '播放B站视频';
     pattern = /(?:https?:\/\/(?:www|m).bilibili.com\/video\/)?(BV[0-9A-Za-z]{10})/gm;
     func: CommandFunction<BaseSession, any> = async (session) => {
-        if (!(await this.client.config.getOne("globalAdmins")).includes(session.author.id)) {
-            return session.reply("Bilibili 视频播放由于可能的内存泄漏问题被暂时关闭，目前尚未有具体恢复时间。");
-        }
         if (!session.guildId) return session.reply("只能在服务器频道中使用此命令");
         const bvid = this.pattern.exec(session.args.join(" "))?.[1]
         let video: Awaited<ReturnType<typeof getVideoDetail>>
         if (bvid) video = await getVideoDetail(bvid);
         if (bvid && video) {
+            if (video.duration > 10 * 60) {
+                await session.reply("视频过长，Arisa 只能播放小于 10 分钟的 Bilibili 视频！");
+                return;
+            }
             const streamer = await getChannelStreamer(session.guildId, session.authorId).catch((e) => {
                 switch (e.err) {
                     case 'network_failure':
