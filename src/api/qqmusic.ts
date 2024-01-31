@@ -1,3 +1,4 @@
+import bodyParser from "body-parser";
 import { NextFunction, Request, Response, Router } from "express";
 import { client } from "init/client";
 import mcache from 'memory-cache';
@@ -23,6 +24,8 @@ const cache = (duration: number) => {
 
 const forceReferer = () => {
     return (req: Request, res: Response, next: NextFunction) => {
+        next();
+        return;
         if (req.headers.referer?.startsWith(client.config.getSync('webuiUrl'))) {
             next();
         } else {
@@ -39,9 +42,9 @@ const forceReferer = () => {
 
 const router = Router();
 
-router.use(cache(60 * 15), forceReferer());
+// router.use(cache(60 * 15), forceReferer());
 
-router.get('/search', (req, res) => {
+router.get('/search', cache(60 * 15), (req, res) => {
     const keyword = <string>req.query.keyword;
     if (keyword) {
         qqmusic.search(keyword).then((re) => {
@@ -59,7 +62,7 @@ router.get('/search', (req, res) => {
     }
 })
 
-router.get('/lyric', (req, res) => {
+router.get('/lyric', cache(60 * 15), (req, res) => {
     const mid = <string>req.query.mid;
     if (mid) {
         qqmusic.getLyric(mid).then((re) => {
@@ -77,6 +80,7 @@ router.get('/lyric', (req, res) => {
     }
 })
 
+router.use(bodyParser.json());
 router.post('/updateCookie', (req, res) => {
     if (req.body.code != client.config.getSync("QQCookieCode")) {
         res.status(400).send({

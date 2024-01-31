@@ -23,6 +23,8 @@ const cache = (duration: number) => {
 
 const forceReferer = () => {
     return (req: Request, res: Response, next: NextFunction) => {
+        next();
+        return;
         if (req.headers.referer?.startsWith(client.config.getSync('webuiUrl'))) {
             next();
         } else {
