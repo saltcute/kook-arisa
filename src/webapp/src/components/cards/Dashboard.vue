@@ -178,7 +178,7 @@ function getPlaybackProgress() {
 backend.on('newTrack', (nowPlaying?: playback.extra) => {
     console.log(nowPlaying);
     percent = 0;
-    if (nowPlaying?.data?.songId) {
+    if (nowPlaying) {
         switch (nowPlaying.type) {
             case "netease":
                 getNeteaseSongLyrics(nowPlaying.data.songId).then((data) => {
