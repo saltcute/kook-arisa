@@ -465,8 +465,14 @@ onMounted(() => {
             :class="index == 0 ? 'now-playing-sign' : ''" :style="getQueueBackground(queue)">
             <div v-if="queue.meta">
                 <span class="now-playing-sign" v-if="index == 0">Now Playing:</span>
-                <span class="title">{{ queue.meta.title }}</span>
-                <span class="artists">{{ queue.meta.artists }}</span>
+                <span class="title">
+                    <i v-if="queue.type == 'netease'" class="iconfont icon-arisa-wangyiyun"></i>
+                    <i v-else-if="queue.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
+                    <i v-else-if="queue.type == 'bilibili'" class="iconfont icon-arisa-bilibili"></i>
+                    {{ queue.meta.title }}
+                </span>
+                <span class="artists">{{ queue.meta.artists }}
+                </span>
                 <i @click="backend.queueMoveEntryUp(index)" class="up-button">
                     <font-awesome-icon :icon="['fas', 'arrow-up']" />
                 </i>
@@ -482,6 +488,13 @@ onMounted(() => {
 </template>
 
 <style scoped>
+[class^='icon-arisa-'],
+[class*='icon-arisa-'] {
+    font-size: 1em;
+    margin-left: 0.1em;
+    cursor: pointer;
+}
+
 @property --playlist-card-top {
     syntax: '<co`lo`r>';
     initial-value: rgb(0, 0, 0, 91%);
@@ -703,7 +716,7 @@ h4 {
 
 .playlist>article>div>.artists {
     grid-area: artists;
-    font-size: .5em;
+    font-size: .6em;
     color: var(--secondary);
 }
 

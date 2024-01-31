@@ -12,7 +12,6 @@ import backend from './common'
 // @ts-ignore
 import { useNotification } from "@kyvg/vue3-notification";
 import { QQMusic } from 'menu/arisa/command/qq/lib';
-import { brands } from '@fortawesome/fontawesome-svg-core/import.macro';
 
 const akarin = "https://img.kookapp.lolicon.ac.cn/assets/2022-07/vlOSxPNReJ0dw0dw.jpg";
 const { notify } = useNotification()
