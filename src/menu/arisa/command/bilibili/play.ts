@@ -40,8 +40,7 @@ class SearchCommand extends BaseCommand<typeof client> {
                 params: {
                     bvid,
                     cid,
-                    qn: 16,
-                    fnval: 80
+                    fnval: 16
                 }
             });
             const data = res.data

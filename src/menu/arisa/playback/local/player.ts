@@ -125,13 +125,12 @@ export class LocalStreamer extends Streamer {
                         params: {
                             bvid: input.data.bvid,
                             cid,
-                            qn: 16,
-                            fnval: 80
+                            fnval: 16
                         }
                     });
                     const data = res.data
                     const url = data.dash.audio[part].baseUrl;
-                    const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data;
+                    const cache = (await axios.get(url, { responseType: 'arraybuffer', headers: { referer: "https://www.bilibili.com" } })).data;
                     return {
                         source: cache,
                         meta: meta || {

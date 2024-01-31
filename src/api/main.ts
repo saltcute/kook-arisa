@@ -137,8 +137,7 @@ app.ws('/', (ws: WebSocket) => {
                                             params: {
                                                 bvid,
                                                 cid,
-                                                qn: 16,
-                                                fnval: 80
+                                                fnval: 16
                                             }
                                         });
                                         const data = res.data;
