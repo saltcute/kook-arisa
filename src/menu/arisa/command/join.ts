@@ -4,6 +4,8 @@ import menu, { controller } from "..";
 import { ButtonControlPanel } from "../playback/lib/panel/index";
 import playlist from "../playback/lib/playlist";
 
+import leaveCommand from './leave';
+
 class AppCommand extends BaseCommand {
     name = 'join';
     description = '使机器人加入当前所在语音频道';
@@ -44,7 +46,7 @@ class AppCommand extends BaseCommand {
                     }
                     await session.update(msg.msg_id, new Card().addText("正在同步播放列表"));
                     await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { this.logger.error(e) });
-                    await session.update(msg.msg_id, new Card().addText(`(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流`));
+                    await session.update(msg.msg_id, new Card().addText(`(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流。\n播放结束时，请使用 \`${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`));
 
                     streamer.panel = new ButtonControlPanel(controller, streamer, controller.client)
                     return streamer.panel?.newPanel(session.channelId);
