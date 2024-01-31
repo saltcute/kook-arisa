@@ -1,8 +1,6 @@
 import netease from 'NeteaseCloudMusicApi';
 import { client } from 'init/client'
 
-
-
 export class Netease {
     readonly REAL_IP?;
     constructor(realIP?: string) {

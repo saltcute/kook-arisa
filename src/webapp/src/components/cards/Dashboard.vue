@@ -4,11 +4,13 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage } from '@fortawesome/free-solid-svg-icons'
 library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage);
 
-import { playback } from '../../../../menu/arisa/playback/type';
+import { playback } from 'menu/arisa/playback/type';
 import backend from './common';
 import { nextTick, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
-import { Netease } from '../../../../menu/arisa/command/netease/lib';
+import { Netease } from 'menu/arisa/command/netease/lib';
+import { QQMusic } from 'menu/arisa/command/qq/lib';
+
 const proxy = "img.kookapp.lolicon.ac.cn";
 
 export declare enum NotificationSetting {
@@ -47,13 +49,26 @@ async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> 
     })
 }
 
-async function getSongLyrics(id: number): Promise<Netease.lyric> {
+async function getNeteaseSongLyrics(id: number): Promise<Netease.lyric> {
     return new Promise((resolve, rejects) => {
         axios({
             url: '/netease/lyric',
             method: 'GET',
             params: {
                 id
+            }
+        }).then(({ data }) => {
+            resolve(data.data);
+        }).catch((e) => { rejects(e) });
+    })
+}
+async function getQQMusicSongLyrics(mid: string): Promise<QQMusic.API.Lyric> {
+    return new Promise((resolve, rejects) => {
+        axios({
+            url: '/qqmusic/lyric',
+            method: 'GET',
+            params: {
+                mid
             }
         }).then(({ data }) => {
             resolve(data.data);
@@ -77,11 +92,7 @@ function parseLRC(rawLyric: string) {
     return lyrics;
 }
 
-function parseLyric(data: Netease.lyric) {
-    const rawLyric = data.lrc?.lyric;
-    const rawKLyric = data.klyric?.lyric;
-    const rawTranslate = data.tlyric?.lyric;
-    const rawRomaji = data.romalrc?.lyric;
+function parseLyric(rawLyric?: string, rawTranslate?: string, rawRomaji?: string, rawKLyric?: string) {
 
     let lyric: [number, string][] | undefined,
         kLyric: any[] | undefined,
@@ -168,14 +179,26 @@ backend.on('newTrack', (nowPlaying?: playback.extra) => {
     console.log(nowPlaying);
     percent = 0;
     if (nowPlaying?.data?.songId) {
-        nowPlaying = nowPlaying as playback.extra.netease;
-        getSongLyrics(nowPlaying.data.songId).then((data) => {
-            const lyrics = parseLyric(data);
-            currentLyric = lyrics
-            bilingualLyric = parseBilingual()
-            currentLyricIndexCache = undefined;
-            loadingLyrics.value = false;
-        })
+        switch (nowPlaying.type) {
+            case "netease":
+                getNeteaseSongLyrics(nowPlaying.data.songId).then((data) => {
+                    const lyrics = parseLyric(data.lrc?.lyric, data.tlyric?.lyric, data.romalrc?.lyric, data.klyric?.lyric);
+                    currentLyric = lyrics
+                    bilingualLyric = parseBilingual()
+                    currentLyricIndexCache = undefined;
+                    loadingLyrics.value = false;
+                })
+                break;
+            case "qqmusic":
+                getQQMusicSongLyrics(nowPlaying.data.songMId).then((data) => {
+                    const lyrics = parseLyric(data.lyric, data.trans);
+                    currentLyric = lyrics
+                    bilingualLyric = parseBilingual()
+                    currentLyricIndexCache = undefined;
+                    loadingLyrics.value = false;
+                })
+                break;
+        }
     }
 })
 

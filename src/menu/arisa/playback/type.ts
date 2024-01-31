@@ -30,6 +30,13 @@ export namespace playback {
                 songId: number
             }
         }
+        export interface qqmusic extends base {
+            type: 'qqmusic',
+            data: {
+                songMId: string,
+                mediaId: string
+            }
+        }
         export interface bilibili extends base {
             type: 'bilibili',
             data: {
@@ -50,7 +57,7 @@ export namespace playback {
 
         export type cache = buffer | readable;
         export type playable = local | cache;
-        export type streaming = netease | bilibili;
+        export type streaming = netease | bilibili | qqmusic;
     }
 }
 

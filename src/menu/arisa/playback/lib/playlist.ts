@@ -77,6 +77,11 @@ class Playlist {
                             await streamer.playBilibili(item.data.bvid, item.data.part, item.meta);
                         break;
                     }
+                    case 'qqmusic': {
+                        if (streamer instanceof LocalStreamer)
+                            await streamer.playQQMusic(item.data.songMId, item.data.mediaId, item.meta);
+                        break;
+                    }
                 }
             }
         }

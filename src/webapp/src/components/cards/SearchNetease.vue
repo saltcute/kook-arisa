@@ -11,6 +11,10 @@ import backend from './common'
 
 // @ts-ignore
 import { useNotification } from "@kyvg/vue3-notification";
+import { QQMusic } from 'menu/arisa/command/qq/lib';
+import { brands } from '@fortawesome/fontawesome-svg-core/import.macro';
+
+const akarin = "https://img.kookapp.lolicon.ac.cn/assets/2022-07/vlOSxPNReJ0dw0dw.jpg";
 const { notify } = useNotification()
 const instance = getCurrentInstance();
 const searched = ref(false);
@@ -23,7 +27,7 @@ function showDialog() {
 }
 
 let searchInput = ref('');
-let searchResult: Netease.songDetail[] = [];
+let searchResult: (Netease.songDetail | QQMusic.Pattern.Song)[] = [];
 async function getNeteaseSearch(keyword: string): Promise<Netease.song[]> {
     return new Promise((resolve, reject) => {
         axios({
@@ -36,7 +40,24 @@ async function getNeteaseSearch(keyword: string): Promise<Netease.song[]> {
         }).catch(e => reject(e));
     })
 }
-async function getSongDetails(ids: string): Promise<Netease.songDetail[]> {
+
+function isNeteaseSong(payload: any): payload is Netease.songDetail {
+    return payload.al !== undefined;
+}
+
+async function getQQMusicSearch(keyword: string): Promise<QQMusic.API.Search> {
+    return new Promise((resolve, reject) => {
+        axios({
+            url: "/qqmusic/search",
+            params: {
+                keyword
+            }
+        }).then(({ data }) => {
+            resolve(data.data);
+        }).catch(e => reject(e));
+    })
+}
+async function getNeteaseSongDetails(ids: string): Promise<Netease.songDetail[]> {
     return new Promise((resolve, reject) => {
         axios({
             url: "/netease/songs",
@@ -55,35 +76,93 @@ function search() {
         searchResult = [];
         instance?.proxy?.$forceUpdate();
         searchResultElement?.setAttribute("aria-busy", "true");
-        getNeteaseSearch(searchInput.value).then((res) => {
-            if (res) {
-                getSongDetails(res.map(v => v.id).join(',')).then(async (re) => {
-                    searchResult = re;
-                    searchResultElement?.removeAttribute("aria-busy");
-                    searched.value = true;
-                    await nextTick();
-                    instance?.proxy?.$forceUpdate();
+        switch (activeTab.value) {
+            case 'netease':
+                getNeteaseSearch(searchInput.value).then((res) => {
+                    if (res) {
+                        getNeteaseSongDetails(res.map(v => v.id).join(',')).then(async (re) => {
+                            searchResult = re;
+                            searchResultElement?.removeAttribute("aria-busy");
+                            searched.value = true;
+                            await nextTick();
+                            instance?.proxy?.$forceUpdate();
+                        }).catch((e) => {
+                            console.error(e);
+                            searched.value = false;
+                            searchResultElement?.removeAttribute("aria-busy");
+                        })
+                    } else {
+                        searched.value = false;
+                        searchResult = [];
+                        searchResultElement?.removeAttribute("aria-busy");
+                    }
                 }).catch((e) => {
-                    console.error(e);
                     searched.value = false;
+                    searchResult = [];
+                    searchResultElement?.removeAttribute("aria-busy");
+                    console.error(e);
+                })
+                break;
+            case "qqmusic":
+                getQQMusicSearch(searchInput.value).then(async (res) => {
+                    if (res) {
+                        searchResult = res.list;
+                        searchResultElement?.removeAttribute("aria-busy");
+                        searched.value = true;
+                        await nextTick();
+                        instance?.proxy?.$forceUpdate();
+                    } else {
+                        searched.value = false;
+                        searchResult = [];
+                        searchResultElement?.removeAttribute("aria-busy");
+                    }
+                }).catch((e) => {
+                    searched.value = false;
+                    searchResult = [];
+                    searchResultElement?.removeAttribute("aria-busy");
+                    console.error(e);
+                })
+                break;
+            case "bilibili":
+                nextTick().then(() => {
+                    searched.value = false;
+                    searchResult = [];
                     searchResultElement?.removeAttribute("aria-busy");
                 })
-            } else {
-                searched.value = false;
-                searchResult = [];
-                searchResultElement?.removeAttribute("aria-busy");
-            }
-        }).catch((e) => {
-            searched.value = false;
-            searchResult = [];
-            searchResultElement?.removeAttribute("aria-busy");
-            console.error(e);
-        })
+                const pattern = /(?:https?:\/\/(?:www|m).bilibili.com\/video\/)?(BV[0-9A-Za-z]{10})/gm;
+                const bvid = pattern.exec(searchInput.value)?.[1]
+                if (bvid) {
+                    backend.addTrack({
+                        type: 'bilibili',
+                        data: {
+                            bvid,
+                            part: 0
+                        },
+                        meta: {
+                            title: "Bilibili Video",
+                            artists: "Unknown",
+                            duration: -1,
+                            cover: akarin
+                        }
+                    })
+                    notify({
+                        group: "search",
+                        title: "Success",
+                        text: `The video has been send to the playlist. Video longer than 10 minutes will not be added.`,
+                    });
+                } else {
+                    notify({
+                        group: "search",
+                        title: "Error",
+                        text: `This does not seem to be a valid Bilibili video link!`,
+                    });
+                }
+        }
     } else {
         notify({
             group: "search",
             title: "Error",
-            text: `Please wait for the previous search to complete`,
+            text: `Please wait for the previous search to complete.`,
         });
     }
 }
@@ -108,13 +187,47 @@ function addNeteaseTrack(song: Netease.songDetail) {
             text: `Added "${song.name}" to playlist`,
         });
     } else {
-
         notify({
             group: "search",
             title: "Warning",
             text: `No streamer active! Attempted to add "${song.name}" to playlist, but may fail to reflect.`,
         });
     }
+}
+
+function addQQMusicTrack(song: QQMusic.Pattern.Song) {
+    backend.addTrack({
+        type: 'qqmusic',
+        data: {
+            songMId: song.songmid,
+            mediaId: song.strMediaMid
+        },
+        meta: {
+            title: song.name,
+            artists: song.singer.map(v => v.name).join(', '),
+            duration: song.interval * 1000,
+            cover: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${song.songmid}.jpg`
+        }
+    });
+    if (backend.currentStreamer) {
+        notify({
+            group: "search",
+            title: "Success",
+            text: `Added "${song.name}" to playlist`,
+        });
+    } else {
+        notify({
+            group: "search",
+            title: "Warning",
+            text: `No streamer active! Attempted to add "${song.name}" to playlist, but may fail to reflect.`,
+        });
+    }
+}
+
+const activeTab = ref<"netease" | "qqmusic" | "bilibili">("netease");
+
+function switchTabTo(target: "netease" | "qqmusic" | "bilibili") {
+    activeTab.value = target;
 }
 
 defineExpose({
@@ -127,21 +240,52 @@ defineExpose({
         <article>
             <header>
                 <a style="cursor: pointer;" @click="closeDialog()" aria-label="Close" class="close"></a>
-                <label for="track-name">Search for A Track
-                    <input v-model="searchInput" type="search" name="track-name" placeholder="Trackname"
-                        @keyup.enter="search()">
+                <label for="track-name">
+                    <span v-if="activeTab == 'netease' || activeTab == 'qqmusic'">Search for A Track</span>
+                    <span v-else-if="activeTab == 'bilibili'">Play a Bilibili Video</span>
+                    <span v-else>Unknown Action</span>
+                    <!-- <svg class="iconfont" aria-hidden="true">
+                        <use xlink:href="#icon-arisa-wangyiyunyinle-copy"></use>
+                    </svg>
+                    <svg class="iconfont" aria-hidden="true">
+                        <use xlink:href="#icon-arisa-bilibili1"></use>
+                    </svg>
+                    <svg class="iconfont" aria-hidden="true">
+                        <use xlink:href="#icon-arisa-qqyinle"></use>
+                    </svg> -->
+                    <i class="iconfont icon-arisa-wangyiyun" :class="{ active: activeTab == 'netease' }"
+                        @click="switchTabTo('netease')"></i>
+                    <i class="iconfont icon-arisa-QQyinleshiliangtubiao" :class="{ active: activeTab == 'qqmusic' }"
+                        @click="switchTabTo('qqmusic')"></i>
+                    <i class="iconfont icon-arisa-bilibili" :class="{ active: activeTab == 'bilibili' }"
+                        @click="switchTabTo('bilibili')"></i>
+                    <input v-model="searchInput" type="search" name="track-name"
+                        :placeholder="activeTab == 'bilibili' ? 'BV ID' : 'Track name'" @keyup.enter="search()">
                 </label>
             </header>
             <div class="search-result">
                 <article v-if="searchResult.length" v-for="song of searchResult">
-                    <img class="cover" :src="(song as Netease.songDetail).al.picUrl" />
-                    <span class="track-meta">
-                        <p class="title">{{ (song as Netease.songDetail).name }}</p>
-                        <p class="artists">{{ (song as Netease.songDetail).ar.map(v => v.name).join(', ') }}</p>
+                    <span v-if="isNeteaseSong(song)">
+                        <img class="cover" :src="(song as Netease.songDetail).al.picUrl" />
+                        <span class="track-meta">
+                            <p class="title">{{ (song as Netease.songDetail).name }}</p>
+                            <p class="artists">{{ (song as Netease.songDetail).ar.map(v => v.name).join(', ') }}</p>
+                        </span>
+                        <i class="control" @click="addNeteaseTrack(song)">
+                            <font-awesome-icon :icon="['fas', 'plus']" />
+                        </i>
                     </span>
-                    <i class="control" @click="addNeteaseTrack(song)">
-                        <font-awesome-icon :icon="['fas', 'plus']" />
-                    </i>
+                    <span v-else>
+                        <img class="cover" :src="`https://y.gtimg.cn/music/photo_new/T002R300x300M000${song.albummid}.jpg`"
+                            @error="(event) => { (event.target as HTMLElement).setAttribute('src', akarin) }" />
+                        <span class="track-meta">
+                            <p class="title">{{ song.name }}</p>
+                            <p class="artists">{{ song.singer.map(v => v.name).join(', ') }}</p>
+                        </span>
+                        <i class="control" @click="addQQMusicTrack(song)">
+                            <font-awesome-icon :icon="['fas', 'plus']" />
+                        </i>
+                    </span>
                 </article>
                 <article v-else-if="searched">
                     <span class="meta">No Results</span>
@@ -152,6 +296,21 @@ defineExpose({
 </template>
 
 <style scoped>
+[class^='icon-arisa-'],
+[class*='icon-arisa-'] {
+    font-size: 1.1em;
+    color: pink;
+    filter: grayscale(1);
+    margin-left: 0.1em;
+    margin-right: 0.1em;
+    cursor: pointer;
+}
+
+[class^='icon-arisa-'].active,
+[class*='icon-arisa-'].active {
+    filter: none;
+}
+
 #netease-search>article {
     width: 65vw;
     padding-bottom: 0px;
@@ -202,6 +361,9 @@ defineExpose({
 .search-result>article {
     padding: 0px;
     margin: 1em;
+}
+
+.search-result>article>span {
     display: grid;
     justify-items: center;
     align-items: center;

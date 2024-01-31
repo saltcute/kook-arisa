@@ -3,7 +3,6 @@ import { BaseMenu } from "kasumi.js";
 import upath from 'upath';
 import * as fs from 'fs';
 import './event';
-import './button';
 import { LocalController } from "./playback/local/controller";
 import { Streamer } from "./playback/type";
 

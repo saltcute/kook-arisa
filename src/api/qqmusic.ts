@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { client } from "init/client";
 import mcache from 'memory-cache';
-import netease from "menu/arisa/command/netease/lib";
+import qqmusic from "menu/arisa/command/qq/lib";
 
 const cache = (duration: number) => {
     return (req: Request, res: any, next: NextFunction) => {
@@ -44,7 +44,7 @@ router.use(cache(60 * 15), forceReferer());
 router.get('/search', (req, res) => {
     const keyword = <string>req.query.keyword;
     if (keyword) {
-        netease.search(keyword).then((re) => {
+        qqmusic.search(keyword).then((re) => {
             res.send({
                 code: 200,
                 message: 'success',
@@ -59,11 +59,10 @@ router.get('/search', (req, res) => {
     }
 })
 
-
-router.get('/songs', (req, res) => {
-    const ids = <string>req.query.ids;
-    if (ids) {
-        netease.getSongMultiple(ids).then((re) => {
+router.get('/lyric', (req, res) => {
+    const mid = <string>req.query.mid;
+    if (mid) {
+        qqmusic.getLyric(mid).then((re) => {
             res.send({
                 code: 200,
                 message: 'success',
@@ -78,22 +77,20 @@ router.get('/songs', (req, res) => {
     }
 })
 
-router.get('/lyric', (req, res) => {
-    const id = <string>req.query.id;
-    if (id) {
-        netease.getLyric(parseInt(id)).then((re) => {
-            res.send({
-                code: 200,
-                message: 'success',
-                data: re
-            });
-        })
-    } else {
+router.post('/updateCookie', (req, res) => {
+    if (req.body.code != client.config.getSync("QQCookieCode")) {
         res.status(400).send({
             code: 400,
-            message: 'no id was provided'
+            message: 'wrong code'
         })
+        return;
     }
+    const cookie = req.body.cookie;
+    qqmusic.updateCookie(cookie);
+    res.send({
+        code: 200,
+        message: 'success'
+    });
 })
 
 export default router;

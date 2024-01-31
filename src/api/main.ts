@@ -10,7 +10,9 @@ import { playback } from 'menu/arisa/playback/type';
 import { streamerDetail } from 'webapp/src/components/cards/types';
 import api from './api';
 import netease from './netease';
+import qqmusic from './qqmusic';
 import { LocalStreamer } from 'menu/arisa/playback/local/player';
+import { getVideoDetail } from 'menu/arisa/command/bilibili/lib/index';
 const { app } = expressWs(express());
 
 interface payload {
@@ -112,6 +114,44 @@ app.ws('/', (ws: WebSocket) => {
                                     streamer.playNetease(data.data.songId, data.meta);
                                 break;
                             }
+                            case 'qqmusic': {
+                                if (streamer instanceof LocalStreamer)
+                                    streamer.playQQMusic(data.data.songMId, data.data.mediaId, data.meta);
+                                break;
+                            }
+                            case 'bilibili': {
+                                if (Date.now() - lastBilibiliRequest < 1 * 1000) break;
+                                if (streamer instanceof LocalStreamer) {
+                                    const bvid = data.data.bvid;
+                                    let video: Awaited<ReturnType<typeof getVideoDetail>>
+                                    if (bvid) video = await getVideoDetail(bvid);
+                                    if (bvid && video) {
+                                        if (video.duration > 10 * 60) return;
+                                        const biliAPI = require('bili-api');
+                                        lastBilibiliRequest = Date.now();
+                                        const { cids } = await biliAPI({ bvid }, ['cids']).catch((e: any) => { client.logger.error(e); });
+                                        const cid = cids[0];
+                                        if (!cid) return;
+                                        const { data: res } = await axios({
+                                            url: "https://api.bilibili.com/x/player/playurl",
+                                            params: {
+                                                bvid,
+                                                cid,
+                                                qn: 16,
+                                                fnval: 80
+                                            }
+                                        });
+                                        const data = res.data;
+                                        streamer.playBilibili(bvid, 0, {
+                                            title: video.title,
+                                            artists: video.owner.name,
+                                            duration: data.timelength,
+                                            cover: video.pic.replace(/(i[0-9].hdslb.com)/, "hdslb.lolicon.ac.cn")
+                                        });
+                                    }
+                                    break;
+                                }
+                            }
                         }
                     }
                     break;
@@ -136,6 +176,8 @@ app.ws('/', (ws: WebSocket) => {
             client.logger.error(e);
         }
     })
+
+    let lastBilibiliRequest = -1;
 
     let isAlive = true;
     let userId = '';
@@ -206,6 +248,7 @@ app.get('/login', async (req, res) => {
 
 app.use('/api', api)
 app.use('/netease', netease);
+app.use('/qqmusic', qqmusic);
 
 client.config.get("internalWebuiPort").then(({ internalWebuiPort }) => {
     app.listen(internalWebuiPort, async () => {

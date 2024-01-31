@@ -9,6 +9,8 @@ export interface ArisaStorage {
     "neteaseEmail": string,
     "neteasePassword": string,
 
+    "QQCookieCode": string,
+
     "globalAdmins": string[],
 
     "streamerMiddlemanID": string,

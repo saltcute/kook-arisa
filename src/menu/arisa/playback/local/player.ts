@@ -6,6 +6,7 @@ import delay from 'delay';
 import * as fs from 'fs';
 import upath from 'upath';
 import netease from '../../command/netease/lib';
+import qqmusic from '../../command/qq/lib';
 import axios from 'axios';
 import { akarin } from '../../command/netease/lib/card';
 import playlist from '../lib/playlist';
@@ -84,7 +85,7 @@ export class LocalStreamer extends Streamer {
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
-    readonly streamingServices = ['netease', 'bilibili'];
+    readonly streamingServices = ['netease', 'bilibili', 'qqmusic'];
     private isStreamingSource(payload: any): payload is playback.extra.streaming {
         return this.streamingServices.includes(payload?.type);
     }
@@ -141,6 +142,20 @@ export class LocalStreamer extends Streamer {
                         }
                     }
                 }
+                case 'qqmusic': {
+                    const song = await qqmusic.getSong(input.data.songMId);
+                    const url = await qqmusic.getSongUrl(input.data.songMId, "128", input.data.mediaId);
+                    const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
+                    return {
+                        source: cache,
+                        meta: meta || {
+                            title: song.track_info.name,
+                            artists: song.track_info.singer.map(v => v.name).join(', '),
+                            duration: song.track_info.interval,
+                            cover: akarin
+                        }
+                    }
+                }
             }
         } catch (e) {
             this.kasumi.logger.error(e);
@@ -152,6 +167,14 @@ export class LocalStreamer extends Streamer {
         const extra: playback.extra.netease = {
             type: 'netease',
             data: { songId },
+            meta
+        }
+        return this.playStreaming(meta, extra, forceSwitch);
+    }
+    async playQQMusic(songMId: string, mediaId: string, meta: playback.meta, forceSwitch: boolean = false) {
+        const extra: playback.extra.qqmusic = {
+            type: 'qqmusic',
+            data: { songMId, mediaId },
             meta
         }
         return this.playStreaming(meta, extra, forceSwitch);
