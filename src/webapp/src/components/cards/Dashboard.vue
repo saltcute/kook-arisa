@@ -200,6 +200,8 @@ backend.on('newTrack', (nowPlaying?: playback.extra) => {
                 break;
             default:
                 currentLyric = { lyric: undefined, translate: undefined, kLyric: undefined, romaji: undefined };
+                currentLyricIndexCache = undefined;
+                loadingLyrics.value = false;
         }
     }
 })
