@@ -205,7 +205,7 @@ function addQQMusicTrack(song: QQMusic.Pattern.Song) {
             title: song.name,
             artists: song.singer.map(v => v.name).join(', '),
             duration: song.interval * 1000,
-            cover: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${song.songmid}.jpg`
+            cover: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${song.albummid}.jpg`
         }
     });
     if (backend.currentStreamer) {
