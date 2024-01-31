@@ -198,6 +198,8 @@ backend.on('newTrack', (nowPlaying?: playback.extra) => {
                     loadingLyrics.value = false;
                 })
                 break;
+            default:
+                currentLyric = { lyric: undefined, translate: undefined, kLyric: undefined, romaji: undefined };
         }
     }
 })
