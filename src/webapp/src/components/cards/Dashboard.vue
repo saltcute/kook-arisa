@@ -314,7 +314,7 @@ function getLyricStyle(index: number, timecode: number, position: "main" | "top"
 }
 function getRandomKaomoji() {
     const library = [`(;-;)`, `(='X'=)`, `(>_<)`, `\\(^Д^)/`, `(˚Δ˚)b`, `(^-^*)`, `(·_·)`, `(o^^)o`, `(≥o≤)`]
-    return library.at((backend.currentNowPlaying?.data.songId || 114514) * 19260817 % library.length);
+    return library.at((backend.currentNowPlaying?.data.songId || Math.random()) * 19260817 % library.length);
 }
 
 const enableRomaji = ref(false), enableTranslate = ref(true);
