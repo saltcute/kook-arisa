@@ -310,7 +310,10 @@ function getLyricStyle(index: number, timecode: number, position: "main" | "top"
     }
     if (index > 0 && position != "main") {
         properties.fontSize = "0.75em";
-        if (properties.color) properties.color = "#916b00"
+        if (properties.color) {
+            if (document.documentElement.getAttribute("data-theme") == "dark") properties.color = "#916b00"
+            else properties.color = "#ffd04b"
+        }
         else properties.color = "grey";
         if (position == "bottom") properties.verticalAlign = "top";
         else properties.verticalAlign = "bottom";
