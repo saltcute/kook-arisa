@@ -301,26 +301,17 @@ function forceRender() {
 
 function getLyricStyle(index: number, timecode: number, position: "main" | "top" | "bottom") {
     const [curIndex, curTimecode] = currentLyricIndex();
-    let properties: any = {};
+    let classes: string[] = [];
     if (index == Object.entries(bilingualLyric).length - 1) currentLyricIndexCache = undefined;
     if (index == curIndex || timecode == curTimecode) {
-        properties.color = 'orange';
-    } else {
-        properties.filter = "blur(1px)";
-    }
-    if (index > 0 && position != "main") {
-        properties.fontSize = "0.75em";
-        if (properties.color) {
-            if (document.documentElement.getAttribute("data-theme") == "dark") properties.color = "#916b00"
-            else properties.color = "#ffd04b"
+        classes.push("active");
+        if (index > 0 && position != "main") {
+            if (position == "bottom") classes.push("top");
+            else classes.push("bottom")
         }
-        else properties.color = "grey";
-        if (position == "bottom") properties.verticalAlign = "top";
-        else properties.verticalAlign = "bottom";
+        return classes.join(" ");
     }
-    return reactive(properties);
 }
-
 function getRandomKaomoji() {
     const library = [`(;-;)`, `(='X'=)`, `(>_<)`, `\\(^Д^)/`, `(˚Δ˚)b`, `(^-^*)`, `(·_·)`, `(o^^)o`, `(≥o≤)`]
     return library.at((backend.currentNowPlaying?.data.songId || 114514) * 19260817 % library.length);
@@ -444,16 +435,18 @@ onMounted(() => {
                 <div class="lyric" v-if="Object.keys(bilingualLyric).length">
                     <div class="line" :class="timecode.toString()"
                         v-for="([timecode, lyric], index) in getBilingualLyricEntry() ">
-                        <span v-if="lyric.romaji && enableRomaji" :style="getLyricStyle(index, timecode, 'top')">
+                        <span v-if="lyric.romaji && enableRomaji" :class="getLyricStyle(index, timecode, 'top')"
+                            class="sub lyric">
                             {{ lyric.romaji }}<br>
                         </span>
                         <i v-if="enableRomaji && !enableTranslate" :id="timecode.toString()"></i>
-                        <span :style="getLyricStyle(index, timecode, 'main')">
+                        <span :class="getLyricStyle(index, timecode, 'main')" class="main lyric">
                             <i v-if="!enableRomaji && !enableTranslate" :id="timecode.toString()"></i>
                             {{ lyric.original }}<br>
                         </span>
                         <i v-if="!enableRomaji && enableTranslate" :id="timecode.toString()"></i>
-                        <span v-if="lyric.translate && enableTranslate" :style="getLyricStyle(index, timecode, 'bottom')">
+                        <span v-if="lyric.translate && enableTranslate" :class="getLyricStyle(index, timecode, 'bottom')"
+                            class="sub lyric">
                             {{ lyric.translate }}
                         </span>
                     </div>
@@ -491,7 +484,98 @@ onMounted(() => {
     </article>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@mixin dark-mode-definition() {
+    .playlist>article>div {
+        --playlist-card-top: rgb(0, 0, 0, 91%);
+        --playlist-card-bottom: rgb(255, 255, 255, 16%);
+    }
+
+    .dashboard>article {
+        background-color: var(--card-panel-background-color-dark);
+    }
+
+    span.sub.lyric.active {
+        color: #916b00;
+    }
+}
+
+@mixin light-mode-definition() {
+    .playlist>article>div {
+        --playlist-card-top: rgb(255, 255, 255, 91%);
+        --playlist-card-bottom: rgb(0, 0, 0, 20%);
+    }
+
+    .dashboard>article {
+        background-color: var(--card-panel-background-color-light);
+    }
+
+    span.sub.lyric.active {
+        color: #ffd04b;
+    }
+}
+
+
+/* Settings set to dark*/
+:root[data-theme="dark"] {
+    @include dark-mode-definition()
+}
+
+/* Settings set to light */
+:root[data-theme="light"] {
+    @include light-mode-definition()
+}
+
+/* System preference is Dark */
+@media only screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        @include dark-mode-definition()
+    }
+}
+
+/* System preference is light */
+@media only screen and (prefers-color-scheme: light) {
+    :root:not([data-theme]) {
+        @include light-mode-definition()
+    }
+}
+
+div.line {
+    height: min-content;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+span.lyric {
+    filter: blur(1px);
+    display: block;
+    height: min-content;
+    line-height: 1.3;
+}
+
+
+span.lyric.active {
+    filter: unset;
+}
+
+span.main.lyric.active {
+    color: orange;
+    filter: unset;
+}
+
+span.sub.lyric {
+    font-size: 0.6em;
+    color: grey;
+}
+
+span.sub.lyric.top {
+    vertical-align: top;
+}
+
+span.sub.lyric.bottom {
+    vertical-align: bottom;
+}
+
 [class^='icon-arisa-'],
 [class*='icon-arisa-'] {
     font-size: 1em;
@@ -524,47 +608,6 @@ onMounted(() => {
 div:hover {
     --myColor1: red;
     --myColor2: #E1AF2F;
-}
-
-@media only screen and (prefers-color-scheme: dark) {
-    :root:not([data-theme]) .playlist>article>div {
-        --playlist-card-top: rgb(0, 0, 0, 91%);
-        --playlist-card-bottom: rgb(255, 255, 255, 16%);
-    }
-
-    :root:not([data-theme]) .dashboard>article {
-        background-color: var(--card-panel-background-color-dark);
-    }
-}
-
-:root[data-theme="dark"] .playlist>article>div {
-    --playlist-card-top: rgb(0, 0, 0, 91%);
-    --playlist-card-bottom: rgb(255, 255, 255, 16%);
-}
-
-:root[data-theme="dark"] .dashboard>article {
-    background-color: var(--card-panel-background-color-dark);
-}
-
-
-@media only screen and (prefers-color-scheme: light) {
-    :root:not([data-theme]) .playlist>article>div {
-        --playlist-card-top: rgb(255, 255, 255, 91%);
-        --playlist-card-bottom: rgb(0, 0, 0, 20%);
-    }
-
-    :root:not([data-theme]) .dashboard>article {
-        background-color: var(--card-panel-background-color-light);
-    }
-}
-
-:root[data-theme="light"] .playlist>article>div {
-    --playlist-card-top: rgb(255, 255, 255, 91%);
-    --playlist-card-bottom: rgb(0, 0, 0, 20%);
-}
-
-:root[data-theme="light"] .dashboard>article {
-    background-color: var(--card-panel-background-color-light);
 }
 
 .playlist>article>div>i {
