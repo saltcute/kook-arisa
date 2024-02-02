@@ -38,7 +38,7 @@ import leaveCommand from "menu/arisa/command/leave";
         return p;
     }, []);
     client.config.set("arisa::session.ongoing", []);
-    for (let session of sessions) {
+    const promises = sessions.map(async session => {
         const streamer = await controller.joinChannel(session.targetGuildId, session.targetChannelId, session.invitationAuthorId, session.invitationTextChannelId);
         if (streamer) {
             await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { client.logger.error(e) });
@@ -49,5 +49,6 @@ import leaveCommand from "menu/arisa/command/leave";
 
             if (streamer.audienceIds.size <= 0) await streamer.disconnect("语音频道内无用户");
         }
-    }
+    })
+    await Promise.all(promises);
 })()
