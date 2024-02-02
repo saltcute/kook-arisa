@@ -106,7 +106,7 @@ onMounted(() => {
     <header>
         <nav>
             <ul>
-                <li><strong class="title">Arisa</strong></li>
+                <li><strong class="title">Arisa Dashboard</strong></li>
             </ul>
             <ul>
                 <li>

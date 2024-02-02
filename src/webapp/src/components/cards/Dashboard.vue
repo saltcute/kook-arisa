@@ -347,7 +347,6 @@ onMounted(() => {
 
 <template>
     <article :aria-busy="waitingForWSConnection" class="dashboard">
-        <h4 v-if="userDataRaw" class="title">Dashboard</h4>
         <article v-if="userDataRaw" class="control">
             <div class="song-title">{{
                 backend.currentNowPlaying?.meta?.title || "Not Playing"
