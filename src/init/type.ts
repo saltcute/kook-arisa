@@ -11,6 +11,13 @@ export interface ArisaStorage {
 
     "QQCookieCode": string,
 
+    "arisa::session.ongoing": {
+        targetChannelId: string,
+        targetGuildId: string,
+        invitationAuthorId: string,
+        invitationTextChannelId: string
+    }[],
+
     "globalAdmins": string[],
 
     "streamerMiddlemanID": string,

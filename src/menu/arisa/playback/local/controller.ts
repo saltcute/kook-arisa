@@ -68,6 +68,13 @@ export class LocalController extends Controller {
     }
 
     async returnStreamer(streamer: Streamer) {
+        let sessions = await this.client.config.getOne("arisa::session.ongoing") || [];
+        sessions = sessions.filter(v => {
+            return !(v.targetGuildId == streamer.TARGET_GUILD_ID &&
+                v.targetChannelId == streamer.TARGET_CHANNEL_ID &&
+                v.invitationAuthorId == streamer.INVITATION_AUTHOR_ID)
+        })
+        this.client.config.set("arisa::session.ongoing", sessions);
         // const { err } = await streamer.kasumi.API.guild.leave(streamer.TARGET_GUILD_ID);
         // if (err) streamer.kasumi.logger.error(err);
         await axios.delete(`https://www.kookapp.cn/api/v2/users/guild/${streamer.TARGET_GUILD_ID}`, {
@@ -180,6 +187,14 @@ export class LocalController extends Controller {
                 streamers.push(streamer);
                 this.guildStreamers.set(guildId, streamers);
             }
+            const sessions = await this.client.config.getOne("arisa::session.ongoing") || [];
+            sessions.push({
+                targetChannelId: channelId,
+                targetGuildId: guildId,
+                invitationAuthorId: authorId,
+                invitationTextChannelId: textChannelId
+            })
+            this.client.config.set("arisa::session.ongoing", sessions);
             return streamer.connect();
         } catch (err) {
             client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addTitle("无法加入语音频道").addText("由于近期 KOOK 的 API 变化，机器人需要拥有「管理员」权限才能正常运行。"))

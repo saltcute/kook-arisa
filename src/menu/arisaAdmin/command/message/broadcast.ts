@@ -4,11 +4,7 @@ import { controller } from "menu/arisa";
 class AddCommand extends BaseCommand {
     name = 'broadcast';
     description = 'Broadcast a message to all streamers (and their users)';
-    func: CommandFunction<BaseSession, any> = async (session) => {
-        await session.sendTemp("Enter message:")
-        const message = await broadcast.client.events.callback
-            .createAsyncCallback("message.text", e => e.authorId == session.authorId, e => e.content, 15 * 1000)
-            .catch(_ => undefined);
+    async broadcast(message: string) {
         for (const streamer of controller.activeStreamersArray) {
             if (streamer.panel) {
                 await Promise
@@ -19,6 +15,18 @@ class AddCommand extends BaseCommand {
                     );
             }
         }
+    }
+    func: CommandFunction<BaseSession, any> = async (session) => {
+        await session.sendTemp("Enter message:")
+        const message = await broadcast.client.events.callback
+            .createAsyncCallback("message.text", e => e.authorId == session.authorId, e => e.content, 15 * 1000)
+            .catch(_ => undefined);
+        if (message) {
+            await this.broadcast(message)
+            await session.send("Message sent.");
+        }
+        else
+            await session.send("Operation cancelled.");
     }
 }
 
