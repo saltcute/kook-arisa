@@ -96,12 +96,13 @@ class Backend extends EventEmitter2 {
         }))
     }
 
-    changeQueueEntry(index: number, action: 'up' | 'down' | 'delete') {
+    changeQueueEntry(index: number, amount = 1, action: 'up' | 'down' | 'delete') {
         this.ws?.send(JSON.stringify({
             t: 3,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 queueIndex: index - 1,
+                amount,
                 action
             }
         }))
@@ -190,22 +191,22 @@ class Backend extends EventEmitter2 {
         }
     }
 
-    queueMoveEntryUp(index: number) {
+    queueMoveEntryUp(index: number, amount = 1) {
         const streamer = this.currentStreamer;
         if (streamer) {
-            return this.changeQueueEntry(index, 'up');
+            return this.changeQueueEntry(index, amount, 'up');
         }
     }
-    queueMoveEntryDown(index: number) {
+    queueMoveEntryDown(index: number, amount = 1) {
         const streamer = this.currentStreamer;
         if (streamer) {
-            return this.changeQueueEntry(index, 'down');
+            return this.changeQueueEntry(index, amount, 'down');
         }
     }
     queueDeleteEntry(index: number) {
         const streamer = this.currentStreamer;
         if (streamer) {
-            return this.changeQueueEntry(index, 'delete');
+            return this.changeQueueEntry(index, 0, 'delete');
         }
     }
 

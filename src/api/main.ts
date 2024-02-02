@@ -76,13 +76,28 @@ app.ws('/', (ws: WebSocket) => {
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         const queueIndex = payload.d.queueIndex;
+                        console.log(payload);
                         switch (payload.d.action) {
-                            case 'up':
-                                streamer.queueMoveUp(queueIndex);
+                            case 'up': {
+                                let currentIndex = queueIndex;
+                                for (let i = 1; i <= payload.d.amount; ++i) {
+                                    console.log(i, currentIndex)
+                                    streamer.queueMoveUp(queueIndex);
+                                    currentIndex--;
+                                    if (currentIndex < 0) currentIndex = streamer.getQueue().length - 1;
+                                }
                                 break;
-                            case 'down':
-                                streamer.queueMoveDown(queueIndex);
+                            }
+                            case 'down': {
+                                let currentIndex = queueIndex;
+                                for (let i = 1; i <= payload.d.amount; ++i) {
+                                    console.log(i, currentIndex)
+                                    streamer.queueMoveDown(currentIndex);
+                                    currentIndex++;
+                                    if (currentIndex >= streamer.getQueue().length) currentIndex = 0;
+                                }
                                 break;
+                            }
                             case 'delete':
                                 streamer.queueDelete(queueIndex);
                                 break;

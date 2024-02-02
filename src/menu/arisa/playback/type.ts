@@ -243,7 +243,6 @@ export abstract class Streamer extends EventEmitter2 {
      * @param index Index of the item in the queue
      */
     queueMoveUp(index: number): void {
-
         if (index) {
             const item = this.queue[index], previous = this.queue[index - 1];
             if (item && previous) {

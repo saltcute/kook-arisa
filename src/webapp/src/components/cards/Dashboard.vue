@@ -11,6 +11,9 @@ import axios from 'axios';
 import { Netease } from 'menu/arisa/command/netease/lib';
 import { QQMusic } from 'menu/arisa/command/qq/lib';
 
+import draggable from "vuedraggable";
+import type { SortableEvent } from "sortablejs"
+
 const proxy = "img.kookapp.lolicon.ac.cn";
 
 export declare enum NotificationSetting {
@@ -157,9 +160,9 @@ function proxiedKookImage(original: string) {
     return original.replace('img.kaiheila.cn', proxy).replace('img.kookapp.cn', proxy);
 }
 
-function currentQueue() {
-    return backend.currentStreamer?.queue || [];
-}
+const currentQueue = reactive({
+    list: backend.currentStreamer?.queue || []
+});
 
 function getPlaybackProgress() {
     if (keep) {
@@ -221,6 +224,8 @@ function scrollToActiveLyric(arg?: boolean | ScrollIntoViewOptions) {
 }
 
 backend.on('wsEvent', () => {
+    if (backend.currentStreamer?.queue && Date.now() - lastDragEnd > 1 * 1000)
+        currentQueue.list = backend.currentStreamer?.queue;
     forceRender().then(() => {
         if (Date.now() - lastScroll > 2 * 1000) {
             scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
@@ -313,8 +318,23 @@ function getLyricStyle(index: number, timecode: number, position: "main" | "top"
     }
 }
 function getRandomKaomoji() {
+    function hashcode(str?: string, seed = 0) {
+        if (!str) return undefined;
+        let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+        for (let i = 0, ch; i < str.length; i++) {
+            ch = str.charCodeAt(i);
+            h1 = Math.imul(h1 ^ ch, 2654435761);
+            h2 = Math.imul(h2 ^ ch, 1597334677);
+        }
+        h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+        h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+        h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+        h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+        return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    };
     const library = [`(;-;)`, `(='X'=)`, `(>_<)`, `\\(^Д^)/`, `(˚Δ˚)b`, `(^-^*)`, `(·_·)`, `(o^^)o`, `(≥o≤)`]
-    return library.at((backend.currentNowPlaying?.data.songId || Math.random()) * 19260817 % library.length);
+    return library.at((backend.currentNowPlaying?.data.songId || hashcode(backend.currentNowPlaying?.data.songmid) || hashcode(backend.currentNowPlaying?.data.bvid) || 114514) * 19260817 % library.length);
 }
 
 const enableRomaji = ref(false), enableTranslate = ref(true);
@@ -332,6 +352,20 @@ function switchTranslate() {
     nextTick().then(() => {
         scrollToActiveLyric({ behavior: 'instant', block: 'center' });
     })
+}
+
+let lastDragEnd = -1;
+function onDragEnd(event: SortableEvent) {
+    const from = event.oldIndex, to = event.newIndex;
+    if (!from || !to) return;
+    let diff = to - from;
+    if (diff > 0) {
+        backend.queueMoveEntryDown(from, diff);
+        lastDragEnd = Date.now();
+    } else if (diff < 0) {
+        backend.queueMoveEntryUp(from, -diff);
+        lastDragEnd = Date.now();
+    }
 }
 
 onMounted(() => {
@@ -431,7 +465,7 @@ onMounted(() => {
                 </span>
             </h5>
             <div id="lyricTextarea" :aria-busy="loadingLyrics">
-                <div class="lyric" v-if="Object.keys(bilingualLyric).length">
+                <div class="lyrics" v-if="Object.keys(bilingualLyric).length">
                     <div class="line" :class="timecode.toString()"
                         v-for="([timecode, lyric], index) in getBilingualLyricEntry() ">
                         <span v-if="lyric.romaji && enableRomaji" :class="getLyricStyle(index, timecode, 'top')"
@@ -450,42 +484,46 @@ onMounted(() => {
                         </span>
                     </div>
                 </div>
-                <div class="lyric" v-else-if="!loadingLyrics">
+                <div class="lyrics" v-else-if="!loadingLyrics">
                     Lyric went missing! {{ getRandomKaomoji() }} </div>
             </div>
         </article>
     </article>
     <article :aria-busy="waitingForWSConnection" class="playlist">
         <h4 v-if="userDataRaw">Playlist</h4>
-        <article :key="componentKey" v-if="userDataRaw" v-for="( queue, index ) in  currentQueue() "
-            :class="index == 0 ? 'now-playing-sign' : ''" :style="getQueueBackground(queue)">
-            <div v-if="queue.meta">
-                <span class="now-playing-sign" v-if="index == 0">Now Playing:</span>
-                <span class="title">
-                    <i v-if="queue.type == 'netease'" class="iconfont icon-arisa-wangyiyun"></i>
-                    <i v-else-if="queue.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
-                    <i v-else-if="queue.type == 'bilibili'" class="iconfont icon-arisa-bilibili"></i>
-                    {{ queue.meta.title }}
-                </span>
-                <span class="artists">{{ queue.meta.artists }}
-                </span>
-                <i @click="backend.queueMoveEntryUp(index)" class="up-button">
-                    <font-awesome-icon :icon="['fas', 'arrow-up']" />
-                </i>
-                <i @click="backend.queueMoveEntryDown(index)" class="down-button">
-                    <font-awesome-icon :icon="['fas', 'arrow-down']" />
-                </i>
-                <i @click="backend.queueDeleteEntry(index)" class="trash-button">
-                    <font-awesome-icon :icon="['fas', 'trash']" />
-                </i>
-            </div>
-        </article>
+        <draggable class="queue-items" :list="currentQueue.list" ghost-class="ghost" chosen-class="chosen-class"
+            @end="onDragEnd" draggable=":not(.now-playing-sign)">
+            <template #item="{ element, index }">
+                <div class="queue-item-card" v-if="element.meta" :class="index ? '' : 'now-playing-sign'"
+                    :data-index="index" :style="getQueueBackground(element)">
+                    <div>
+                        <span class="now-playing-sign" v-if="index == 0">Now Playing:</span>
+                        <span class="title">
+                            <i v-if="element.type == 'netease'" class="iconfont icon-arisa-wangyiyun"></i>
+                            <i v-else-if="element.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
+                            <i v-else-if="element.type == 'bilibili'" class="iconfont icon-arisa-bilibili"></i>
+                            {{ element.meta.title }}
+                        </span>
+                        <span class="artists">{{ element.meta.artists }}</span>
+                        <i @click="backend.queueMoveEntryUp(index)" class="up-button">
+                            <font-awesome-icon :icon="['fas', 'arrow-up']" />
+                        </i>
+                        <i @click="backend.queueMoveEntryDown(index)" class="down-button">
+                            <font-awesome-icon :icon="['fas', 'arrow-down']" />
+                        </i>
+                        <i @click="backend.queueDeleteEntry(index)" class="trash-button">
+                            <font-awesome-icon :icon="['fas', 'trash']" />
+                        </i>
+                    </div>
+                </div>
+            </template>
+        </draggable>
     </article>
 </template>
 
 <style scoped lang="scss">
 @mixin dark-mode-definition() {
-    .playlist>article>div {
+    .playlist>div.queue-items>div.queue-item-card>div {
         --playlist-card-top: rgb(0, 0, 0, 91%);
         --playlist-card-bottom: rgb(255, 255, 255, 16%);
     }
@@ -497,10 +535,15 @@ onMounted(() => {
     span.sub.lyric.active {
         color: #916b00;
     }
+
+
+    .chosen-class {
+        box-shadow: 0px 0px 25px -15px rgb(160, 255, 255);
+    }
 }
 
 @mixin light-mode-definition() {
-    .playlist>article>div {
+    .playlist>div.queue-items>div.queue-item-card>div {
         --playlist-card-top: rgb(255, 255, 255, 91%);
         --playlist-card-bottom: rgb(0, 0, 0, 20%);
     }
@@ -511,6 +554,10 @@ onMounted(() => {
 
     span.sub.lyric.active {
         color: #ffd04b;
+    }
+
+    .chosen-class {
+        box-shadow: 0px 0px 25px 1px rgb(0, 32, 32);
     }
 }
 
@@ -537,6 +584,11 @@ onMounted(() => {
     :root:not([data-theme]) {
         @include light-mode-definition()
     }
+}
+
+.ghost {
+    // filter: grayscale(1);
+    visibility: hidden;
 }
 
 div.line {
@@ -595,12 +647,12 @@ span.sub.lyric.bottom {
 }
 
 
-.playlist>article>div {
+.playlist>div.queue-items>div.queue-item-card>div {
     background-image: linear-gradient(var(--playlist-card-top), 75%, var(--playlist-card-bottom));
     transition: --playlist-card-top var(--transition), --playlist-card-botoom var(--transition);
 }
 
-.playlist>article.now-playing-sign>div {
+.playlist>div.queue-items>div.queue-item-card>div.now-playing-sign {
     background-image: linear-gradient(var(--playlist-card-top), 85%, var(--playlist-card-bottom));
 }
 
@@ -609,15 +661,16 @@ div:hover {
     --myColor2: #E1AF2F;
 }
 
-.playlist>article>div>i {
+.playlist>div.queue-items>div.queue-item-card>div>i {
     display: none;
 }
 
-.playlist>article:not(.now-playing-sign):hover>div>i {
+.playlist>div.queue-items>div.queue-item-card:not(.now-playing-sign)>div:hover>i {
     display: unset;
 }
 
-.playlist>article {
+.playlist>div.queue-items>div.queue-item-card {
+    border-radius: 0.25rem;
     margin: .5em;
     padding: 0px;
     background-position: center;
@@ -625,7 +678,7 @@ div:hover {
     background-size: cover;
 }
 
-.playlist>article>div {
+.playlist>div.queue-items>div.queue-item-card>div {
     border-radius: 0.25rem;
     padding: .5em;
     justify-items: center;
@@ -643,7 +696,7 @@ div:hover {
         ". down-button";
 }
 
-.playlist>article.now-playing-sign>div {
+.playlist>div.queue-items>div.queue-item-card.now-playing-sign>div {
     grid-template-rows: 1em 1em 1em 1em 1em 1em 1em 1em;
     grid-template-areas:
         "now-playing now-playing"
@@ -742,31 +795,31 @@ h4 {
     --typography-spacing-vertical: 1em;
 }
 
-.playlist>article>div>span {
+.playlist>div.queue-items>div.queue-item-card>div>span {
     width: 100%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
 
-.playlist>article>div>.title {
+.playlist>div.queue-items>div.queue-item-card>div>.title {
     font-size: 1em;
     grid-area: title;
 }
 
-.playlist>article>div>.now-playing-sign {
+.playlist>div.queue-items>div.queue-item-card>div>.now-playing-sign {
     font-family: var(--header-font);
     font-size: 1em;
     grid-area: now-playing;
 }
 
-.playlist>article>div>.artists {
+.playlist>div.queue-items>div.queue-item-card>div>.artists {
     grid-area: artists;
     font-size: .6em;
     color: var(--secondary);
 }
 
-.playlist>article>div>.controls {
+.playlist>div.queue-items>div.queue-item-card>div>.controls {
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-rows: 1fr;
     gap: 0px .4em;
