@@ -276,7 +276,6 @@ export class LocalStreamer extends Streamer {
         } else {
             this.lastOperation = Date.now();
         }
-        if (this.audienceIds.size <= 0) this.disconnect("语音频道内无用户");
         setTimeout(() => { this.ensureUsage() }, 15 * 60 * 1000);
     }
 
