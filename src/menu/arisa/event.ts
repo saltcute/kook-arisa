@@ -26,10 +26,10 @@ client.on('event.system', async (event) => {
         if (streamer) { // has arisa
             if (extra.body.user_id == streamer.kasumi.me.userId) {
                 if (streamer.panel) {
-                    const promises = streamer.panel.panelChannelArray.map(id => client.API.message.create(MessageType.CardMessage, id, new Card().addTitle("Notice | 注意").addText("机器人有可能被踢出。如需结束推流，请使用指令 `/arisa leave` 停止点歌，不要将机器人直接踢出语音频道。")));
+                    const promises = streamer.panel.panelChannelArray.map(id => client.API.message.create(MessageType.CardMessage, id, new Card().addTitle("Notice | 注意").addText("机器人被动断开连接，机器人可能被踢出语音频道或经历了网络波动。如需结束推流，请使用指令 `/arisa leave` 停止点歌，不要将机器人直接踢出语音频道。")));
                     await Promise.all(promises);
                 }
-                streamer.disconnect("被动断开，机器人可能被踢出语音频道或经历了网络波动");
+                // streamer.disconnect("被动断开，机器人可能被踢出语音频道或经历了网络波动");
             } else {
                 streamer.audienceIds.delete(extra.body.user_id);
                 if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
