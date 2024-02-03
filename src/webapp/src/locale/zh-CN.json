@@ -1,0 +1,82 @@
+{
+    "desc": {
+        "language": {
+            "en-US": "English {'|'} 英语",
+            "zh-CN": "简体中文",
+            "zh-TW": "繁體中文 {'|'} 繁体中文",
+            "ja": "日本語 {'|'} 日语"
+        },
+        "header": {
+            "title": "Arisa Dashboard"
+        },
+        "footer": {
+            "MIT": "MIT 授权",
+            "license": "{0}。源代码在 {1} 下发布。"
+        },
+        "controlBoard": {
+            "notPlaying": "没有播放"
+        },
+        "dashboard": {
+            "noStreamers": "没有推流姬"
+        },
+        "lyrics": {
+            "title": "歌词",
+            "notFound": "歌词不见了！{emoji}"
+        },
+        "playlist": {
+            "title": "播放列表",
+            "nowPlaying": "正在播放："
+        },
+        "profile": {
+            "pleaseLogin": "请登入"
+        },
+        "search": {
+            "title": {
+                "searchForTrack": "搜索一首歌",
+                "playBilibiliVideo": "播放一个 B站视频",
+                "unknown": "未知操作"
+            },
+            "boxDesc": {
+                "trackName": "歌曲名称",
+                "bilibiliVideo": "BV 号"
+            },
+            "noResults": "没有结果"
+        }
+    },
+    "action": {
+        "login": "登入",
+        "logout": "登出"
+    },
+    "notification": {
+        "search": {
+            "success": {
+                "title": "成功",
+                "addedToPlaylist": "{name} 已被添加到播放列表中！",
+                "bilibili": "这个视频已被发送给播放列表。时长大于 10 分钟的视频将不会被添加。"
+            },
+            "warning": {
+                "title": "注意",
+                "noStreamers": "没有选中的推流姬！尝试添加 “{name}” 到播放列表，但可能无法成功。"
+            },
+            "error": {
+                "title": "错误",
+                "bilibiliWrongLinkPattern": "这不像是一个有效的 B站视频链接。",
+                "waitForPreviousFinish": "请等待上一个操作完成！"
+            }
+        }
+    },
+    "tooltip": {
+        "controlBoard": {
+            "shufflePlaylist": "点击随机排序播放列表",
+            "noRepeat": "不循环",
+            "repeat": "列表循环",
+            "repeatOne": "单曲循环"
+        },
+        "lyrics": {
+            "hideTranslate": "隐藏翻译",
+            "showTranslate": "展示翻译",
+            "hideRomaji": "隐藏罗马字",
+            "showRomaji": "展示罗马字"
+        }
+    }
+}

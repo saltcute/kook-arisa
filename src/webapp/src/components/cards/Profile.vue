@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 const proxy = "img.kookapp.lolicon.ac.cn";
 const userDataRaw = localStorage.getItem('user');
-let username = ref('Please login');
+let username = ref("");
 let avatar = ref(`https://${proxy}/assets/2022-07/vlOSxPNReJ0dw0dw.jpg`);
 if (userDataRaw) {
     const userData = JSON.parse(userDataRaw);
@@ -16,11 +20,13 @@ if (userDataRaw) {
         <article class="avatar">
             <img :src="avatar">
         </article>
-        <div class="username">
+        <div v-if="username" class="username">
             <span>{{ username.split("#")[0] }}</span>
-            <span style="font-size: 0.75rem; font-weight: var(--header-weight); color: gray;">#{{ username.split("#")[1]
-            }}</span>
+            <span style="font-size: 0.75rem; font-weight: var(--header-weight); color: gray;">
+                #{{ username.split("#")[1] }}
+            </span>
         </div>
+        <div v-else class="username">{{ t("desc.profile.pleaseLogin") }}</div>
     </article>
 </template>
 

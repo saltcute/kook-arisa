@@ -1,0 +1,82 @@
+{
+    "desc": {
+        "language": {
+            "en-US": "English {'|'} 英文",
+            "zh-CN": "简体中文 {'|'} 簡體中文",
+            "zh-TW": "繁體中文",
+            "ja": "日本語 {'|'} 日文"
+        },
+        "header": {
+            "title": "Arisa Dashboard"
+        },
+        "footer": {
+            "MIT": "MIT 授權",
+            "license": "{0}。原始碼在 {1} 下釋出。"
+        },
+        "controlBoard": {
+            "notPlaying": "未在播放"
+        },
+        "dashboard": {
+            "noStreamers": "沒有串流姬"
+        },
+        "lyrics": {
+            "title": "歌詞",
+            "notFound": "歌詞不見了！{emoji}"
+        },
+        "playlist": {
+            "title": "播放列表",
+            "nowPlaying": "正在播放："
+        },
+        "profile": {
+            "pleaseLogin": "請登入"
+        },
+        "search": {
+            "title": {
+                "searchForTrack": "搜尋一首歌",
+                "playBilibiliVideo": "搜尋一只 Bilibili 影片",
+                "unknown": "未知操作"
+            },
+            "boxDesc": {
+                "trackName": "曲目名字",
+                "bilibiliVideo": "Bilibili BV 號"
+            },
+            "noResults": "沒有結果"
+        }
+    },
+    "action": {
+        "login": "登入",
+        "logout": "登出"
+    },
+    "notification": {
+        "search": {
+            "success": {
+                "title": "成功",
+                "addedToPlaylist": "已把 {name} 加入至播放列表！",
+                "bilibili": "這條影片已被送至播放列表。長度大於 10 分鐘的影片將不會被添加。"
+            },
+            "warning": {
+                "title": "注意",
+                "noStreamers": "沒有活躍的串流姬！試圖將「{name}」加入至播放列表，但可能會失敗。"
+            },
+            "error": {
+                "title": "錯誤",
+                "bilibiliWrongLinkPattern": "這不像是一個有效的 Bilibili 連結！",
+                "waitForPreviousFinish": "請等待上一次搜尋結束！"
+            }
+        }
+    },
+    "tooltip": {
+        "controlBoard": {
+            "shufflePlaylist": "點選隨機排序播放列表",
+            "noRepeat": "不循環",
+            "repeat": "列表循環",
+            "repeatOne": "單曲循環"
+        },
+        "lyrics": {
+            "hideTranslate": "隱藏翻譯",
+            "showTranslate": "顯示翻譯",
+            "hideRomaji": "隱藏羅馬字",
+            "showRomaji": "顯示羅馬字"
+        }
+    }
+}

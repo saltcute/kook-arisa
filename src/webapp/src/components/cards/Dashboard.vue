@@ -14,6 +14,9 @@ import { QQMusic } from 'menu/arisa/command/qq/lib';
 import draggable from "vuedraggable";
 import type { SortableEvent } from "sortablejs"
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 const proxy = "img.kookapp.lolicon.ac.cn";
 
 export declare enum NotificationSetting {
@@ -383,14 +386,14 @@ onMounted(() => {
     <article :aria-busy="waitingForWSConnection" class="dashboard">
         <article v-if="userDataRaw" class="control">
             <div class="song-title">{{
-                backend.currentNowPlaying?.meta?.title || "Not Playing"
+                backend.currentNowPlaying?.meta?.title || t("desc.controlBoard.notPlaying")
             }}</div>
             <div class="song-artists">{{
                 backend.currentNowPlaying?.meta?.artists
             }}</div>
             <progress :key="componentKey" id="playback-progress" :value="getPlaybackProgress()"></progress>
             <div v-if="backend.currentStreamer" class="playback-control grid">
-                <i data-tooltip="Click to Shuffle Playlist" @click="backend.shuffleQueue">
+                <i :data-tooltip="t('tooltip.controlBoard.shufflePlaylist')" @click="backend.shuffleQueue">
                     <font-awesome-icon :icon="['fas', 'shuffle']" />
                 </i>
                 <i @click="() => { backend.playPrevious() }">
@@ -403,15 +406,17 @@ onMounted(() => {
                 <i @click="backend.playNext">
                     <font-awesome-icon :icon="['fas', 'forward']" />
                 </i>
-                <i data-tooltip="No Repeat" v-if="backend.currentStreamer.cycleMode == 'no_repeat'"
-                    @click="backend.switchCycleMode('repeat')">
+                <i :data-tooltip="t('tooltip.controlBoard.noRepeat')"
+                    v-if="backend.currentStreamer.cycleMode == 'no_repeat'" @click="backend.switchCycleMode('repeat')">
                     <font-awesome-icon :icon="['fas', 'circle-xmark']" />
                 </i>
-                <i data-tooltip="Repeat" v-else-if="backend.currentStreamer.cycleMode == 'repeat'"
+                <i :data-tooltip="t('tooltip.controlBoard.repeat')"
+                    v-else-if="backend.currentStreamer.cycleMode == 'repeat'"
                     @click="backend.switchCycleMode('repeat_one')">
                     <font-awesome-icon :icon="['fas', 'repeat']" />
                 </i>
-                <i data-tooltip="Repeat One" v-else-if="backend.currentStreamer.cycleMode == 'repeat_one'"
+                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')"
+                    v-else-if="backend.currentStreamer.cycleMode == 'repeat_one'"
                     @click="backend.switchCycleMode('no_repeat')">
                     <font-awesome-icon :icon="['fas', 'repeat']" fade />
                 </i>
@@ -438,7 +443,7 @@ onMounted(() => {
             <summary aria-haspopup="listbox">{{ backend.currentStreamerName }}</summary>
             <ul role="listbox" class="dropdown">
                 <li v-if="!backend.streamers.length">
-                    No Streamers
+                    {{ t('desc.dashboard.noStreamers') }}
                 </li>
                 <li v-else class="grid" v-for="(streamer, index) in backend.streamers" :index="index"
                     @click="backend.selectStreamer">
@@ -450,17 +455,18 @@ onMounted(() => {
         <!-- <article v-if="userDataRaw && (nowPlaying() as playback.extra.netease)?.data.songId"> -->
         <article v-if="userDataRaw">
             <h5 style="margin: 0px;">
-                Lyrics
+                {{ t('desc.lyrics.title') }}
                 &nbsp<span v-if="currentLyric?.translate" @click="switchTranslate">
-                    <i class="click-cursor" v-if="enableTranslate" data-tooltip="Hide translation"><font-awesome-icon
+                    <i class="click-cursor" v-if="enableTranslate"
+                        :data-tooltip="t('tooltip.lyrics.hideTranslate')"><font-awesome-icon
                             :icon="['fas', 'language']" /></i>
-                    <i class="click-cursor" v-else data-tooltip="Show translation"><font-awesome-icon
+                    <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.hideTranslate')"><font-awesome-icon
                             :icon="['fas', 'language']" /></i>
                 </span>
                 &nbsp<span v-if="currentLyric?.romaji" @click="switchRomaji">
-                    <i class="click-cursor" v-if="enableRomaji" data-tooltip="Hide Romaji"><font-awesome-icon
-                            :icon="['fas', 'globe']" /></i>
-                    <i class="click-cursor" v-else data-tooltip="Show Romaji"><font-awesome-icon
+                    <i class="click-cursor" v-if="enableRomaji"
+                        :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon :icon="['fas', 'globe']" /></i>
+                    <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon
                             :icon="['fas', 'globe']" /></i>
                 </span>
             </h5>
@@ -485,19 +491,19 @@ onMounted(() => {
                     </div>
                 </div>
                 <div class="lyrics" v-else-if="!loadingLyrics">
-                    Lyric went missing! {{ getRandomKaomoji() }} </div>
+                    {{ t("desc.lyrics.notFound", { emoji: getRandomKaomoji() }) }} </div>
             </div>
         </article>
     </article>
     <article :aria-busy="waitingForWSConnection" class="playlist">
-        <h4 v-if="userDataRaw">Playlist</h4>
+        <h4 v-if="userDataRaw">{{ t("desc.playlist.title") }}</h4>
         <draggable class="queue-items" :list="currentQueue.list" ghost-class="ghost" chosen-class="chosen-class"
             @end="onDragEnd" draggable=":not(.now-playing-sign)">
             <template #item="{ element, index }">
                 <div class="queue-item-card" v-if="element.meta" :class="index ? '' : 'now-playing-sign'"
                     :data-index="index" :style="getQueueBackground(element)">
                     <div>
-                        <span class="now-playing-sign" v-if="index == 0">Now Playing:</span>
+                        <span class="now-playing-sign" v-if="index == 0">{{ t("desc.playlist.nowPlaying") }}</span>
                         <span class="title">
                             <i v-if="element.type == 'netease'" class="iconfont icon-arisa-wangyiyun"></i>
                             <i v-else-if="element.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>

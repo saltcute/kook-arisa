@@ -13,6 +13,9 @@ import backend from './common'
 import { useNotification } from "@kyvg/vue3-notification";
 import { QQMusic } from 'menu/arisa/command/qq/lib';
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 const akarin = "https://img.kookapp.lolicon.ac.cn/assets/2022-07/vlOSxPNReJ0dw0dw.jpg";
 const { notify } = useNotification()
 const instance = getCurrentInstance();
@@ -146,22 +149,22 @@ function search() {
                     })
                     notify({
                         group: "search",
-                        title: "Success",
-                        text: `The video has been send to the playlist. Video longer than 10 minutes will not be added.`,
+                        title: t("notification.search.success.title"),
+                        text: t("notification.search.success.bilibili"),
                     });
                 } else {
                     notify({
                         group: "search",
-                        title: "Error",
-                        text: `This does not seem to be a valid Bilibili video link!`,
+                        title: t("notification.search.error.title"),
+                        text: t("notification.search.error.bilibiliWrongLinkPattern"),
                     });
                 }
         }
     } else {
         notify({
             group: "search",
-            title: "Error",
-            text: `Please wait for the previous search to complete.`,
+            title: t("notification.search.error.title"),
+            text: t("notification.search.error.waitForPreviousFinish"),
         });
     }
 }
@@ -182,14 +185,14 @@ function addNeteaseTrack(song: Netease.songDetail) {
     if (backend.currentStreamer) {
         notify({
             group: "search",
-            title: "Success",
-            text: `Added "${song.name}" to playlist`,
+            title: t("notification.search.success.title"),
+            text: t("notification.search.success.addedToPlaylist", { name: song.name }),
         });
     } else {
         notify({
             group: "search",
-            title: "Warning",
-            text: `No streamer active! Attempted to add "${song.name}" to playlist, but may fail to reflect.`,
+            title: t("notification.search.warning.title", { name: song.name }),
+            text: t("notification.search.warning.noStreamers", { name: song.name }),
         });
     }
 }
@@ -211,14 +214,14 @@ function addQQMusicTrack(song: QQMusic.Pattern.Song) {
     if (backend.currentStreamer) {
         notify({
             group: "search",
-            title: "Success",
-            text: `Added "${song.name}" to playlist`,
+            title: t("notification.search.success.title"),
+            text: t("notification.search.success.addedToPlaylist", { name: song.name }),
         });
     } else {
         notify({
             group: "search",
-            title: "Warning",
-            text: `No streamer active! Attempted to add "${song.name}" to playlist, but may fail to reflect.`,
+            title: t("notification.search.warning.title", { name: song.name }),
+            text: t("notification.search.warning.noStreamers", { name: song.name }),
         });
     }
 }
@@ -240,18 +243,11 @@ defineExpose({
             <header>
                 <a style="cursor: pointer;" @click="closeDialog()" aria-label="Close" class="close"></a>
                 <label for="track-name">
-                    <span v-if="activeTab == 'netease' || activeTab == 'qqmusic'">Search for A Track</span>
-                    <span v-else-if="activeTab == 'bilibili'">Play a Bilibili Video</span>
-                    <span v-else>Unknown Action</span>
-                    <!-- <svg class="iconfont" aria-hidden="true">
-                        <use xlink:href="#icon-arisa-wangyiyunyinle-copy"></use>
-                    </svg>
-                    <svg class="iconfont" aria-hidden="true">
-                        <use xlink:href="#icon-arisa-bilibili1"></use>
-                    </svg>
-                    <svg class="iconfont" aria-hidden="true">
-                        <use xlink:href="#icon-arisa-qqyinle"></use>
-                    </svg> -->
+                    <span v-if="activeTab == 'netease' || activeTab == 'qqmusic'">
+                        {{ t('desc.serach.title.searchForTrack') }}
+                    </span>
+                    <span v-else-if="activeTab == 'bilibili'">{{ t('desc.serach.title.playBilibiliVideo') }}</span>
+                    <span v-else>{{ t('desc.serach.title.unknown') }}</span>
                     <i class="iconfont icon-arisa-wangyiyun" :class="{ active: activeTab == 'netease' }"
                         @click="switchTabTo('netease')"></i>
                     <i class="iconfont icon-arisa-QQyinleshiliangtubiao" :class="{ active: activeTab == 'qqmusic' }"
@@ -259,7 +255,8 @@ defineExpose({
                     <i class="iconfont icon-arisa-bilibili" :class="{ active: activeTab == 'bilibili' }"
                         @click="switchTabTo('bilibili')"></i>
                     <input v-model="searchInput" type="search" name="track-name"
-                        :placeholder="activeTab == 'bilibili' ? 'BV ID' : 'Track name'" @keyup.enter="search()">
+                        :placeholder="activeTab == 'bilibili' ? t('desc.serach.boxDesc.bilibiliVideo') : t('desc.serach.boxDesc.trackName')"
+                        @keyup.enter="search()">
                 </label>
             </header>
             <div class="search-result">
@@ -287,7 +284,7 @@ defineExpose({
                     </span>
                 </article>
                 <article v-else-if="searched">
-                    <span class="meta">No Results</span>
+                    <span class="meta">{{ t('desc.serach.noResults') }}</span>
                 </article>
             </div>
         </article>

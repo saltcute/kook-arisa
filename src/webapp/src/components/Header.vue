@@ -6,7 +6,10 @@ library.add(faSun, faMoon, faMagnifyingGlass);
 
 import type { auth as authType } from './cards/common';
 import axios from 'axios';
-import { Ref, onMounted, ref, } from 'vue';
+import { Ref, getCurrentInstance, onMounted, ref, } from 'vue';
+
+import { useI18n } from 'vue-i18n'
+const { t, availableLocales, locale } = useI18n()
 
 const props = defineProps<{
     showNeteaseSearchDialog: (() => void) | undefined
@@ -60,6 +63,7 @@ callbackUrl = ref('');
             const userData = (await getUserMe(auth.access_token)).data
             localStorage.setItem('user', JSON.stringify(userData));
             user.value = `${userData.username}`
+
         } else {
             console.log('No auth');
             console.log(auth);
@@ -94,6 +98,15 @@ function switchTheme() {
     }
 }
 
+changeLocale(localStorage.getItem("locale") || "");
+function changeLocale(target?: string) {
+    if (!target) return;
+    if (availableLocales.includes(target)) {
+        locale.value = target as any;
+        localStorage.setItem("locale", target);
+    }
+}
+
 onMounted(() => {
     const preferredTheme = localStorage.getItem('preferredTheme');
     if (preferredTheme == 'light' || preferredTheme == 'dark') {
@@ -106,9 +119,20 @@ onMounted(() => {
     <header>
         <nav>
             <ul>
-                <li><strong class="title">Arisa Dashboard</strong></li>
+                <li><strong class="title">{{ t("desc.header.title") }}</strong></li>
             </ul>
             <ul>
+                <li>
+                    <details role="list" class="language-selector">
+                        <summary aria-haspopup="listbox"> {{ t(`desc.language.${$i18n.locale}`) }}</summary>
+                        <ul role="listbox" class="dropdown">
+                            <li :class="$i18n.locale == locale ? 'active' : ''" class="language-entry"
+                                v-for="locale in $i18n.availableLocales" @click="() => { changeLocale(locale) }">
+                                {{ t(`desc.language.${locale}`) }}
+                            </li>
+                        </ul>
+                    </details>
+                </li>
                 <li>
                     <i style="cursor: pointer;" @click="showNeteaseSearchDialog">
                         <font-awesome-icon :icon="['fas', 'magnifying-glass']" />
@@ -124,17 +148,27 @@ onMounted(() => {
                 </li>
                 <li>
                     <a v-if="user">{{ user }}</a>
-                    <a v-else="callbackUrl" :href="callbackUrl" role="button">Login with KOOK</a>
+                    <a v-else="callbackUrl" :href="callbackUrl" role="button">{{ $t("action.login") }}</a>
                 </li>
                 <li v-if="user">
-                    <a @click="logout" href="#" role="button">Logout</a>
+                    <a @click="logout" href="#" role="button">{{ $t("action.logout") }}</a>
                 </li>
             </ul>
         </nav>
     </header>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+.language-selector {
+    .language-entry {
+        cursor: pointer;
+
+        &.active {
+            background-color: var(--primary);
+        }
+    }
+}
+
 .title {
     font-family: var(--header-font);
     font-weight: var(--header-weight);
