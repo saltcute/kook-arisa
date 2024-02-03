@@ -244,10 +244,10 @@ defineExpose({
                 <a style="cursor: pointer;" @click="closeDialog()" aria-label="Close" class="close"></a>
                 <label for="track-name">
                     <span v-if="activeTab == 'netease' || activeTab == 'qqmusic'">
-                        {{ t('desc.serach.title.searchForTrack') }}
+                        {{ t('desc.search.title.searchForTrack') }}
                     </span>
-                    <span v-else-if="activeTab == 'bilibili'">{{ t('desc.serach.title.playBilibiliVideo') }}</span>
-                    <span v-else>{{ t('desc.serach.title.unknown') }}</span>
+                    <span v-else-if="activeTab == 'bilibili'">{{ t('desc.search.title.playBilibiliVideo') }}</span>
+                    <span v-else>{{ t('desc.search.title.unknown') }}</span>
                     <i class="iconfont icon-arisa-wangyiyun" :class="{ active: activeTab == 'netease' }"
                         @click="switchTabTo('netease')"></i>
                     <i class="iconfont icon-arisa-QQyinleshiliangtubiao" :class="{ active: activeTab == 'qqmusic' }"
@@ -255,7 +255,7 @@ defineExpose({
                     <i class="iconfont icon-arisa-bilibili" :class="{ active: activeTab == 'bilibili' }"
                         @click="switchTabTo('bilibili')"></i>
                     <input v-model="searchInput" type="search" name="track-name"
-                        :placeholder="activeTab == 'bilibili' ? t('desc.serach.boxDesc.bilibiliVideo') : t('desc.serach.boxDesc.trackName')"
+                        :placeholder="activeTab == 'bilibili' ? t('desc.search.boxDesc.bilibiliVideo') : t('desc.search.boxDesc.trackName')"
                         @keyup.enter="search()">
                 </label>
             </header>
@@ -284,7 +284,7 @@ defineExpose({
                     </span>
                 </article>
                 <article v-else-if="searched">
-                    <span class="meta">{{ t('desc.serach.noResults') }}</span>
+                    <span class="meta">{{ t('desc.search.noResults') }}</span>
                 </article>
             </div>
         </article>
