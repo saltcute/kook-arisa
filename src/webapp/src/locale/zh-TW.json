@@ -17,7 +17,8 @@
             "notPlaying": "未在播放"
         },
         "dashboard": {
-            "noStreamers": "沒有串流姬"
+            "noStreamers": "沒有串流姬",
+            "selectStreamer": "選擇一隻串流姬"
         },
         "lyrics": {
             "title": "歌詞",
@@ -33,7 +34,7 @@
         "search": {
             "title": {
                 "searchForTrack": "搜尋一首歌",
-                "playBilibiliVideo": "搜尋一只 Bilibili 影片",
+                "playBilibiliVideo": "搜尋一條 Bilibili 影片",
                 "unknown": "未知操作"
             },
             "boxDesc": {

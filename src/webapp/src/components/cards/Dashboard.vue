@@ -440,7 +440,8 @@ onMounted(() => {
             </div>
         </article>
         <details v-if="userDataRaw" role="list" id="streamerselector">
-            <summary aria-haspopup="listbox">{{ backend.currentStreamerName }}</summary>
+            <summary aria-haspopup="listbox">{{ backend.currentStreamerName || t("desc.dashboard.selectStreamer") }}
+            </summary>
             <ul role="listbox" class="dropdown">
                 <li v-if="!backend.streamers.length">
                     {{ t('desc.dashboard.noStreamers') }}
@@ -460,13 +461,13 @@ onMounted(() => {
                     <i class="click-cursor" v-if="enableTranslate"
                         :data-tooltip="t('tooltip.lyrics.hideTranslate')"><font-awesome-icon
                             :icon="['fas', 'language']" /></i>
-                    <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.hideTranslate')"><font-awesome-icon
+                    <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.showTranslate')"><font-awesome-icon
                             :icon="['fas', 'language']" /></i>
                 </span>
                 &nbsp<span v-if="currentLyric?.romaji" @click="switchRomaji">
                     <i class="click-cursor" v-if="enableRomaji"
                         :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon :icon="['fas', 'globe']" /></i>
-                    <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon
+                    <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.showRomaji')"><font-awesome-icon
                             :icon="['fas', 'globe']" /></i>
                 </span>
             </h5>

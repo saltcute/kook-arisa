@@ -17,7 +17,8 @@
             "notPlaying": "Not Playing"
         },
         "dashboard": {
-            "noStreamers": "No Streamers"
+            "noStreamers": "No Streamers",
+            "selectStreamer": "Select a Streamer"
         },
         "lyrics": {
             "title": "Lyrics",

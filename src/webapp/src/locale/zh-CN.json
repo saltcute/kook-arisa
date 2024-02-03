@@ -17,7 +17,8 @@
             "notPlaying": "没有播放"
         },
         "dashboard": {
-            "noStreamers": "没有推流姬"
+            "noStreamers": "没有推流姬",
+            "selectStreamer": "选择一只推流姬"
         },
         "lyrics": {
             "title": "歌词",

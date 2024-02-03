@@ -153,7 +153,7 @@ class Backend extends EventEmitter2 {
         if (streamer) {
             return `${streamer.name}#${streamer.identifyNum}`;
         } else {
-            return "Select a Streamer";
+            return "";
         }
     }
 
