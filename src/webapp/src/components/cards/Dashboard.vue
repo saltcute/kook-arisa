@@ -213,26 +213,34 @@ backend.on('newTrack', (nowPlaying?: playback.extra) => {
     }
 })
 
-function scrollToActiveLyric(arg?: boolean | ScrollIntoViewOptions) {
-    let element: Element | null = document.getElementById(currentLyricIndex()[1].toString())
+function scrollToActiveLyric() {
+    let element = document.getElementById(currentLyricIndex()[1].toString())
+    let parentContainer = document.getElementById("lyricTextarea");
     if (!element) {
         const children = document.getElementsByClassName(currentLyricIndex()[1].toString());
-        element = children[1] || children[0];
+        element = (children[1] || children[0]) as HTMLElement;
     }
     if (!element) {
-        const children = document.getElementsByClassName("lyric")[0]?.children;
-        if (children) element = children[children.length - 1];
+        const children = parentContainer?.children;
+        if (children) element = children[children.length - 1] as HTMLElement;
     }
-    element?.scrollIntoView(arg);
+    if (element && parentContainer) {
+        var elementTop = element.offsetTop;
+        var divTop = parentContainer.offsetTop;
+        var elementRelativeTop = elementTop - divTop;
+        parentContainer.scrollTop = elementRelativeTop - parentContainer.clientHeight / 2 + element.clientHeight / 2;
+    }
 }
 
 backend.on('wsEvent', () => {
     if (backend.currentStreamer?.queue && Date.now() - lastDragEnd > 1 * 1000)
         currentQueue.list = backend.currentStreamer?.queue;
     forceRender().then(() => {
-        if (Date.now() - lastScroll > 2 * 1000) {
-            scrollToActiveLyric({ behavior: 'smooth', block: 'center' });
-        }
+        forceRender().then(() => {
+            if (Date.now() - lastScroll > 2 * 1000) {
+                scrollToActiveLyric();
+            }
+        });
     })
 })
 
@@ -346,14 +354,14 @@ function switchRomaji() {
     enableRomaji.value = !enableRomaji.value;
     localStorage.setItem('showRomaji', enableRomaji.value.toString());
     nextTick().then(() => {
-        scrollToActiveLyric({ behavior: 'instant', block: 'center' });
+        scrollToActiveLyric();
     })
 }
 function switchTranslate() {
     enableTranslate.value = !enableTranslate.value;
     localStorage.setItem('showTranslate', enableTranslate.value.toString());
     nextTick().then(() => {
-        scrollToActiveLyric({ behavior: 'instant', block: 'center' });
+        scrollToActiveLyric();
     })
 }
 
@@ -869,6 +877,7 @@ h4 {
     overflow-y: scroll;
     -ms-overflow-style: none;
     scrollbar-width: none;
+    scroll-behavior: smooth;
 }
 
 #lyricTextarea::-webkit-scrollbar {

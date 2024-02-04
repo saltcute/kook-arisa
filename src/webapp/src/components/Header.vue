@@ -165,7 +165,7 @@ function getFlagEmoji(country: string) {
                     </i>
                 </li>
                 <li>
-                    <a v-if="user">{{ user }}</a>
+                    <a class="username" v-if="user">{{ user }}</a>
                     <a v-else="callbackUrl" :href="callbackUrl" role="button">{{ $t("action.login") }}</a>
                 </li>
                 <li v-if="user">

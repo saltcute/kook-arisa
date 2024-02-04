@@ -10,7 +10,7 @@ import Profile from '../components/cards/Profile.vue';
     </main>
 </template>
 
-<style>
+<style lang="scss">
 main {
     padding-top: 2em;
     padding-bottom: 2em;
@@ -31,6 +31,50 @@ main {
         "dashboard profile"
         "dashboard playlist";
 }
+
+@media screen and (max-aspect-ratio: 1/1),
+screen and (max-height: 500px) {
+    .container {
+        height: unset;
+        grid-template-columns: auto;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+            "profile"
+            "dashboard"
+            "playlist";
+
+        .dashboard {
+            .lyrics {
+                max-height: 35vh;
+            }
+        }
+    }
+}
+
+@media screen and (max-aspect-ratio: 17/20) {
+    header {
+        .language-current {
+            display: none;
+        }
+    }
+}
+
+@media screen and (max-aspect-ratio: 7/10) {
+    header {
+        .username {
+            display: none;
+        }
+    }
+}
+
+@media screen and (max-aspect-ratio: 6/10) {
+    header {
+        .title {
+            display: none;
+        }
+    }
+}
+
 
 .container>article {
     margin: 0px;

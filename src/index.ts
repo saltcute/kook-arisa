@@ -33,7 +33,7 @@ import leaveCommand from "menu/arisa/command/leave";
     }
 
     let sessions = await client.config.getOne("arisa::session.ongoing") || [];
-    sessions = sessions.reduce(function (p: typeof sessions, c) {
+    sessions = sessions.reduce((p: typeof sessions, c) => {
         if (!p.some(function (el) { return el.targetGuildId == c.targetGuildId && el.targetChannelId == c.targetChannelId; })) p.push(c);
         return p;
     }, []);
