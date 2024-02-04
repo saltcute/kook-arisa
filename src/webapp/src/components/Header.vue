@@ -98,12 +98,13 @@ function switchTheme() {
     }
 }
 
-changeLocale(localStorage.getItem("locale") || "");
+changeLocale(localStorage.getItem("locale") || navigator.language);
 function changeLocale(target?: string) {
     if (!target) return;
     if (availableLocales.includes(target)) {
         locale.value = target as any;
         localStorage.setItem("locale", target);
+        document.documentElement.setAttribute("lang", target);
     }
 }
 
@@ -113,6 +114,15 @@ onMounted(() => {
         document.querySelector(":root")?.setAttribute('data-theme', preferredTheme);
     }
 })
+
+function getFlagEmoji(country: string) {
+    function alphaToFlagAlpha(a: string) {
+        return String.fromCodePoint(0x1f1a5 + a.toUpperCase().codePointAt(0)!);
+    }
+    let code = country.slice(0, 2);
+    if (code.toLowerCase() == "tw") code = "CN";
+    return code.split("").map(alphaToFlagAlpha).join("");
+}
 </script>
 
 <template>
@@ -124,11 +134,19 @@ onMounted(() => {
             <ul>
                 <li>
                     <details role="list" class="language-selector">
-                        <summary aria-haspopup="listbox"> {{ t(`desc.language.${$i18n.locale}`) }}</summary>
+                        <summary aria-haspopup="listbox">
+                            <i class="language-name flag" v-emoji="getFlagEmoji($i18n.locale.split('-')[1])"></i>
+                            <span class="language-current">{{ t(`desc.language.name.self`) }}</span>
+                        </summary>
                         <ul role="listbox" class="dropdown">
                             <li :class="$i18n.locale == locale ? 'active' : ''" class="language-entry"
                                 v-for="locale in $i18n.availableLocales" @click="() => { changeLocale(locale) }">
-                                {{ t(`desc.language.${locale}`) }}
+                                <div class="language-name original">
+                                    <span>{{ t(`desc.language.name.original.${locale}`) }}</span>
+                                </div>
+                                <div class="language-name translated">
+                                    {{ t(`desc.language.name.translated.${locale}`) }}
+                                </div>
                             </li>
                         </ul>
                     </details>
@@ -164,8 +182,25 @@ onMounted(() => {
         cursor: pointer;
 
         &.active {
-            background-color: var(--primary);
+            color: var(--primary);
+            background-color: var(--secondary);
         }
+
+        .language-name {
+            &.translated {
+                font-size: .65em;
+                color: grey;
+                float: right;
+            }
+
+            &.flag {
+                font-size: 1.5em;
+            }
+        }
+    }
+
+    .language-current {
+        font-size: .75em;
     }
 }
 

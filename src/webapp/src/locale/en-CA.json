@@ -2,7 +2,20 @@
     "desc": {
         "language": {
             "name": {
-                "self": "English (United States)",
+                "self": "English (Canada)",
+                "original": {
+                    "en-CA": "English (Canada)",
+                    "en-US": "English (United States)",
+                    "zh-CN": "简体中文（中国大陆）",
+                    "zh-TW": "繁體中文（台灣）",
+                    "zh-HK": "繁體中文（香港）",
+                    "zh-HK-yue": "廣東話（香港）",
+                    "zh-MO": "繁體中文（澳門）",
+                    "zh-SG": "简体中文（新加坡）",
+                    "zh-MY": "简体中文（马来西亚）",
+                    "ja-JP": "日本語",
+                    "ko-KR": "한국어"
+                },
                 "translated": {
                     "en-CA": "English (Canada)",
                     "en-US": "English (United States)",
@@ -10,7 +23,7 @@
                     "zh-TW": "Traditional Chinese (Taiwan)",
                     "zh-HK": "Traditional Chinese (Hong Kong)",
                     "zh-HK-yue": "Cantonese (Hong Kong)",
-                    "zh-MO": "Traditional Chinese (Macau)",
+                    "zh-MO": "Traditional Chinese (Macao)",
                     "zh-SG": "Simplified Chinese (Singapore)",
                     "zh-MY": "Simplified Chinese (Malaysia)",
                     "ja-JP": "Japanese",
@@ -22,7 +35,7 @@
             "title": "Arisa Dashboard"
         },
         "footer": {
-            "MIT": "MIT License",
+            "MIT": "MIT Licence",
             "license": "{0}. The source code is distributed under the {1}."
         },
         "controlBoard": {
