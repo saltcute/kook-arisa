@@ -308,7 +308,6 @@ defineExpose({
 }
 
 #netease-search>article {
-    width: 65vw;
     padding-bottom: 0px;
 }
 
