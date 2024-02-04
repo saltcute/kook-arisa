@@ -662,6 +662,28 @@ span.sub.lyric.bottom {
 }
 
 
+.dashboard {
+    display: grid;
+    grid-template-rows: min-content min-content auto;
+    grid-template-areas:
+        "control"
+        "selector"
+        "lyric";
+
+    align-items: center;
+    row-gap: var(--spacing);
+
+    article,
+    details {
+        margin: 0px;
+    }
+
+    .controls {
+        grid-area: control;
+    }
+}
+
+
 .playlist>div.queue-items>div.queue-item-card>div {
     background-image: linear-gradient(var(--playlist-card-top), 75%, var(--playlist-card-bottom));
     transition: --playlist-card-top var(--transition), --playlist-card-botoom var(--transition);
@@ -846,25 +868,6 @@ h4 {
     cursor: pointer;
 }
 
-.dashboard {
-    display: grid;
-    grid-template-rows: min-content min-content min-content auto;
-    grid-template-areas:
-        "title"
-        "control"
-        "selector"
-        "lyric";
-
-    align-items: center;
-}
-
-.dashboard>.title {
-    grid-area: title;
-}
-
-.dashboard>.controls {
-    grid-area: control;
-}
 
 #streamerSelector {
     grid-area: selector;
