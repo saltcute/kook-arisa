@@ -422,11 +422,11 @@ export class LocalStreamer extends Streamer {
     }
 
     private async preload() {
-        let item = this.queue[0];
-        if (item) {
-            let prepared = await this.preparePayload(item);
-            if (prepared) this.queue[0] = prepared;
-        }
+        // let item = this.queue[0];
+        // if (item) {
+        //     let prepared = await this.preparePayload(item);
+        //     if (prepared) this.queue[0] = prepared;
+        // }
     }
 
     private async preparePayload(payload: queueItem): Promise<{

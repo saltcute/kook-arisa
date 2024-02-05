@@ -28,7 +28,7 @@ export class Time {
         if (d) res += `${d}天`;
         if (h) res += `${h}小时`;
         if (m) res += `${m}分钟`;
-        if (s) res += `${s}秒`;
+        res += `${s}秒`;
         return res;
     }
 

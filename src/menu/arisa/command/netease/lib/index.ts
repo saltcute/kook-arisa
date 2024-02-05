@@ -50,6 +50,9 @@ export class Netease {
     async getLyric(id: number): Promise<Netease.lyric> {
         return ((await netease.lyric({ id, cookie: this.cookie, realIP: this.REAL_IP }))).body as any;
     }
+    async getPlaylist(id: string): Promise<Netease.playlist> {
+        return ((await netease.playlist_track_all({ id })).body as any).songs;
+    }
 }
 
 const neteaseInstance = new Netease(client.config.hasSync("realIP") ? client.config.getSync("realIP").toString() : undefined);
@@ -171,6 +174,7 @@ export namespace Netease {
         tlyric?: lyricContent,
         romalrc?: lyricContent
     }
+    export type playlist = songDetail[];
     export interface lyricContent {
         version: number,
         lyric: string,

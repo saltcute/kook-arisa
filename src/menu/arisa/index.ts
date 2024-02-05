@@ -1,10 +1,11 @@
 import { client } from "init/client";
-import { BaseMenu } from "kasumi.js";
+import { BaseCommand, BaseMenu, BaseSession } from "kasumi.js";
 import upath from 'upath';
 import * as fs from 'fs';
 import './event';
 import { LocalController } from "./playback/local/controller";
 import { Streamer } from "./playback/type";
+import { LocalStreamer } from "./playback/local/player";
 
 class AppMenu extends BaseMenu {
     name = 'arisa';
@@ -49,4 +50,28 @@ export async function getChannelStreamer(guildId: string, authorId: string): Pro
     } else {
         throw { err: 'no_joinedchannel', msg: '请先加入语音频道！' };
     }
+}
+
+export declare class StreamerSession extends BaseSession {
+    guildId: string;
+    streamer: LocalStreamer;
+}
+
+export async function requireStreamer(session: BaseSession, commands: BaseCommand[]) {
+    if (!session.guildId) {
+        await session.reply("只能在服务器频道中使用此命令")
+        return false;
+    }
+    const streamer = await getChannelStreamer(session.guildId, session.authorId).catch((e) => {
+        switch (e.err) {
+            case 'network_failure':
+            case 'no_streamer':
+            case 'no_joinedchannel':
+                session.reply(e.msg);
+            default:
+                client.logger.error(e);
+        }
+    });
+    if (streamer) return true;
+    else return false;
 }

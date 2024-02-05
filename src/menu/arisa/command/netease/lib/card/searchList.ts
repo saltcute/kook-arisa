@@ -10,7 +10,7 @@ export type data = {
     meta: playback.meta
 }
 
-async function processing(song: Netease.song, order: number) {
+export async function processing(song: Netease.song, order: number) {
     let url;
     try {
         const album = await netease.getAlbum(song.album.id);
