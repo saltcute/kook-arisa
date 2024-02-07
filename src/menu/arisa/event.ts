@@ -2,6 +2,8 @@ import { client } from "init/client";
 import { controller } from ".";
 import playlist from "./playback/lib/playlist";
 import { Card, MessageType } from "kasumi.js";
+import { ButtonControlPanel } from "./playback/lib/panel/index";
+import leaveCommand from 'menu/arisa/command/leave'
 
 interface userLeaveVoiceChannelEventExtra {
     type: 'exited_channel',
@@ -29,7 +31,19 @@ client.on('event.system', async (event) => {
                     const promises = streamer.panel.panelChannelArray.map(id => client.API.message.create(MessageType.CardMessage, id, new Card().addTitle("Notice | 注意").addText("机器人被动断开连接，机器人可能被踢出语音频道或经历了网络波动。如需结束推流，请使用指令 `/arisa leave` 停止点歌，不要将机器人直接踢出语音频道。")));
                     await Promise.all(promises);
                 }
-                // streamer.disconnect("被动断开，机器人可能被踢出语音频道或经历了网络波动");
+                await streamer.disconnect("机器人被动断开连接，正在重连…");
+                const textChannelId = streamer.panel?.panelChannelArray[0]
+                const newStreamer = await controller.joinChannel(streamer.TARGET_GUILD_ID, streamer.TARGET_CHANNEL_ID, streamer.INVITATION_AUTHOR_ID, textChannelId);
+                if (newStreamer) {
+                    await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { client.logger.error(e) });
+                    if (textChannelId) {
+                        await client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addText(`(met)${streamer.kasumi.me.userId}(met) 已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`));
+                        streamer.panel = new ButtonControlPanel(controller, streamer, controller.client)
+                        await streamer.panel.newPanel(textChannelId);
+                    }
+
+                    if (streamer.audienceIds.size <= 0) await streamer.disconnect("语音频道内无用户");
+                }
             } else {
                 streamer.audienceIds.delete(extra.body.user_id);
                 if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {

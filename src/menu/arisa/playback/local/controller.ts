@@ -116,7 +116,7 @@ export class LocalController extends Controller {
      * Bot token is auto assigned.
      * @param channelId ChannelID
      */
-    async joinChannel(guildId: string, channelId: string, authorId: string, textChannelId: string) {
+    async joinChannel(guildId: string, channelId: string, authorId: string, textChannelId?: string) {
         const STREAMER_TOKEN = this.getNextAvailableStreamer();
         if (!STREAMER_TOKEN) return;
 
@@ -197,9 +197,9 @@ export class LocalController extends Controller {
             this.client.config.set("arisa::session.ongoing", sessions);
             return streamer.connect();
         } catch (err) {
-            client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addTitle("无法加入语音频道").addText("由于近期 KOOK 的 API 变化，机器人需要拥有「管理员」权限才能正常运行。"))
+            if (textChannelId) await client.API.message.create(MessageType.CardMessage, textChannelId, new Card().addTitle("无法加入语音频道").addText("可能原因：由于近期 KOOK 的 API 变化，机器人需要拥有「管理员」权限才能正常运行。"))
             streamer.kasumi.logger.error(err);
-            streamer.disconnect(null);
+            await streamer.disconnect(null);
             return;
         }
     }

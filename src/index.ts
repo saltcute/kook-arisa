@@ -42,10 +42,12 @@ import leaveCommand from "menu/arisa/command/leave";
         const streamer = await controller.joinChannel(session.targetGuildId, session.targetChannelId, session.invitationAuthorId, session.invitationTextChannelId);
         if (streamer) {
             await playlist.user.restore(streamer, streamer.INVITATION_AUTHOR_ID).catch((e) => { client.logger.error(e) });
-            await client.API.message.create(MessageType.CardMessage, session.invitationTextChannelId, new Card().addText(`(met)${streamer.kasumi.me.userId}(met) 已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`));
 
-            streamer.panel = new ButtonControlPanel(controller, streamer, controller.client)
-            await streamer.panel.newPanel(session.invitationTextChannelId);
+            if (session.invitationTextChannelId) {
+                await client.API.message.create(MessageType.CardMessage, session.invitationTextChannelId, new Card().addText(`(met)${streamer.kasumi.me.userId}(met) 已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`));
+                streamer.panel = new ButtonControlPanel(controller, streamer, controller.client)
+                await streamer.panel.newPanel(session.invitationTextChannelId);
+            }
 
             if (streamer.audienceIds.size <= 0) await streamer.disconnect("语音频道内无用户");
         }

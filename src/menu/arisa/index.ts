@@ -2,7 +2,6 @@ import { client } from "init/client";
 import { BaseCommand, BaseMenu, BaseSession } from "kasumi.js";
 import upath from 'upath';
 import * as fs from 'fs';
-import './event';
 import { LocalController } from "./playback/local/controller";
 import { Streamer } from "./playback/type";
 import { LocalStreamer } from "./playback/local/player";
@@ -14,6 +13,8 @@ class AppMenu extends BaseMenu {
 const menu = new AppMenu();
 export default menu;
 client.plugin.load(menu);
+
+import './event';
 
 const basicPath = upath.join(__dirname, 'command');
 const commands = fs.readdirSync(basicPath);

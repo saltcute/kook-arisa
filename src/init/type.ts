@@ -15,7 +15,7 @@ export interface ArisaStorage {
         targetChannelId: string,
         targetGuildId: string,
         invitationAuthorId: string,
-        invitationTextChannelId: string
+        invitationTextChannelId?: string
     }[],
 
     "globalAdmins": string[],
