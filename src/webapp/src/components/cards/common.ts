@@ -1,7 +1,6 @@
 import { playback } from "menu/arisa/playback/type";
-import { streamerDetail } from "./types";
+import { ClientEvents, ServerEvents, ServerPayload, streamerDetail } from "./types";
 import EventEmitter2 from "eventemitter2";
-import { computed } from "vue";
 export interface auth {
     access_token: string,
     expires_in: number,
@@ -39,46 +38,101 @@ class Backend extends EventEmitter2 {
     }
 
 
-    connect() {
-        const self = this;
-        this.ws = new WebSocket(window.location.protocol.replace('http', 'ws') + location.hostname);
-        this.ws.onopen = function () {
-            self.ws?.send(JSON.stringify({
-                t: 0,
-                d: {
-                    access_token: auth.access_token
-                }
-            }));
-        };
-
-        this.ws.onmessage = function (data) {
-            try {
-                self.emit("wsEvent");
-                if (data.data) {
-                    self.streamers = JSON.parse(data.data.toString());
-                    if (Backend.getNowPlayingHash(self.nowPlaying) != Backend.getNowPlayingHash(self.currentStreamer?.nowPlaying)) {
-                        self.nowPlaying = self.currentStreamer?.nowPlaying;
-                        self.emit("newTrack", self.currentNowPlaying);
+    isWsAlive = true;
+    isWsClosed = true;
+    checkWsAliveTimeout?: NodeJS.Timeout;
+    checkWsAlive() {
+        if (!this.isWsClosed) {
+            if (!this.isWsAlive) {
+                this.ws?.close();
+                this.isWsClosed = true;
+                this.reconnect();
+            } else {
+                this.isWsAlive = false;
+                this.ws?.send(JSON.stringify({
+                    t: ClientEvents.CLIENT_PING,
+                    d: {
+                        time: Date.now()
                     }
-                    // console.log(streamers.value[currentStreamerIndex].nowPlaying);
-                }
-            } catch (e) { console.error(e) }
-        };
+                }))
+            }
+        }
+        clearTimeout(this.checkWsAliveTimeout);
+        this.checkWsAliveTimeout = setTimeout(() => { this.checkWsAlive() }, 5 * 1000);
+    }
+    /**
+     * Lantency with server in ms
+     */
+    serverLatency = 0;
+    now() {
+        return Date.now() - this.serverLatency;
+    }
+    connect() {
+        try {
+            const self = this;
+            this.ws = new WebSocket(window.location.protocol.replace('http', 'ws') + location.hostname);
+            this.isWsAlive = true;
+            this.isWsClosed = false;
+            this.ws.onopen = function () {
+                self.ws?.send(JSON.stringify({
+                    t: 0,
+                    d: {
+                        access_token: auth.access_token
+                    }
+                }));
+                self.checkWsAlive();
+            };
 
-        this.ws.onclose = function (e) {
-            console.log('Socket is closed. Attempting to reconnect in 5 second.', e.reason);
-            setTimeout(self.connect, 5000);
-        };
+            this.ws.onmessage = function (data) {
+                try {
+                    self.currentReconnectLatency = 1000;
+                    self.emit("wsEvent", data);
+                    if (data.data) {
+                        const event: ServerPayload = JSON.parse(data.data.toString());
+                        switch (event.t) {
+                            case ServerEvents.STREAMER_DATA: {
+                                self.streamers = event.d;
+                                if (Backend.getNowPlayingHash(self.nowPlaying) != Backend.getNowPlayingHash(self.currentStreamer?.nowPlaying)) {
+                                    self.nowPlaying = self.currentStreamer?.nowPlaying;
+                                    self.emit("newTrack", self.currentNowPlaying);
+                                }
+                                // console.log(streamers.value[currentStreamerIndex].nowPlaying);
+                                break;
+                            }
+                            case ServerEvents.SERVER_PONG: {
+                                self.isWsAlive = true;
+                                self.serverLatency = Date.now() - event.d.time;
+                            }
+                        }
+                    }
+                } catch (e) { console.error(e) }
+            };
 
-        this.ws.onerror = function (err) {
-            console.error('Socket encountered error: ', err, 'Closing socket');
-            self.ws?.close();
-        };
+            this.ws.onerror = function (err) {
+                console.error('Socket encountered error: ', err, 'Closing socket');
+                self.ws?.close();
+                self.isWsClosed = true;
+                self.reconnect();
+            };
+        } catch (e) {
+            console.error(e);
+            this.ws?.close();
+            this.isWsClosed = true;
+            this.reconnect();
+        }
+    }
+    reconnectTimeout?: NodeJS.Timeout;
+    currentReconnectLatency = 1000;
+    reconnect() {
+        this.currentReconnectLatency = 1.5 * this.currentReconnectLatency;
+        console.log(`Socket is closed. Attempting to reconnect in ${this.currentReconnectLatency / 1000} seconds.`);
+        clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = setTimeout(() => { this.connect() }, this.currentReconnectLatency);
     }
 
     setPlayback(paused: boolean) {
         this.ws?.send(JSON.stringify({
-            t: 1,
+            t: ClientEvents.PLAYBACK_PAUSE_RESUME,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 paused,
@@ -88,7 +142,7 @@ class Backend extends EventEmitter2 {
 
     changeTrack(next: boolean) {
         this.ws?.send(JSON.stringify({
-            t: 2,
+            t: ClientEvents.PLAYBACK_NEXT_PREVIOUS,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 next
@@ -98,7 +152,7 @@ class Backend extends EventEmitter2 {
 
     changeQueueEntry(index: number, amount = 1, action: 'up' | 'down' | 'delete') {
         this.ws?.send(JSON.stringify({
-            t: 3,
+            t: ClientEvents.PLAYBACK_MOVE_QUEUE,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 queueIndex: index - 1,
@@ -110,7 +164,7 @@ class Backend extends EventEmitter2 {
 
     sendShuffleQueue() {
         this.ws?.send(JSON.stringify({
-            t: 4,
+            t: ClientEvents.PLAYBACK_SHUFFLE_QUEUE,
             d: {
                 streamerIndex: this.currentStreamerIndex,
             }
@@ -119,7 +173,7 @@ class Backend extends EventEmitter2 {
 
     sendChangeCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
         this.ws?.send(JSON.stringify({
-            t: 5,
+            t: ClientEvents.PLAYBACK_CYCLE_MODE,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 cycleMode: mode
@@ -129,7 +183,7 @@ class Backend extends EventEmitter2 {
 
     public addTrack(data: playback.extra.streaming) {
         this.ws?.send(JSON.stringify({
-            t: 6,
+            t: ClientEvents.PLAYBACK_PLAY_SONG,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 data
@@ -139,7 +193,7 @@ class Backend extends EventEmitter2 {
 
     jumpToPercentage(percent: number) {
         this.ws?.send(JSON.stringify({
-            t: 7,
+            t: ClientEvents.PLAYBACK_JUMP_TO_PERCENT,
             d: {
                 streamerIndex: this.currentStreamerIndex,
                 percent
@@ -227,7 +281,7 @@ class Backend extends EventEmitter2 {
 
     // sendSelectServer(guildId: string) {
     //    this.ws?.send(JSON.stringify({
-    //         t: 8,
+    // t: ClientEvents.SELECT_GUILD,
     //         d: {
     //             guildId
     //         }

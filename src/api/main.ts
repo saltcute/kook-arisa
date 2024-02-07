@@ -7,7 +7,7 @@ import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
 import { controller } from 'menu/arisa';
 import { playback } from 'menu/arisa/playback/type';
-import { streamerDetail } from 'webapp/src/components/cards/types';
+import { ClientEvents, ClientPayload, ServerEvents, streamerDetail } from 'webapp/src/components/cards/types';
 import api from './api';
 import netease from './netease';
 import qqmusic from './qqmusic';
@@ -15,10 +15,6 @@ import { LocalStreamer } from 'menu/arisa/playback/local/player';
 import { getVideoDetail } from 'menu/arisa/command/bilibili/lib/index';
 const { app } = expressWs(express());
 
-interface payload {
-    t: number,
-    d: any
-}
 
 app.ws('/', (ws: WebSocket) => {
     ws.on('message', async (data) => {
@@ -43,14 +39,14 @@ app.ws('/', (ws: WebSocket) => {
         }
         try {
             const raw = data.toString();
-            const payload: payload = JSON.parse(raw);
+            const payload: ClientPayload = JSON.parse(raw);
             switch (payload.t) {
-                case 0: // Get user ID
+                case ClientEvents.GET_USER_ID: // Get user ID
                     const accessToken = payload.d.access_token;
                     const user = await getUserMe(accessToken);
                     userId = user.data.id;
                     break;
-                case 1: { // Pause and resume 
+                case ClientEvents.PLAYBACK_PAUSE_RESUME: { // Pause and resume 
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         if (payload.d.paused) {
@@ -61,7 +57,7 @@ app.ws('/', (ws: WebSocket) => {
                     }
                     break;
                 }
-                case 2: { // Next/Previous track in queue
+                case ClientEvents.PLAYBACK_NEXT_PREVIOUS: { // Next/Previous track in queue
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         if (payload.d.next) {
@@ -72,7 +68,7 @@ app.ws('/', (ws: WebSocket) => {
                     }
                     break;
                 }
-                case 3: { // Move queue items
+                case ClientEvents.PLAYBACK_MOVE_QUEUE: { // Move queue items
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         const queueIndex = payload.d.queueIndex;
@@ -102,21 +98,21 @@ app.ws('/', (ws: WebSocket) => {
                     }
                     break;
                 }
-                case 4: { // Shuffle queue
+                case ClientEvents.PLAYBACK_SHUFFLE_QUEUE: { // Shuffle queue
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         streamer.shuffle();
                     }
                     break;
                 }
-                case 5: { // Change cycle mode
+                case ClientEvents.PLAYBACK_CYCLE_MODE: { // Change cycle mode
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         streamer.setCycleMode(payload.d.cycleMode)
                     }
                     break;
                 }
-                case 6: { // Play song
+                case ClientEvents.PLAYBACK_PLAY_SONG: { // Play song
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         const data = payload.d.data as playback.extra.streaming;
@@ -167,7 +163,7 @@ app.ws('/', (ws: WebSocket) => {
                     }
                     break;
                 }
-                case 7: { // Jump to percentage
+                case ClientEvents.PLAYBACK_JUMP_TO_PERCENT: { // Jump to percentage
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
                     if (streamer) {
                         const percent = payload.d.percent;
@@ -177,9 +173,18 @@ app.ws('/', (ws: WebSocket) => {
                     }
                     break;
                 }
-                case 8: { // Select guild
+                case ClientEvents.SELECT_GUILD: { // Select guild
                     // guildId = payload.d.guildId;
                     // getChannelStreamer()
+                    break;
+                }
+                case ClientEvents.CLIENT_PING: { // Ping
+                    ws.send(JSON.stringify({
+                        t: ServerEvents.SERVER_PONG,
+                        d: {
+                            time: Date.now()
+                        }
+                    }))
                     break;
                 }
             }
@@ -230,7 +235,10 @@ app.ws('/', (ws: WebSocket) => {
                     payload.push(data)
                 }
                 // console.log(payload);
-                ws.send(JSON.stringify(payload));
+                ws.send(JSON.stringify({
+                    t: ServerEvents.STREAMER_DATA,
+                    d: payload
+                }));
             }
         }
     }
