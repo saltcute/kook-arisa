@@ -797,7 +797,7 @@ div:hover {
         }
     }
 
-    &>.i {
+    & .i {
         padding-top: 1em;
         cursor: pointer;
     }
