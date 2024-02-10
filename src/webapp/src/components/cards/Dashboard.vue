@@ -371,14 +371,16 @@ onMounted(() => {
 });
 
 function f(x: number) {
-    if (x < 0.63726) return 1.29 * x * x;
-    else return 1.414 * Math.sqrt(x - 0.5);
+    return Math.exp(0.6933 * x) - 1;
+    // if (x < 0.63726) return 1.29 * x * x;
+    // else return 1.414 * Math.sqrt(x - 0.5);
     // return Math.pow(x, 2);
     // return 5 / 9 * x * x * x + 0.05;
 }
 function fr(x: number) {
-    if (x < 0.63726) return Math.sqrt(x / 1.29);
-    else return (x / 1.414) * (x / 1.414) + 0.5;
+    return Math.log(x + 1) / 0.6933;
+    // if (x < 0.63726) return Math.sqrt(x / 1.29);
+    // else return (x / 1.414) * (x / 1.414) + 0.5;
     // return Math.sqrt(x);
     // return Math.cbrt((x - 0.05) * 9 / 5);
 }
