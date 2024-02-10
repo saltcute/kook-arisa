@@ -183,6 +183,7 @@ class Backend extends EventEmitter2 {
 
     private lastSentGain = -1;
     changeVolumeGain(value: number) {
+        if (typeof value != 'number') return;
         if (value >= 0.5) value = 0.5;
         if (value <= 0.15) value = 0;
         if (Date.now() - this.lastSentGain > 50) {
