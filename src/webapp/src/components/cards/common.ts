@@ -171,7 +171,7 @@ class Backend extends EventEmitter2 {
         }))
     }
 
-    sendChangeCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
+    sendChangeCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat' | 'random') {
         this.ws?.send(JSON.stringify({
             t: ClientEvents.PLAYBACK_CYCLE_MODE,
             d: {
@@ -179,6 +179,22 @@ class Backend extends EventEmitter2 {
                 cycleMode: mode
             }
         }))
+    }
+
+    private lastSentGain = -1;
+    changeVolumeGain(value: number) {
+        if (value >= 0.5) value = 0.5;
+        if (value <= 0.15) value = 0;
+        if (Date.now() - this.lastSentGain > 50) {
+            this.lastSentGain = Date.now();
+            this.ws?.send(JSON.stringify({
+                t: ClientEvents.PLAYBACK_VOLUME,
+                d: {
+                    streamerIndex: this.currentStreamerIndex,
+                    value
+                }
+            }))
+        }
     }
 
     public addTrack(data: playback.extra.streaming) {
@@ -271,7 +287,7 @@ class Backend extends EventEmitter2 {
         }
     }
 
-    switchCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat') {
+    switchCycleMode(mode: 'repeat_one' | 'repeat' | 'no_repeat' | 'random') {
         const streamer = this.currentStreamer;
         if (streamer) {
             return this.sendChangeCycleMode(mode);

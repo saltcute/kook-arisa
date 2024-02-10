@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import SliderComponent from './VolumeSlider.vue';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage } from '@fortawesome/free-solid-svg-icons'
-library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage);
+import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage, faVolumeXmark, faVolumeLow, faVolumeHigh } from '@fortawesome/free-solid-svg-icons'
+library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage, faVolumeXmark, faVolumeLow, faVolumeHigh);
 
 import { playback } from 'menu/arisa/playback/type';
 import backend from './common';
@@ -16,6 +17,7 @@ import type { SortableEvent } from "sortablejs"
 
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
+
 
 const proxy = "img.kookapp.lolicon.ac.cn";
 
@@ -131,34 +133,6 @@ function getQueueBackground(queue: playback.extra) {
 }
 
 
-let keep = false, percent = 0;
-window.addEventListener('mousemove', (event) => {
-    const target = document.getElementById('playback-progress') as HTMLProgressElement | null;
-    if (target) {
-        const localX = event.clientX - target.offsetLeft;
-        if (keep) {
-            percent = localX / target.offsetWidth;
-            target.value = percent
-        }
-    }
-});
-window.addEventListener('mousedown', (event) => {
-    const target = event.target as HTMLProgressElement | null;
-    if (target?.id == 'playback-progress') {
-        keep = true;
-        const localX = event.clientX - target.offsetLeft;
-        percent = localX / target.offsetWidth;
-        target.value = percent;
-    }
-})
-window.addEventListener('mouseup', () => {
-    if (keep) {
-        keep = false;
-        backend.jumpToPercentage(percent);
-    }
-})
-
-
 function proxiedKookImage(original: string) {
     return original.replace('img.kaiheila.cn', proxy).replace('img.kookapp.cn', proxy);
 }
@@ -168,22 +142,17 @@ const currentQueue = reactive({
 });
 
 function getPlaybackProgress() {
-    if (keep) {
-        return percent;
-    } else {
-        const streamer = backend.currentStreamer
-        if (streamer) {
-            const played = streamer.trackPlayedTime
-            const duration = streamer.trackTotalDuration
-            if (played && duration) return played / duration
-            else return 0;
-        } else return 0;
-    }
+    const streamer = backend.currentStreamer
+    if (streamer) {
+        const played = streamer.trackPlayedTime
+        const duration = streamer.trackTotalDuration
+        if (played && duration) return played / duration * 100
+        else return 0;
+    } else return 0;
 }
 
 backend.on('newTrack', (nowPlaying?: playback.extra) => {
     console.log(nowPlaying);
-    percent = 0;
     if (nowPlaying) {
         switch (nowPlaying.type) {
             case "netease":
@@ -399,21 +368,10 @@ onMounted(() => {
             <div class="song-artists">{{
                 backend.currentNowPlaying?.meta?.artists
             }}</div>
-            <progress :key="componentKey" id="playback-progress" :value="getPlaybackProgress()"></progress>
+            <input type="range" id="playback-progress"
+                @change="(event) => { if (event.target) backend.jumpToPercentage((event.target as any).value / 100) }"
+                :value="getPlaybackProgress()" min="0" max="100" />
             <div v-if="backend.currentStreamer" class="playback-control grid">
-                <i :data-tooltip="t('tooltip.controlBoard.shufflePlaylist')" @click="backend.shuffleQueue">
-                    <font-awesome-icon :icon="['fas', 'shuffle']" />
-                </i>
-                <i @click="() => { backend.playPrevious() }">
-                    <font-awesome-icon :icon="['fas', 'backward']" />
-                </i>
-                <i @click="backend.switchPlayback">
-                    <font-awesome-icon v-if="backend.currentStreamer.isPaused" :icon="['fas', 'play']" />
-                    <font-awesome-icon v-else :icon="['fas', 'pause']" />
-                </i>
-                <i @click="backend.playNext">
-                    <font-awesome-icon :icon="['fas', 'forward']" />
-                </i>
                 <i :data-tooltip="t('tooltip.controlBoard.noRepeat')"
                     v-if="backend.currentStreamer.cycleMode == 'no_repeat'" @click="backend.switchCycleMode('repeat')">
                     <font-awesome-icon :icon="['fas', 'circle-xmark']" />
@@ -425,13 +383,40 @@ onMounted(() => {
                 </i>
                 <i :data-tooltip="t('tooltip.controlBoard.repeatOne')"
                     v-else-if="backend.currentStreamer.cycleMode == 'repeat_one'"
-                    @click="backend.switchCycleMode('no_repeat')">
+                    @click="backend.switchCycleMode('random')">
                     <font-awesome-icon :icon="['fas', 'repeat']" fade />
+                </i>
+                <i :data-tooltip="t('tooltip.controlBoard.shufflePlaylist')"
+                    v-else-if="backend.currentStreamer.cycleMode == 'random'" @click="backend.switchCycleMode('no_repeat')">
+                    <font-awesome-icon :icon="['fas', 'shuffle']" />
+                </i>
+
+                <i @click="() => { backend.playPrevious() }">
+                    <font-awesome-icon :icon="['fas', 'backward']" />
+                </i>
+                <i @click="backend.switchPlayback">
+                    <font-awesome-icon v-if="backend.currentStreamer.isPaused" :icon="['fas', 'play']" />
+                    <font-awesome-icon v-else :icon="['fas', 'pause']" />
+                </i>
+                <i @click="backend.playNext">
+                    <font-awesome-icon :icon="['fas', 'forward']" />
+                </i>
+                <i id="volume-control">
+                    <font-awesome-icon v-if="backend.currentStreamer.volumeGain <= 0" :icon="['fas', 'volume-xmark']" />
+                    <font-awesome-icon v-else-if="backend.currentStreamer.volumeGain <= 0.4"
+                        :icon="['fas', 'volume-low']" />
+                    <font-awesome-icon v-else :icon="['fas', 'volume-high']" />
+                    <slider-component id="volume-slider" @inputValue="(value) => {
+                        const f = (x: number) => {
+                            return 7 * x * x * x / 20 + 0.15;
+                        }
+                        backend.changeVolumeGain(f(value / 100));
+                    }"></slider-component>
                 </i>
             </div>
             <div v-else class="playback-control grid" style="opacity: 55%;">
                 <i>
-                    <font-awesome-icon :icon="['fas', 'shuffle']" />
+                    <font-awesome-icon :icon="['fas', 'repeat']" />
                 </i>
                 <i>
                     <font-awesome-icon :icon="['fas', 'backward']" />
@@ -443,7 +428,7 @@ onMounted(() => {
                     <font-awesome-icon :icon="['fas', 'forward']" />
                 </i>
                 <i>
-                    <font-awesome-icon :icon="['fas', 'repeat']" />
+                    <font-awesome-icon :icon="['fas', 'volume-xmark']" />
                 </i>
             </div>
         </article>
@@ -518,6 +503,7 @@ onMounted(() => {
                             <i v-else-if="element.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
                             <i v-else-if="element.type == 'bilibili'" class="iconfont icon-arisa-bilibili"></i>
                             {{ element.meta.title }}
+                            <span>{{ element.endMark }}</span>
                         </span>
                         <span class="artists">{{ element.meta.artists }}</span>
                         <i @click="backend.queueMoveEntryUp(index)" class="up-button">
@@ -537,6 +523,19 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+#volume-control {
+
+    &:hover #volume-slider {
+        transform: translate(-0.8em, -11em);
+        display: block;
+        position: absolute;
+    }
+
+    #volume-slider {
+        display: none;
+    }
+}
+
 @mixin dark-mode-definition() {
     .playlist>div.queue-items>div.queue-item-card>div {
         --playlist-card-top: rgb(0, 0, 0, 91%);
@@ -794,6 +793,7 @@ div:hover {
 }
 
 .playback-control>i {
+    padding-top: 1em;
     cursor: pointer;
 }
 

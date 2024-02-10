@@ -80,7 +80,7 @@
     },
     "tooltip": {
         "controlBoard": {
-            "shufflePlaylist": "点击随机排序播放列表",
+            "shufflePlaylist": "随机循环",
             "noRepeat": "不循环",
             "repeat": "列表循环",
             "repeatOne": "单曲循环"

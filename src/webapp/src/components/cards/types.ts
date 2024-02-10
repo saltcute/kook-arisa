@@ -9,7 +9,8 @@ export interface streamerDetail {
     isPaused: boolean,
     nowPlaying?: playback.extra,
     queue: playback.extra[],
-    cycleMode: 'repeat_one' | 'repeat' | 'no_repeat'
+    cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' | 'random',
+    volumeGain: number;
 }
 
 interface Payload {
@@ -33,6 +34,7 @@ export enum ClientEvents {
     PLAYBACK_CYCLE_MODE,
     PLAYBACK_PLAY_SONG,
     PLAYBACK_JUMP_TO_PERCENT,
+    PLAYBACK_VOLUME,
     SELECT_GUILD,
     CLIENT_PING
 }

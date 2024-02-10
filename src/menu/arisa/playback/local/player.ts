@@ -365,7 +365,7 @@ export class LocalStreamer extends Streamer {
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
-    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat') {
+    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' | 'random' = 'no_repeat') {
         super.setCycleMode(payload);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
@@ -381,12 +381,17 @@ export class LocalStreamer extends Streamer {
                 case 'repeat_one':
                     upnext = this.nowPlaying || this.queue.pop();
                     break;
+                case 'random':
                 case 'repeat':
                     if (this.nowPlaying) this.queue.unshift(this.nowPlaying);
                     upnext = this.queue.pop();
                     break;
             }
             if (upnext) {
+                if (upnext.endMark) {
+                    upnext.endMark = false;
+                    this.shuffle();
+                }
                 this.nowPlaying = upnext;
                 await this.playback(upnext);
                 return upnext;
@@ -405,6 +410,7 @@ export class LocalStreamer extends Streamer {
                     if (this.nowPlaying) upnext = this.nowPlaying;
                     else this.queue.shift();
                     break;
+                case 'random':
                 case 'repeat':
                     if (this.nowPlaying) {
                         this.queue.push(this.nowPlaying);
@@ -414,6 +420,10 @@ export class LocalStreamer extends Streamer {
                     break;
             }
             if (upnext) {
+                if (upnext.endMark) {
+                    upnext.endMark = false;
+                    this.shuffle();
+                }
                 this.nowPlaying = upnext;
                 await this.playback(upnext);
                 return upnext;
@@ -483,7 +493,6 @@ export class LocalStreamer extends Streamer {
         }
     }
 
-
     private currentChunkStart = 0;
     private currentBufferSize = 0;
     private readonly OUTPUT_FREQUENCY = 48000;
@@ -493,6 +502,9 @@ export class LocalStreamer extends Streamer {
     private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async doPlayback(payload: queueItem): Promise<void> {
         try {
+            if (!this.queue.find(v => v.endMark)) {
+                this.queue[this.queue.length - 1].endMark = true;
+            }
             await this.checkKoice();
             this.preload();
             if (this.previousStream) {
@@ -544,9 +556,18 @@ export class LocalStreamer extends Streamer {
                 this.lastOperation = Date.now();
                 var cache = Buffer.concat(bfs);
                 bfs = [];
-                const FILE_HEADER_SIZE = 44;
                 this.currentChunkStart = 0;
                 this.currentBufferSize = cache.length;
+                for (let i = 0; i < cache.length; ++i) {
+                    if (cache.subarray(i, i + 4).toString() == 'data') {
+                        this.currentChunkStart = i + 5;
+                        break;
+                    }
+                }
+                if (!this.currentChunkStart) {
+                    await this.endPlayback();
+                    return;
+                }
                 /** 
                  * Rate for PCM audio 
                  * 48000hz * 8 bit * 2 channel = 768kbps = 96KB/s
@@ -556,18 +577,15 @@ export class LocalStreamer extends Streamer {
                 while (Date.now() - this.lastRead < 20);
 
                 this.lastRead = Date.now();
-                const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + FILE_HEADER_SIZE + 1);
-                if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
-                    this.stream.push(chunk);
-                }
-                this.currentChunkStart += FILE_HEADER_SIZE + 1;
+                const chunk = cache.subarray(0, this.currentChunkStart);
+                this.stream.push(chunk);
 
                 while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     if (!this.paused) {
                         this.lastRead = Date.now();
                         const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE + 1);
                         if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
-                            this.stream.push(chunk);
+                            this.stream.push(chunk.map(v => v * this.volumeGain));
                         }
                         else {
                             break;

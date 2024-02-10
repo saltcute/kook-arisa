@@ -7,7 +7,8 @@ namespace Playlist {
     export interface collectionItem {
         _id: string,
         id: string,
-        cycle: 'repeat' | 'repeat_one' | 'no_repeat',
+        cycle: 'repeat' | 'repeat_one' | 'no_repeat' | 'random',
+        volumeGain: number,
         playlist: playback.extra[]
     }
 }
@@ -43,6 +44,7 @@ class Playlist {
             _id: id,
             id,
             cycle: streamer.getCycleMode(),
+            volumeGain: streamer.volumeGain,
             playlist: array
         });
         await this.syncToDataBase(id);
@@ -64,6 +66,7 @@ class Playlist {
         let collectionItem = this.map.get(id);
         if (collectionItem) {
             streamer.setCycleMode(collectionItem.cycle);
+            streamer.volumeGain = collectionItem.volumeGain;
             let array = collectionItem.playlist;
             for (const item of array) {
                 switch (item.type) {

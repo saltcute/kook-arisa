@@ -80,7 +80,7 @@
     },
     "tooltip": {
         "controlBoard": {
-            "shufflePlaylist": "Click to shuffle the playlist",
+            "shufflePlaylist": "Random",
             "noRepeat": "No Repeat",
             "repeat": "Repeat",
             "repeatOne": "Repeat One"

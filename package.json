@@ -11,6 +11,7 @@
     "start": "npm run web-build && npm run serve",
     "pm2": "node src/pm2/index.js"
   },
+  "type": "commonjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hexona69/kasumi-template.git"

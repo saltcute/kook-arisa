@@ -187,6 +187,15 @@ app.ws('/', (ws: WebSocket) => {
                     }))
                     break;
                 }
+                case ClientEvents.PLAYBACK_VOLUME: { // Change volume
+                    const streamer = getAllStreamers()[payload.d.streamerIndex];
+                    if (streamer) {
+                        if (payload.d.value >= 0 && payload.d.value <= 1) {
+                            streamer.volumeGain = payload.d.value;
+                        }
+                    }
+                    break;
+                }
             }
         } catch (e) {
             client.logger.error(e);
@@ -230,7 +239,8 @@ app.ws('/', (ws: WebSocket) => {
                         isPaused: streamer.isPaused(),
                         nowPlaying: streamer.nowPlaying?.extra,
                         queue: array,
-                        cycleMode: streamer.getCycleMode()
+                        cycleMode: streamer.getCycleMode(),
+                        volumeGain: streamer.volumeGain
                     };
                     payload.push(data)
                 }

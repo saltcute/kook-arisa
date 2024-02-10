@@ -65,7 +65,8 @@ export namespace playback {
 export type queueItem = {
     source?: playback.source.cache | playback.source.none,
     meta: playback.meta,
-    extra: playback.extra
+    extra: playback.extra,
+    endMark?: boolean
 };
 
 
@@ -283,19 +284,19 @@ export abstract class Streamer extends EventEmitter2 {
         this.queue = this.queue.filter(v => v != item);
     }
 
-    protected cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' = 'no_repeat';
+    protected cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' | 'random' = 'repeat';
     /**
      * Set the cycle mode for the current user.
      * @param payload Desired cycle mode.
      */
-    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat'): void {
-        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat') payload = 'no_repeat';
+    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' | 'random'): void {
+        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat' && payload != 'random') payload = 'no_repeat';
         this.cycleMode = payload;
     }
     /**
      * Get the cycle mode of the current channel.
      */
-    getCycleMode(): 'repeat_one' | 'repeat' | 'no_repeat' {
+    getCycleMode() {
         return this.cycleMode;
     }
 
@@ -331,6 +332,16 @@ export abstract class Streamer extends EventEmitter2 {
      */
     abstract jumpToPercentage(percent: number): void
 
+
+    private _volume_gain = 0.2;
+    public get volumeGain() { return this._volume_gain; }
+    public set volumeGain(payload: number) {
+        if (typeof payload != 'number') payload = 0.2;
+        if (payload >= 1) payload = 1;
+        if (payload <= 0) payload = 0;
+        this._volume_gain = payload;
+    }
+
     /**
      * Play a item.
      * @param payload The item to be played.
@@ -340,8 +351,8 @@ export abstract class Streamer extends EventEmitter2 {
      * Resueme the playback. Does nothing when already playing.
      */
     @Streamer.writable(false)
-    playback(payload: queueItem): void {
-        this.doPlayback(payload);
+    async playback(payload: queueItem): Promise<void> {
+        await this.doPlayback(payload);
         this.emit('play', payload);
     }
 }
