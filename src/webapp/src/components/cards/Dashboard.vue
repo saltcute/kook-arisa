@@ -427,7 +427,7 @@ function fr(x: number) {
                     <font-awesome-icon :icon="['fas', 'forward']" />
                 </i>
                 <i id="volume-control">
-                    <font-awesome-icon v-if="backend.currentVolumeGain <= 0.0" :icon="['fas', 'volume-xmark']" />
+                    <font-awesome-icon v-if="backend.currentVolumeGain <= 0.01" :icon="['fas', 'volume-xmark']" />
                     <font-awesome-icon v-else-if="backend.currentVolumeGain <= 0.4" :icon="['fas', 'volume-low']" />
                     <font-awesome-icon v-else :icon="['fas', 'volume-high']" />
                     <slider-component id="volume-slider" ref="volumeSlider" @inputValue="(value) => {
