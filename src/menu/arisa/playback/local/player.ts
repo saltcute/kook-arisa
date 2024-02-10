@@ -486,9 +486,15 @@ export class LocalStreamer extends Streamer {
         this.fileP = new PassThrough();
     }
 
+    private get currentUsableStreamData() {
+        return this.currentBufferSize - this.currentHeadSize;
+    }
+
     jumpToPercentage(percent: number) {
         if (percent >= 0 && percent <= 1) {
-            this.currentChunkStart = Math.trunc(this.currentBufferSize * percent);
+            let newUsablePosition = Math.trunc(this.currentUsableStreamData * percent);
+            newUsablePosition = newUsablePosition - newUsablePosition % 4;
+            this.currentChunkStart = this.currentHeadSize + newUsablePosition;
         }
     }
 
@@ -502,6 +508,7 @@ export class LocalStreamer extends Streamer {
 
     private currentChunkStart = 0;
     private currentBufferSize = 0;
+    private currentHeadSize = 0;
     private readonly OUTPUT_FREQUENCY = 48000;
     private readonly OUTPUT_CHANNEL = 2;
     private readonly OUTPUT_BITS = 32;
@@ -585,6 +592,7 @@ export class LocalStreamer extends Streamer {
                 while (Date.now() - this.lastRead < 20);
 
                 this.lastRead = Date.now();
+                this.currentHeadSize = this.currentChunkStart;
                 const headerChunk = cache.subarray(0, this.currentChunkStart);
                 if (!this.streamHasHead) {
                     this.stream.push(headerChunk);
