@@ -7,12 +7,13 @@ import * as fs from 'fs';
 import upath from 'upath';
 import netease from '../../command/netease/lib';
 import qqmusic from '../../command/qq/lib';
-import axios from 'axios';
+import axios, { head } from 'axios';
 import { akarin } from '../../command/netease/lib/card';
 import playlist from '../lib/playlist';
 import { Streamer, playback, queueItem } from '../type';
 import { MessageType } from 'kasumi.js';
 import { Time } from '../lib/time';
+import e from 'express';
 
 const biliAPI = require('bili-api');
 
@@ -30,6 +31,7 @@ export class LocalStreamer extends Streamer {
         this.lastOperation = Date.now();
         this.ensureUsage();
     }
+    streamHasHead = false;
     private async initKoice() {
         await this.endPlayback();
         await this.koice.close();
@@ -39,13 +41,18 @@ export class LocalStreamer extends Streamer {
                 return true;
             },
         })
+        this.streamHasHead = false;
 
         this.koice.onclose = () => {
             this.kasumi.logger.warn(`Koice.js closed on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
             this.checkKoice();
         }
         this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
-        await this.koice.startStream(this.stream);
+        await this.koice.startStream(this.stream, {
+            inputCodec: 'pcm_s32le',
+            inputChannels: 2,
+            inputFrequency: 48000
+        });
         if (this.nowPlaying) {
             await this.playback(this.nowPlaying);
         } else {
@@ -497,8 +504,8 @@ export class LocalStreamer extends Streamer {
     private currentBufferSize = 0;
     private readonly OUTPUT_FREQUENCY = 48000;
     private readonly OUTPUT_CHANNEL = 2;
-    private readonly OUTPUT_BITS = 8;
-    private readonly PUSH_INTERVAL = 20;
+    private readonly OUTPUT_BITS = 32;
+    private readonly PUSH_INTERVAL = 100;
     private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async doPlayback(payload: queueItem): Promise<void> {
         try {
@@ -528,10 +535,11 @@ export class LocalStreamer extends Streamer {
             else fileC = fs.createReadStream(file);
             this.ffmpegInstance = ffmpeg()
                 .input(fileC)
-                .audioCodec('pcm_u8')
+                // .audioCodec('pcm_u8')
+                .audioCodec('pcm_s32le')
                 // .audioCodec('pcm_s16le')
                 .audioChannels(this.OUTPUT_CHANNEL)
-                // .audioFilter('volume=0.5')
+                .audioFilter('volume=0.5')
                 .audioFrequency(this.OUTPUT_FREQUENCY)
                 .outputFormat('wav')
                 .removeAllListeners('error')
@@ -560,7 +568,7 @@ export class LocalStreamer extends Streamer {
                 this.currentBufferSize = cache.length;
                 for (let i = 0; i < cache.length; ++i) {
                     if (cache.subarray(i, i + 4).toString() == 'data') {
-                        this.currentChunkStart = i + 5;
+                        this.currentChunkStart = i + 4;
                         break;
                     }
                 }
@@ -577,20 +585,28 @@ export class LocalStreamer extends Streamer {
                 while (Date.now() - this.lastRead < 20);
 
                 this.lastRead = Date.now();
-                const chunk = cache.subarray(0, this.currentChunkStart);
-                this.stream.push(chunk);
+                const headerChunk = cache.subarray(0, this.currentChunkStart);
+                if (!this.streamHasHead) {
+                    this.stream.push(headerChunk);
+                    this.streamHasHead = true;
+                }
 
                 while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                     if (!this.paused) {
                         this.lastRead = Date.now();
-                        const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE + 1);
+                        const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE);
                         if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
-                            this.stream.push(chunk.map(v => v * this.volumeGain));
+                            let tmpChunk = Buffer.alloc(chunk.length);
+                            for (let i = 0; i < chunk.length; i += 4) {
+                                let v = chunk.readInt32LE(i);
+                                tmpChunk.writeInt32LE(v * this.volumeGain, i);
+                            }
+                            this.stream.push(tmpChunk);
                         }
                         else {
                             break;
                         }
-                        this.currentChunkStart += this.RATE + 1;
+                        this.currentChunkStart += this.RATE;
                     }
                     await delay(this.PUSH_INTERVAL);
                 }

@@ -95,6 +95,11 @@ export default {
         }
     },
     methods: {
+        setSliderValue(value: number) {
+            if (value > 100) value = 100;
+            if (value < 0) value = 0;
+            this.value = value;
+        },
         onMouseDown() {
             this.dragging = true;
         },
@@ -113,6 +118,7 @@ export default {
         onClick(e: MouseEvent) {
             this.update(e);
         }
-    }
+    },
+    expose: ['setSliderValue']
 };
 </script>

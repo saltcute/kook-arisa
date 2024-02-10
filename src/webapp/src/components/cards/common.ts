@@ -24,6 +24,24 @@ class Backend extends EventEmitter2 {
     get currentStreamer() {
         return this.streamers.at(this.streamerIndex);
     }
+    get currentCycleMode() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return streamer.cycleMode
+        } else return "repeat"
+    }
+    get currentIsPaused() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return streamer.isPaused
+        } else return true;
+    }
+    get currentVolumeGain() {
+        const streamer = this.currentStreamer;
+        if (streamer) {
+            return streamer.volumeGain
+        } else return 0;
+    }
 
     static getNowPlayingHash(payload?: playback.extra) {
         if (!payload) return undefined;
@@ -183,9 +201,9 @@ class Backend extends EventEmitter2 {
 
     private lastSentGain = -1;
     changeVolumeGain(value: number) {
-        if (typeof value != 'number') return;
-        if (value >= 0.5) value = 0.5;
-        if (value <= 0.15) value = 0;
+        if (isNaN(value) || typeof value != 'number') return;
+        if (value >= 1) value = 1;
+        if (value <= 0) value = 0;
         if (Date.now() - this.lastSentGain > 50) {
             this.lastSentGain = Date.now();
             this.ws?.send(JSON.stringify({

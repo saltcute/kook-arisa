@@ -18,6 +18,11 @@ import type { SortableEvent } from "sortablejs"
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
+const props = defineProps<{
+    setSliderValue: ((value: number) => void) | undefined
+}>()
+const volumeSlider = ref(null);
+
 
 const proxy = "img.kookapp.lolicon.ac.cn";
 
@@ -154,6 +159,13 @@ function getPlaybackProgress() {
 backend.on('newTrack', (nowPlaying?: playback.extra) => {
     console.log(nowPlaying);
     if (nowPlaying) {
+        nextTick().then(() => {
+            if (volumeSlider.value) {
+                console.log(volumeSlider.value);
+                // @ts-ignore
+                volumeSlider.value.setSliderValue(fr(backend.currentStreamer?.volumeGain || 0) * 100);
+            }
+        })
         switch (nowPlaying.type) {
             case "netease":
                 getNeteaseSongLyrics(nowPlaying.data.songId).then((data) => {
@@ -357,6 +369,19 @@ onMounted(() => {
         lyricTextarea.addEventListener('wheel', onScrollLyric)
     }
 });
+
+function f(x: number) {
+    if (x < 0.63726) return 1.29 * x * x;
+    else return 1.414 * Math.sqrt(x - 0.5);
+    // return Math.pow(x, 2);
+    // return 5 / 9 * x * x * x + 0.05;
+}
+function fr(x: number) {
+    if (x < 0.63726) return Math.sqrt(x / 1.29);
+    else return (x / 1.414) * (x / 1.414) + 0.5;
+    // return Math.sqrt(x);
+    // return Math.cbrt((x - 0.05) * 9 / 5);
+}
 </script>
 
 <template>
@@ -371,23 +396,21 @@ onMounted(() => {
             <input type="range" id="playback-progress"
                 @change="(event) => { if (event.target) backend.jumpToPercentage((event.target as any).value / 100) }"
                 :value="getPlaybackProgress()" min="0" max="100" />
-            <div v-if="backend.currentStreamer" class="playback-control grid">
-                <i :data-tooltip="t('tooltip.controlBoard.noRepeat')"
-                    v-if="backend.currentStreamer.cycleMode == 'no_repeat'" @click="backend.switchCycleMode('repeat')">
+            <div class="playback-control grid" :class="{ disabled: backend.currentStreamer ? false : true }">
+                <i :data-tooltip="t('tooltip.controlBoard.noRepeat')" v-if="backend.currentCycleMode == 'no_repeat'"
+                    @click="backend.switchCycleMode('repeat')">
                     <font-awesome-icon :icon="['fas', 'circle-xmark']" />
                 </i>
-                <i :data-tooltip="t('tooltip.controlBoard.repeat')"
-                    v-else-if="backend.currentStreamer.cycleMode == 'repeat'"
+                <i :data-tooltip="t('tooltip.controlBoard.repeat')" v-else-if="backend.currentCycleMode == 'repeat'"
                     @click="backend.switchCycleMode('repeat_one')">
                     <font-awesome-icon :icon="['fas', 'repeat']" />
                 </i>
-                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')"
-                    v-else-if="backend.currentStreamer.cycleMode == 'repeat_one'"
+                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')" v-else-if="backend.currentCycleMode == 'repeat_one'"
                     @click="backend.switchCycleMode('random')">
                     <font-awesome-icon :icon="['fas', 'repeat']" fade />
                 </i>
                 <i :data-tooltip="t('tooltip.controlBoard.shufflePlaylist')"
-                    v-else-if="backend.currentStreamer.cycleMode == 'random'" @click="backend.switchCycleMode('no_repeat')">
+                    v-else-if="backend.currentCycleMode == 'random'" @click="backend.switchCycleMode('no_repeat')">
                     <font-awesome-icon :icon="['fas', 'shuffle']" />
                 </i>
 
@@ -395,40 +418,20 @@ onMounted(() => {
                     <font-awesome-icon :icon="['fas', 'backward']" />
                 </i>
                 <i @click="backend.switchPlayback">
-                    <font-awesome-icon v-if="backend.currentStreamer.isPaused" :icon="['fas', 'play']" />
+                    <font-awesome-icon v-if="backend.currentIsPaused" :icon="['fas', 'play']" />
                     <font-awesome-icon v-else :icon="['fas', 'pause']" />
                 </i>
                 <i @click="backend.playNext">
                     <font-awesome-icon :icon="['fas', 'forward']" />
                 </i>
                 <i id="volume-control">
-                    <font-awesome-icon v-if="backend.currentStreamer.volumeGain <= 0" :icon="['fas', 'volume-xmark']" />
-                    <font-awesome-icon v-else-if="backend.currentStreamer.volumeGain <= 0.4"
-                        :icon="['fas', 'volume-low']" />
+                    <font-awesome-icon v-if="backend.currentVolumeGain <= 0.0" :icon="['fas', 'volume-xmark']" />
+                    <font-awesome-icon v-else-if="backend.currentVolumeGain <= 0.4" :icon="['fas', 'volume-low']" />
                     <font-awesome-icon v-else :icon="['fas', 'volume-high']" />
-                    <slider-component id="volume-slider" @inputValue="(value) => {
-                        const f = (x: number) => {
-                            return 7 * x * x * x / 20 + 0.15;
-                        }
+                    <slider-component id="volume-slider" ref="volumeSlider" @inputValue="(value) => {
                         backend.changeVolumeGain(f(value / 100));
-                    }"></slider-component>
-                </i>
-            </div>
-            <div v-else class="playback-control grid" style="opacity: 55%;">
-                <i>
-                    <font-awesome-icon :icon="['fas', 'repeat']" />
-                </i>
-                <i>
-                    <font-awesome-icon :icon="['fas', 'backward']" />
-                </i>
-                <i>
-                    <font-awesome-icon :icon="['fas', 'play']" />
-                </i>
-                <i>
-                    <font-awesome-icon :icon="['fas', 'forward']" />
-                </i>
-                <i>
-                    <font-awesome-icon :icon="['fas', 'volume-xmark']" />
+                    }
+                        " z></slider-component>
                 </i>
             </div>
         </article>
@@ -439,7 +442,7 @@ onMounted(() => {
                 <li v-if="!backend.streamers.length">
                     {{ t('desc.dashboard.noStreamers') }}
                 </li>
-                <li v-else class="grid" v-for="(streamer, index) in backend.streamers" :index="index"
+                <li v-else class="grid" v-for="(  streamer, index  ) in   backend.streamers  " :index="index"
                     @click="backend.selectStreamer">
                     <img :src="proxiedKookImage(streamer.avatar)" />
                     {{ streamer.name }}#{{ streamer.identifyNum }}
@@ -467,7 +470,7 @@ onMounted(() => {
             <div id="lyricTextarea" :aria-busy="loadingLyrics">
                 <div class="lyrics" v-if="Object.keys(bilingualLyric).length">
                     <div class="line" :class="timecode.toString()"
-                        v-for="([timecode, lyric], index) in getBilingualLyricEntry() ">
+                        v-for="(  [timecode, lyric], index  ) in   getBilingualLyricEntry()   ">
                         <span v-if="lyric.romaji && enableRomaji" :class="getLyricStyle(index, timecode, 'top')"
                             class="sub lyric">
                             {{ lyric.romaji }}<br>
@@ -523,19 +526,6 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-#volume-control {
-
-    &:hover #volume-slider {
-        transform: translate(-0.8em, -11em);
-        display: block;
-        position: absolute;
-    }
-
-    #volume-slider {
-        display: none;
-    }
-}
-
 @mixin dark-mode-definition() {
     .playlist>div.queue-items>div.queue-item-card>div {
         --playlist-card-top: rgb(0, 0, 0, 91%);
@@ -790,11 +780,31 @@ div:hover {
 .playback-control {
     justify-items: center;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-}
 
-.playback-control>i {
-    padding-top: 1em;
-    cursor: pointer;
+    &:not(.disabled) #volume-control {
+
+        &:hover #volume-slider {
+            transform: translate(-0.8em, -11em);
+            display: block;
+            position: absolute;
+        }
+    }
+
+    #volume-control {
+
+        #volume-slider {
+            display: none;
+        }
+    }
+
+    &>.i {
+        padding-top: 1em;
+        cursor: pointer;
+    }
+
+    &.disabled {
+        opacity: 55%;
+    }
 }
 
 
