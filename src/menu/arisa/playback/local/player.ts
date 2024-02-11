@@ -49,7 +49,9 @@ export class LocalStreamer extends Streamer {
         }
         this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         await this.koice.startStream(this.stream, {
-            inputCodec: 'pcm_s32le',
+            // inputCodec: 'pcm_u8',
+            inputCodec: 'pcm_s16le',
+            // inputCodec: 'pcm_s32le',
             inputChannels: 2,
             inputFrequency: 48000
         });
@@ -493,7 +495,7 @@ export class LocalStreamer extends Streamer {
     jumpToPercentage(percent: number) {
         if (percent >= 0 && percent <= 1) {
             let newUsablePosition = Math.trunc(this.currentUsableStreamData * percent);
-            newUsablePosition = newUsablePosition - newUsablePosition % 4;
+            newUsablePosition = newUsablePosition - newUsablePosition % this.BYTES_PER_SAMPLE;
             this.currentChunkStart = this.currentHeadSize + newUsablePosition;
         }
     }
@@ -511,8 +513,11 @@ export class LocalStreamer extends Streamer {
     private currentHeadSize = 0;
     private readonly OUTPUT_FREQUENCY = 48000;
     private readonly OUTPUT_CHANNEL = 2;
-    private readonly OUTPUT_BITS = 32;
-    private readonly PUSH_INTERVAL = 100;
+    private readonly OUTPUT_BITS = 16;
+    private readonly PUSH_INTERVAL = 20;
+    private get BYTES_PER_SAMPLE() {
+        return this.OUTPUT_BITS / 8;
+    }
     private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async doPlayback(payload: queueItem): Promise<void> {
         try {
@@ -543,8 +548,8 @@ export class LocalStreamer extends Streamer {
             this.ffmpegInstance = ffmpeg()
                 .input(fileC)
                 // .audioCodec('pcm_u8')
-                .audioCodec('pcm_s32le')
-                // .audioCodec('pcm_s16le')
+                .audioCodec('pcm_s16le')
+                // .audioCodec('pcm_s32le')
                 .audioChannels(this.OUTPUT_CHANNEL)
                 .audioFilter('volume=0.5')
                 .audioFrequency(this.OUTPUT_FREQUENCY)
@@ -605,9 +610,16 @@ export class LocalStreamer extends Streamer {
                         const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE);
                         if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                             let tmpChunk = Buffer.alloc(chunk.length);
-                            for (let i = 0; i < chunk.length; i += 4) {
-                                let v = chunk.readInt32LE(i);
-                                tmpChunk.writeInt32LE(v * this.volumeGain, i);
+                            for (let i = 0; i < chunk.length; i += this.BYTES_PER_SAMPLE) {
+                                // let v = chunk.readUInt8(i);
+                                // let after = (v - 128) * this.volumeGain + 128; // pcm_u8
+                                // tmpChunk.writeUInt8(after, i);
+                                let v = chunk.readInt16LE(i);
+                                let after = v * this.volumeGain; // pcm_s16le
+                                tmpChunk.writeInt16LE(after, i);
+                                // let v = chunk.readInt32LE(i);
+                                // let after = v * this.volumeGain; // pcm_s32le
+                                // tmpChunk.writeInt32LE(after, i);
                             }
                             this.stream.push(tmpChunk);
                         }
