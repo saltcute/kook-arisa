@@ -133,14 +133,17 @@ export class ButtonControlPanel {
 
     readonly MAINTAIN_INTERVAL = 5 * 1000;
     async maintainPanel(customCard?: Card) {
+        if (Date.now() - this.lastMaintain < 500) return;
         clearTimeout(this.maintainCounter);
         const promises = this.panelMessageArray.map(id => this.client.API.message.update(id, customCard || this.toCard()));
         await Promise.all(promises);
+        this.lastMaintain = Date.now();
         this.maintainCounter = setTimeout(() => {
             this.maintainPanel();
         }, this.MAINTAIN_INTERVAL)
     }
-    maintainCounter?: NodeJS.Timeout;
+    private maintainCounter?: NodeJS.Timeout;
+    private lastMaintain = -1;
 
     async close() {
         clearTimeout(this.maintainCounter);

@@ -13,7 +13,6 @@ import playlist from '../lib/playlist';
 import { Streamer, playback, queueItem } from '../type';
 import { MessageType } from 'kasumi.js';
 import { Time } from '../lib/time';
-import e from 'express';
 
 const biliAPI = require('bili-api');
 
@@ -44,8 +43,8 @@ export class LocalStreamer extends Streamer {
         this.streamHasHead = false;
 
         this.koice.onclose = () => {
-            this.kasumi.logger.warn(`Koice.js closed on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
-            this.checkKoice();
+            this.kasumi.logger.warn(`Koice.js closed unexpectedly on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
+            // this.checkKoice();
         }
         this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         await this.koice.startStream(this.stream, {
@@ -89,8 +88,9 @@ export class LocalStreamer extends Streamer {
         };
         this.endPlayback();
         for (const item of this.queue) {
-            delete item.source
+            item.source = null;
         }
+        await playlist.user.save(this, this.INVITATION_AUTHOR_ID);
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
@@ -275,7 +275,9 @@ export class LocalStreamer extends Streamer {
     private pushPayload(payload: any, forceSwitch: boolean = false) {
         this.preload();
         this.queue.push(payload)
-        if (!(this.previousStream && !forceSwitch)) this.next();
+        if (!(this.previousStream && !forceSwitch)) {
+            this.next();
+        }
     }
 
     private lastOperation: number;
@@ -381,7 +383,9 @@ export class LocalStreamer extends Streamer {
 
 
     async previous(): Promise<queueItem | undefined> {
+        if (this.hasOngoingSkip) return;
         try {
+            this.hasOngoingSkip = true;
             let upnext: queueItem | undefined;
             switch (this.cycleMode) {
                 case 'no_repeat':
@@ -403,12 +407,19 @@ export class LocalStreamer extends Streamer {
                 }
                 this.nowPlaying = upnext;
                 await this.playback(upnext);
+                this.hasOngoingSkip = false;
                 return upnext;
             }
-        } catch { };
+            this.hasOngoingSkip = false;
+        } catch (e) {
+            this.kasumi.logger.error(e);
+        };
     }
+    private hasOngoingSkip = false;
     async next(): Promise<queueItem | undefined> {
+        if (this.hasOngoingSkip) return;
         try {
+            this.hasOngoingSkip = true;
             let upnext: queueItem | undefined;
             switch (this.cycleMode) {
                 case 'no_repeat':
@@ -435,9 +446,13 @@ export class LocalStreamer extends Streamer {
                 }
                 this.nowPlaying = upnext;
                 await this.playback(upnext);
+                this.hasOngoingSkip = false;
                 return upnext;
             }
-        } catch { }
+            this.hasOngoingSkip = false;
+        } catch (e) {
+            this.kasumi.logger.error(e);
+        };
     }
 
     private async preload() {
@@ -521,7 +536,7 @@ export class LocalStreamer extends Streamer {
     private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
     async doPlayback(payload: queueItem): Promise<void> {
         try {
-            if (!this.queue.find(v => v.endMark)) {
+            if (this.queue.length && !this.queue.find(v => v.endMark)) {
                 this.queue[this.queue.length - 1].endMark = true;
             }
             await this.checkKoice();
@@ -635,7 +650,8 @@ export class LocalStreamer extends Streamer {
                     await this.next();
                 }
             });
-        } catch {
+        } catch (e) {
+            this.kasumi.logger.error(e);
             await this.endPlayback();
             await this.next();
         }
