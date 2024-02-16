@@ -6,10 +6,13 @@ export class QQMusic {
     constructor(cookie?: string) {
         if (cookie) this.updateCookie(cookie);
     };
+    get cookie() {
+        return qqmusic.cookie;
+    }
     updateCookie(cookie: string) {
         const obj: Object = Object.fromEntries(cookie.split(";").map(v => v.trim()).map(v => {
             const split = v.split("=");
-            return [v[0], v[1]];
+            return [split[0], split[1]];
         }));
         if (obj.hasOwnProperty("qqmusic_key") || obj.hasOwnProperty("qm_keyst")) {
             qqmusic.setCookie(obj);
