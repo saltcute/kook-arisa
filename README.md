@@ -22,7 +22,7 @@ cp src/config/template-config.json5 src/config/config.json5
 
 -   Here are some config entries that you have to fill out.
 
-```json
+```json5
 {
     // KOOK connection settings. See https://kasumi.js.org/introduction/getting-started.html.
     "kasumi::config.token": "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
@@ -36,32 +36,32 @@ cp src/config/template-config.json5 src/config/config.json5
 
     // Users whose id is in this array will have Admin group.
     // Use /arisaadmin to see admin commands.
-    "globalAdmins": ["1854484583"]
+    globalAdmins: ["1854484583"],
 }
 ```
 
 -   These setting are optional.
 
-```json
+```json5
 {
     // Client ID and Client Secret is required for webui to work.
-    "kookClientID": "",
+    kookClientID: "",
     // You need to have access to KOOK's oauth2 to get this.
-    "kookClientSecret": "",
+    kookClientSecret: "",
 
     // Optionally use other ports.
-    "internalWebuiPort": 80,
+    internalWebuiPort: 80,
     // This URL will be in cards and logs where it needs to link to the webui.
-    "webuiUrl": "http://localhost",
+    webuiUrl: "http://localhost",
 
     // Set this to true to play VIP-exclusive tracks on Netease Cloud Music.
-    "neteaseVIP": false,
+    neteaseVIP: false,
     // Your credentials are only sent to Netease's servers.
-    "neteaseEmail": "nayutalien@love.you",
-    "neteasePassword": "up!side@down#side$up%and^down",
+    neteaseEmail: "nayutalien@love.you",
+    neteasePassword: "up!side@down#side$up%and^down",
 
     // This is a random string that you will need if you want to update the cookie of QQ Music.
-    "QQCookieCode": "11.86 mata aeru"
+    QQCookieCode: "11.86 mata aeru",
 }
 ```
 
