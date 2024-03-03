@@ -16,6 +16,11 @@
         "content": "由于 KOOK 的近期变化，推流机器人的名字可能会变为「こなた的测试机器人」。但这并不会对机器人的任何功能造成影响，请放心使用。"
     },
     {
+        "title": "更新日志",
+        "timestamp": 1709425801000,
+        "content": "**2024/03/02 更新内容：**\n○ (font)自然指令现在只会从行头匹配。(font)[warning]"
+    },
+    {
         "title": "置顶消息",
         "timestamp": 1709425293000,
         "content": "(font)如果你喜欢这个机器人(font)[pink]，欢迎来[我的爱发电](https://afdian.net/a/saltcute)赞助！虽然现在赞助并不会有什么福利，(font)但是您的任何支持都是我继续开发的动力！(font)[primary]\nArisa 也在 [GitHub](https://github.com/saltcute/kook-arisa) 以 [MIT 协议](https://github.com/saltcute/kook-arisa/blob/main/LICENSE) 开源\n问题、建议→[KOOK服务器](https://kook.top/iOOsLu)"
