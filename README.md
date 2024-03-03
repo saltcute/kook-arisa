@@ -66,6 +66,14 @@ cp src/config/template-config.json5 src/config/config.json5
     // This is required if you want the bot to play in a new server automatically. See below for more.
     streamerMiddlemanID: "",
     streamerMiddlemanToken: "",
+
+    // This is the actual bot that will join a voice channel.
+    // It could be the same as kasumi::config.token, but just to be safe a different one is recommended.
+    // You need at least one token.
+    streamers: [
+        "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
+        "1/SU1SeI=/H4N3MuaN4taN0rENdEzV0us==",
+    ],
 }
 ```
 
