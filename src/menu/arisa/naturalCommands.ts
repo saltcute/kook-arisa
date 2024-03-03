@@ -14,7 +14,7 @@ function matchRegex(regex: RegExp, content: string) {
 client.on('message.text', async (event) => {
     const content = event.content;
     switch (true) {
-        case /(?:点歌|播放).+/.test(content): {
+        case /^(?:点歌|播放).+/.test(content): {
             switch (true) {
                 case /.*https?.*music\.163\.com.*/.test(content): { // Netease Cloud Music
                     switch (true) {
