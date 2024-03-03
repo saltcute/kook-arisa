@@ -60,14 +60,14 @@ async function processNetease(song: Netease.songDetail, order: number): Promise<
     } catch { }
     if (!url) url = akarin;
 
-    return {
+    return new ProcessedNeteaseTrack(
         order,
-        songId: song.id,
+        url,
+        song.ar.map(v => v.name),
+        song.dt,
         song,
-        artists: song.ar.map(v => v.name),
-        duration: song.dt,
-        coverUrl: url
-    }
+        song.id
+    )
 }
 
 
@@ -85,15 +85,15 @@ async function processQQ(song: QQMusic.Pattern.Song, order: number): Promise<Pro
     } catch { }
     if (!url) url = akarin;
 
-    return {
+    return new ProcessedQQTrack(
         order,
-        songId: song.songmid,
+        url,
+        song.singer.map(v => v.name),
+        song.interval * 1000,
         song,
-        artists: song.singer.map(v => v.name),
-        duration: song.interval * 1000,
-        coverUrl: url,
-        songMediaId: song.strMediaMid
-    }
+        song.songmid,
+        song.strMediaMid
+    );
 }
 
 abstract class ProcessedTrack {
@@ -190,48 +190,48 @@ async function searchList(keyword: string, provider: string, songs: (Netease.son
                 click: Card.Parts.ButtonClickType.RETURN_VALUE
             })
         }
-        card.addModule({
-            type: Card.Modules.Types.ACTION_GROUP,
-            elements: [{
-                type: Card.Parts.AccessoryType.BUTTON,
-                theme: page > 1 ? Card.Theme.WARNING : Card.Theme.SECONDARY,
-                text: {
-                    type: Card.Parts.TextType.KMARKDOWN,
-                    content: "上一页"
-                },
-                value: page > 1 ? JSON.stringify({
-                    sessionId: client.events.button.createSession('search.nextPage', {
-                        currentPage: page - 1,
-                        keyword, provider
-                    }, true)
-                }) : undefined,
-                click: page > 1 ? Card.Parts.ButtonClickType.RETURN_VALUE : undefined
-            }, {
-                type: Card.Parts.AccessoryType.BUTTON,
-                theme: Card.Theme.PRIMARY,
-                text: {
-                    type: Card.Parts.TextType.KMARKDOWN,
-                    content: "下一页"
-                },
-                value: JSON.stringify({
-                    sessionId: client.events.button.createSession('search.nextPage', {
-                        currentPage: page + 1,
-                        keyword, provider
-                    }, true)
-                }),
-                click: Card.Parts.ButtonClickType.RETURN_VALUE
-            }, {
-                type: Card.Parts.AccessoryType.BUTTON,
-                theme: Card.Theme.SECONDARY,
-                text: {
-                    type: Card.Parts.TextType.KMARKDOWN,
-                    content: `第 ${page} 页`
-                }
-            }]
-        })
     } else {
         card.addText("没有任何结果");
     }
+    card.addModule({
+        type: Card.Modules.Types.ACTION_GROUP,
+        elements: [{
+            type: Card.Parts.AccessoryType.BUTTON,
+            theme: page > 1 ? Card.Theme.WARNING : Card.Theme.SECONDARY,
+            text: {
+                type: Card.Parts.TextType.KMARKDOWN,
+                content: "上一页"
+            },
+            value: page > 1 ? JSON.stringify({
+                sessionId: client.events.button.createSession('search.nextPage', {
+                    currentPage: page - 1,
+                    keyword, provider
+                }, true)
+            }) : undefined,
+            click: page > 1 ? Card.Parts.ButtonClickType.RETURN_VALUE : undefined
+        }, {
+            type: Card.Parts.AccessoryType.BUTTON,
+            theme: Card.Theme.PRIMARY,
+            text: {
+                type: Card.Parts.TextType.KMARKDOWN,
+                content: "下一页"
+            },
+            value: JSON.stringify({
+                sessionId: client.events.button.createSession('search.nextPage', {
+                    currentPage: page + 1,
+                    keyword, provider
+                }, true)
+            }),
+            click: Card.Parts.ButtonClickType.RETURN_VALUE
+        }, {
+            type: Card.Parts.AccessoryType.BUTTON,
+            theme: Card.Theme.SECONDARY,
+            text: {
+                type: Card.Parts.TextType.KMARKDOWN,
+                content: `第 ${page} 页`
+            }
+        }]
+    })
     return card;
 }
 
