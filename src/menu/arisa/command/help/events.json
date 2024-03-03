@@ -11,8 +11,13 @@
         "content": "**2024/03/02 更新内容：**\n○ (font)新增了一些中文快捷指令。(font)[primary]\n　使用例：\n```plain\n播放 https://music.163.com/#/song?id=1446321695```\n```plain\n播放 https://music.163.com/#/playlist?id=9373464493```\n```plain\n播放 ロケットサイダー```\n○ (font)使用指令搜索网易云与 QQ 音乐的歌曲时可以翻页。(font)[primary]\n○ (font)可以直接使用链接播放网易云的歌曲。(font)[primary]\n　使用例：\n```plain\n/arisa netease play https://music.163.com/#/song?id=546722667```\n○ (font)优化了搜索时的加载速度。(font)[warning]\n○ (font)版本更新后，旧版卡片可能不再能使用。(font)[danger]"
     },
     {
-        "title": "置顶消息",
+        "title": "推流机器人",
         "timestamp": 1709425057000,
+        "content": "由于 KOOK 的近期变化，推流机器人的名字可能会变为「こなた的测试机器人」。但这并不会对机器人的任何功能造成影响，请放心使用。"
+    },
+    {
+        "title": "置顶消息",
+        "timestamp": 1709425293000,
         "content": "(font)如果你喜欢这个机器人(font)[pink]，欢迎来[我的爱发电](https://afdian.net/a/saltcute)赞助！虽然现在赞助并不会有什么福利，(font)但是您的任何支持都是我继续开发的动力！(font)[primary]\nArisa 也在 [GitHub](https://github.com/saltcute/kook-arisa) 以 [MIT 协议](https://github.com/saltcute/kook-arisa/blob/main/LICENSE) 开源\n问题、建议→[KOOK服务器](https://kook.top/iOOsLu)"
     }
 ]
