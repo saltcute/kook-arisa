@@ -84,7 +84,7 @@ Or you can also send a POST request to `${webuiUrl}/qqmusic/updateCookie` with t
 
 ## Streamer Middleman?
 
-Due to limitation on KOOK's side, one single bot can only strveam to one voice channel. `kook-arisa` get around with that limitation by using separate bots for each play session. This was originally done by using `/v3/guild/join` endpoint. However, this was soon patched by KOOK (reasonably), so that bots can no longer join an arbitary server own its own.
+Due to limitation on KOOK's side, one single bot can only stream to one voice channel. `kook-arisa` get around with that limitation by using separate bots for each play session. This was originally done by using `/v3/guild/join` endpoint. However, this was soon patched by KOOK (reasonably), so that bots can no longer join an arbitary server own its own.
 
 As a workaround, streamer middleman is implemented by using a normal user account to invite the bot to the server. The middleman will first join the server with `/v2/guilds/join` and then invite the bot using oauth2 (Yes you hear it right lol and see details [here](./src/menu/arisa/playback/local/controller.ts#L128-L161)).
 
