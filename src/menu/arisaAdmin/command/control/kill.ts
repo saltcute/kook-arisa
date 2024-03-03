@@ -22,8 +22,8 @@ Audiences: ${streamer.audienceIds.size}
 Streaming started at: ${new Date(streamer.streamStart).toLocaleString()}
 Lasted: ${Time.timeToShortString((Date.now() - streamer.streamStart) / 1000)}`, {
                 buttonContent: "Kill",
-                theme: 'danger',
-                click: 'return-val',
+                theme: Card.Theme.DANGER,
+                click: Card.Parts.ButtonClickType.RETURN_VALUE,
                 value: JSON.stringify({ sessionId })
             })
         }

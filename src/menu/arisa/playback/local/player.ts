@@ -7,12 +7,12 @@ import * as fs from 'fs';
 import upath from 'upath';
 import netease from '../../command/netease/lib';
 import qqmusic from '../../command/qq/lib';
-import axios, { head } from 'axios';
-import { akarin } from '../../command/netease/lib/card';
+import axios from 'axios';
+import { akarin } from 'menu/arisa/command/lib';
 import playlist from '../lib/playlist';
 import { Streamer, playback, queueItem } from '../type';
-import { MessageType } from 'kasumi.js';
 import { Time } from '../lib/time';
+import { MessageType } from 'kasumi.js';
 
 const biliAPI = require('bili-api');
 
@@ -626,15 +626,9 @@ export class LocalStreamer extends Streamer {
                         if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
                             let tmpChunk = Buffer.alloc(chunk.length);
                             for (let i = 0; i < chunk.length; i += this.BYTES_PER_SAMPLE) {
-                                // let v = chunk.readUInt8(i);
-                                // let after = (v - 128) * this.volumeGain + 128; // pcm_u8
-                                // tmpChunk.writeUInt8(after, i);
                                 let v = chunk.readInt16LE(i);
                                 let after = v * this.volumeGain; // pcm_s16le
                                 tmpChunk.writeInt16LE(after, i);
-                                // let v = chunk.readInt32LE(i);
-                                // let after = v * this.volumeGain; // pcm_s32le
-                                // tmpChunk.writeInt32LE(after, i);
                             }
                             this.stream.push(tmpChunk);
                         }

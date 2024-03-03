@@ -47,7 +47,7 @@ const router = Router();
 router.get('/search', cache(60 * 15), (req, res) => {
     const keyword = <string>req.query.keyword;
     if (keyword) {
-        qqmusic.search(keyword).then((re) => {
+        qqmusic.search(keyword, undefined, 20).then((re) => {
             res.send({
                 code: 200,
                 message: 'success',

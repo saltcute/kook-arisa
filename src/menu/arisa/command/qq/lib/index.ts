@@ -19,8 +19,8 @@ export class QQMusic {
             client.config.set("arisa::QQMusic.cookie", cookie);
         }
     }
-    async search(keywords: string): Promise<QQMusic.API.Search> {
-        const res = await qqmusic.api("search", { key: keywords });
+    async search(keywords: string, page: number = 1, pageSize: number = 5): Promise<QQMusic.API.Search> {
+        const res = await qqmusic.api("search", { key: keywords, pageNo: page, pageSize });
         return res;
     }
     async getAlbum(mid: string) {

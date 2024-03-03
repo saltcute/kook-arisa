@@ -30,7 +30,7 @@ function showDialog() {
 
 let searchInput = ref('');
 let searchResult: (Netease.songDetail | QQMusic.Pattern.Song)[] = [];
-async function getNeteaseSearch(keyword: string): Promise<Netease.song[]> {
+async function getNeteaseSearch(keyword: string): Promise<Netease.songDetail[]> {
     return new Promise((resolve, reject) => {
         axios({
             url: "/netease/search",
@@ -59,18 +59,6 @@ async function getQQMusicSearch(keyword: string): Promise<QQMusic.API.Search> {
         }).catch(e => reject(e));
     })
 }
-async function getNeteaseSongDetails(ids: string): Promise<Netease.songDetail[]> {
-    return new Promise((resolve, reject) => {
-        axios({
-            url: "/netease/songs",
-            params: {
-                ids
-            }
-        }).then(({ data }) => {
-            resolve(data.data);
-        }).catch(e => reject(e));
-    })
-}
 function search() {
     let searchResultElement = document.querySelector("#netease-search .search-result");
     if (searchResultElement?.getAttribute("aria-busy") != "true") {
@@ -80,19 +68,13 @@ function search() {
         searchResultElement?.setAttribute("aria-busy", "true");
         switch (activeTab.value) {
             case 'netease':
-                getNeteaseSearch(searchInput.value).then((res) => {
+                getNeteaseSearch(searchInput.value).then(async (res) => {
                     if (res) {
-                        getNeteaseSongDetails(res.map(v => v.id).join(',')).then(async (re) => {
-                            searchResult = re;
-                            searchResultElement?.removeAttribute("aria-busy");
-                            searched.value = true;
-                            await nextTick();
-                            instance?.proxy?.$forceUpdate();
-                        }).catch((e) => {
-                            console.error(e);
-                            searched.value = false;
-                            searchResultElement?.removeAttribute("aria-busy");
-                        })
+                        searchResult = res;
+                        searchResultElement?.removeAttribute("aria-busy");
+                        searched.value = true;
+                        await nextTick();
+                        instance?.proxy?.$forceUpdate();
                     } else {
                         searched.value = false;
                         searchResult = [];

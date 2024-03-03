@@ -7,7 +7,7 @@ import { getVideoDetail } from "./lib/index";
 
 const biliAPI = require('bili-api');
 
-class SearchCommand extends BaseCommand<typeof client> {
+class PlayCommand extends BaseCommand<typeof client> {
     name = 'play';
     description = '播放B站视频';
     pattern = /(?:https?:\/\/(?:www|m).bilibili.com\/video\/)?(BV[0-9A-Za-z]{10})/gm;
@@ -58,5 +58,5 @@ class SearchCommand extends BaseCommand<typeof client> {
     }
 }
 
-const search = new SearchCommand();
-export default search;
+const play = new PlayCommand();
+export default play;

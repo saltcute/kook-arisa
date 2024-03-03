@@ -4,7 +4,7 @@ import upath from 'upath';
 import * as fs from 'fs';
 import { LocalController } from "./playback/local/controller";
 import { Streamer } from "./playback/type";
-import { LocalStreamer } from "./playback/local/player";
+import './naturalCommands';
 
 class AppMenu extends BaseMenu {
     name = 'arisa';
@@ -51,11 +51,6 @@ export async function getChannelStreamer(guildId: string, authorId: string): Pro
     } else {
         throw { err: 'no_joinedchannel', msg: '请先加入语音频道！' };
     }
-}
-
-export declare class StreamerSession extends BaseSession {
-    guildId: string;
-    streamer: LocalStreamer;
 }
 
 export async function requireStreamer(session: BaseSession, commands: BaseCommand[]) {

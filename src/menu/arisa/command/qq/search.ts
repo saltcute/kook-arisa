@@ -1,5 +1,5 @@
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
-import { searchList } from "./lib/card";
+import { searchQQ } from "../lib";
 
 class SearchCommand extends BaseCommand {
     name = 'search';
@@ -13,7 +13,7 @@ class SearchCommand extends BaseCommand {
                 this.logger.error(err);
                 return;
             }
-            session.update(data.msg_id, await searchList(keyword));
+            session.update(data.msg_id, await searchQQ(keyword));
         } else {
             session.reply("Please provide a keyword");
         }

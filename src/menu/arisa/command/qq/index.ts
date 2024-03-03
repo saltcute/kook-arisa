@@ -13,11 +13,15 @@ menu.addCommand(qqMenu);
 
 import { client } from "init/client";
 import { BaseSession, ButtonClickedEvent, Card } from "kasumi.js";
-import { data } from "./lib/card/searchList";
 import { getChannelStreamer } from "menu/arisa";
 import { LocalStreamer } from "menu/arisa/playback/local/player";
+import { playback } from "menu/arisa/playback/type";
 
-client.events.button.registerActivator('qq.queue.add', (event: ButtonClickedEvent, data: data) => {
+client.events.button.registerActivator('qq.queue.add', (event: ButtonClickedEvent, data: {
+    songId: string,
+    mediaId: string,
+    meta: playback.meta
+}) => {
     let session = new BaseSession([], event, client), songId = data.songId, mediaId = data.mediaId;
 
     if (!session.guildId || !songId || !mediaId) return;

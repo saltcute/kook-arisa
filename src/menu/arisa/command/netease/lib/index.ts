@@ -22,8 +22,12 @@ export class Netease {
             this.cookie = undefined;
         }
     }
-    async search(keywords: string): Promise<Netease.song[]> {
-        const res = await netease.search({ keywords, cookie: this.cookie, realIP: this.REAL_IP });
+    async search(keywords: string, page = 1, limit = 5): Promise<Netease.song[]> {
+        const res = await netease.search({ keywords, offset: (page - 1) * limit, limit, cookie: this.cookie, realIP: this.REAL_IP });
+        return (res.body.result as any).songs;
+    }
+    async cloudsearch(keywords: string, page = 1, limit = 5): Promise<Netease.songDetail[]> {
+        const res = await netease.cloudsearch({ keywords, offset: (page - 1) * limit, limit, cookie: this.cookie, realIP: this.REAL_IP });
         return (res.body.result as any).songs;
     }
     async getAlbum(id: number): Promise<{
@@ -155,7 +159,7 @@ export namespace Netease {
          * Song duration
          */
         dt: number,
-        [key: string]: any
+        // [key: string]: any
     }
     export interface lyric {
         sgc: boolean,

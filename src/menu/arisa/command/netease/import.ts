@@ -1,9 +1,8 @@
-import { BaseCommand, CommandFunction } from "kasumi.js";
-import { StreamerSession, requireStreamer, getChannelStreamer } from "menu/arisa";
-import { client } from "init/client";
+import { BaseSession, BaseCommand, CommandFunction } from "kasumi.js";
+import { requireStreamer, getChannelStreamer } from "menu/arisa";
 import netease, { Netease } from "./lib/index";
-import { akarin } from "./lib/card/index";
-import axios from "axios";
+import { akarin } from "../lib";
+import { LocalStreamer } from "menu/arisa/playback/local/player";
 
 class ImportCommand extends BaseCommand {
     name = 'import';
@@ -31,13 +30,13 @@ class ImportCommand extends BaseCommand {
             url
         }
     }
-    async replaceQueue(session: StreamerSession, playlist: Netease.playlist) {
-        session.streamer.clearQueue();
-        await this.addToEndOfList(session, playlist);
-        await session.streamer.next();
-        session.streamer.queueDelete(session.streamer.getQueue().length + 1 - 1);
+    async replaceQueue(streamer: LocalStreamer, playlist: Netease.playlist) {
+        streamer.clearQueue();
+        await this.addToEndOfList(streamer, playlist);
+        await streamer.next();
+        streamer.queueDelete(streamer.getQueue().length + 1 - 1);
     }
-    async addToEndOfList(session: StreamerSession, playlist: Netease.playlist) {
+    async addToEndOfList(streamer: LocalStreamer, playlist: Netease.playlist) {
         let counter = 0;
         const promises: Promise<Awaited<ReturnType<typeof this.processing>>>[] = [];
         for (const track of playlist) {
@@ -46,7 +45,7 @@ class ImportCommand extends BaseCommand {
         }
         const awaiteds = (await Promise.all(promises)).sort((a, b) => { return a.order - b.order; });
         for (let { url, song, songId } of awaiteds) {
-            await session.streamer.playNetease(songId, {
+            await streamer.playNetease(songId, {
                 title: song.name,
                 cover: url || akarin,
                 duration: song.dt,
@@ -54,34 +53,35 @@ class ImportCommand extends BaseCommand {
             })
         }
     }
-    func: CommandFunction<StreamerSession, any> = async (session) => {
-        // @ts-ignore
-        if (!session.streamer) session.streamer = await getChannelStreamer(session.guildId, session.authorId);
+    func: CommandFunction<BaseSession, any> = async (session) => {
+        if (!session.guildId) return;
+        const streamer = await getChannelStreamer(session.guildId, session.authorId);
+        if (!(streamer instanceof LocalStreamer)) return;
         const playlistId = this.pattern.exec(session.args[0])?.[1]
         if (playlistId) {
             let mode: "replace" | "add" = "replace"
             if (session.args[1] == "add") mode = "add";
-            const playlist = await netease.getPlaylist(playlistId);
-            if (!(playlist instanceof Array)) {
-                await session.send("获取歌单出错，请稍后再试或换一个歌单再试。");
+            const playlist = await netease.getPlaylist(playlistId).catch(async (e) => {
+                await session.send(`获取歌单出错，请稍后再试或换一个歌单再试。\n错误信息：${e.body.message}`);
                 return;
-            }
+            })
+            if (!(playlist instanceof Array)) return;
             switch (mode) {
                 case "replace": {
-                    if (session.streamer.getQueue().length) {
+                    if (streamer.getQueue().length) {
                         await session.send(`当前播放列表不为空，如果继续，现在的播放列表将被转入的播放列表替换。要继续吗？\n（发送 "y" 确认、"n" 取消、"a" 将传入的播放列表添加到当前列表末尾）`);
                         const response = await this.client.events.callback.createAsyncCallback("message.text", e => e.authorId == session.authorId, e => e.content);
                         switch (response) {
                             case "y": {
                                 await session.send("正在添加…");
-                                await this.replaceQueue(session, playlist);
-                                await session.send(`添加完成。当前列表共 ${session.streamer.getQueue().length + 1} 首歌。`);
+                                await this.replaceQueue(streamer, playlist);
+                                await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
                                 break;
                             }
                             case "a": {
                                 await session.send("正在添加…");
-                                await this.addToEndOfList(session, playlist);
-                                await session.send(`添加完成。当前列表共 ${session.streamer.getQueue().length + 1} 首歌。`);
+                                await this.addToEndOfList(streamer, playlist);
+                                await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
                                 break;
                             }
                             case "n":
@@ -92,16 +92,16 @@ class ImportCommand extends BaseCommand {
                         }
                     } else {
                         await session.send("正在添加…");
-                        await this.addToEndOfList(session, playlist);
-                        await session.send(`添加完成。当前列表共 ${session.streamer.getQueue().length + 1} 首歌。`);
+                        await this.addToEndOfList(streamer, playlist);
+                        await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
                         break;
                     }
                     break;
                 }
                 case "add": {
                     await session.send("正在添加…");
-                    await this.addToEndOfList(session, playlist);
-                    await session.send(`添加完成。当前列表共 ${session.streamer.getQueue().length + 1} 首歌。`);
+                    await this.addToEndOfList(streamer, playlist);
+                    await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
                     break;
                 }
             }

@@ -33,6 +33,7 @@ const view = ref<InstanceType<typeof RouterView> | null>(null);
     --font-size: 14;
 
     font-size: min(max(calc(100vh / 720 * var(--font-size)), 12px), 28px);
+    // font-size: var(--font-size)px;
 
     --card-panel-background-color-dark: #16242f;
     --card-panel-background-color-light: #ffffff;

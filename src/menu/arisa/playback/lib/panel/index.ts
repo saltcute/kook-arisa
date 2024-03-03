@@ -174,55 +174,55 @@ export class ButtonControlPanel {
             .addText(`${Time.timeToShortString(this.streamer.playedTime)}/${Time.timeToShortString(this.streamer.duration)}`);
 
         card.addModule({
-            type: "action-group",
+            type: Card.Modules.Types.ACTION_GROUP,
             elements: [
                 {
-                    type: "button",
-                    theme: "primary",
-                    click: 'return-val',
+                    type: Card.Parts.AccessoryType.BUTTON,
+                    theme: Card.Theme.PRIMARY,
+                    click: Card.Parts.ButtonClickType.RETURN_VALUE,
                     value: JSON.stringify({ sessionId: this.previousButton }),
                     text: {
-                        "type": "plain-text",
-                        "content": "上一首"
+                        type: Card.Parts.TextType.PLAIN_TEXT,
+                        content: "上一首"
                     }
                 },
                 this.streamer.isPaused() ? {
-                    type: "button",
-                    theme: "warning",
-                    click: 'return-val',
+                    type: Card.Parts.AccessoryType.BUTTON,
+                    theme: Card.Theme.WARNING,
+                    click: Card.Parts.ButtonClickType.RETURN_VALUE,
                     value: JSON.stringify({ sessionId: this.resumeButton }),
                     text: {
-                        "type": "plain-text",
-                        "content": "继续"
+                        type: Card.Parts.TextType.PLAIN_TEXT,
+                        content: "继续"
                     }
                 } : {
-                    type: "button",
-                    theme: "secondary",
-                    click: 'return-val',
+                    type: Card.Parts.AccessoryType.BUTTON,
+                    theme: Card.Theme.SECONDARY,
+                    click: Card.Parts.ButtonClickType.RETURN_VALUE,
                     value: JSON.stringify({ sessionId: this.pauseButton }),
                     text: {
-                        "type": "plain-text",
-                        "content": "暂停"
+                        type: Card.Parts.TextType.PLAIN_TEXT,
+                        content: "暂停"
                     }
                 },
                 {
-                    type: "button",
-                    theme: "primary",
-                    click: 'return-val',
+                    type: Card.Parts.AccessoryType.BUTTON,
+                    theme: Card.Theme.PRIMARY,
+                    click: Card.Parts.ButtonClickType.RETURN_VALUE,
                     value: JSON.stringify({ sessionId: this.nextButton }),
                     text: {
-                        "type": "plain-text",
-                        "content": "下一首"
+                        type: Card.Parts.TextType.PLAIN_TEXT,
+                        content: "下一首"
                     }
                 },
                 {
-                    type: "button",
-                    theme: "warning",
-                    click: 'return-val',
+                    type: Card.Parts.AccessoryType.BUTTON,
+                    theme: Card.Theme.WARNING,
+                    click: Card.Parts.ButtonClickType.RETURN_VALUE,
                     value: JSON.stringify({ sessionId: this.showqueueButton }),
                     text: {
-                        "type": "plain-text",
-                        "content": "查看队列"
+                        type: Card.Parts.TextType.PLAIN_TEXT,
+                        content: "查看队列"
                     }
                 }
             ]
