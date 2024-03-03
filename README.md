@@ -75,10 +75,10 @@ Most (90%) of the tracks on QQ Music needs a valid cookie to play. You can use [
 
 Or you can also send a POST request to `${webuiUrl}/qqmusic/updateCookie` with the body:
 
-```json
+```json5
 {
-    "code": "The string you put in config",
-    "cookie": "The cookie string"
+    code: "The string you put in config",
+    cookie: "The cookie string",
 }
 ```
 
@@ -90,13 +90,13 @@ As a workaround, streamer middleman is implemented by using a normal user accoun
 
 With that, the config entries become obvious:
 
-```json
+```json5
 {
     // KOOK user ID of the middleman.
-    "streamerMiddlemanID": "",
+    streamerMiddlemanID: "",
     // KOOK user token of the middleman.
     // You can get this at `localStorage.authorization` in DevTools
-    "streamerMiddlemanToken": ""
+    streamerMiddlemanToken: "",
 }
 ```
 
