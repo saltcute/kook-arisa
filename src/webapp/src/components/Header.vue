@@ -6,7 +6,7 @@ library.add(faSun, faMoon, faMagnifyingGlass);
 
 import type { auth as authType } from './cards/common';
 import axios from 'axios';
-import { Ref, getCurrentInstance, onMounted, ref, } from 'vue';
+import { Ref, onMounted, ref } from 'vue';
 
 import { useI18n } from 'vue-i18n'
 const { t, availableLocales, locale } = useI18n()
