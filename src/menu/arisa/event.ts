@@ -5,7 +5,7 @@ import { Card, MessageType } from "kasumi.js";
 import { ButtonControlPanel } from "./playback/lib/panel/index";
 import leaveCommand from 'menu/arisa/command/leave'
 
-interface userLeaveVoiceChannelEventExtra {
+interface UserLeaveVoiceChannelEventExtra {
     type: 'exited_channel',
     body: {
         user_id: string,
@@ -13,7 +13,7 @@ interface userLeaveVoiceChannelEventExtra {
         exited_at: number
     }
 }
-interface userJoinVoiceChannelEventExtra {
+interface UserJoinVoiceChannelEventExtra {
     type: 'joined_channel',
     body: {
         user_id: string,
@@ -23,7 +23,7 @@ interface userJoinVoiceChannelEventExtra {
 }
 client.on('event.system', async (event) => {
     if (event.rawEvent.extra.type == 'exited_channel') { // User leaves voice channel
-        const extra: userLeaveVoiceChannelEventExtra = event.rawEvent.extra;
+        const extra: UserLeaveVoiceChannelEventExtra = event.rawEvent.extra;
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) { // has arisa
             if (extra.body.user_id == streamer.kasumi.me.userId) {
@@ -55,7 +55,7 @@ client.on('event.system', async (event) => {
             }
         }
     } else if (event.rawEvent.extra.type == 'joined_channel') { // User joins voice channel
-        const extra: userJoinVoiceChannelEventExtra = event.rawEvent.extra;
+        const extra: UserJoinVoiceChannelEventExtra = event.rawEvent.extra;
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) {
             if (extra.body.user_id != streamer.kasumi.me.userId) streamer.audienceIds.add(extra.body.user_id);
