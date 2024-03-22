@@ -119,7 +119,6 @@ export class LocalController extends Controller {
         return res;
     }
     private isAprilFools() {
-        return true;
         const date = new Date();
         return date.getMonth() === 4 && date.getDate() === 1;
     }
