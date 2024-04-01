@@ -120,7 +120,7 @@ export class LocalController extends Controller {
     }
     private isAprilFools() {
         const date = new Date();
-        return date.getMonth() === 4 && date.getDate() === 1;
+        return date.getMonth() === 3 && date.getDate() === 1;
     }
     private getRandomFromArray(arr: any[]) {
         return arr[crypto.randomInt(arr.length)];
