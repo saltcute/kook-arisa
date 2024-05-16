@@ -1,6 +1,11 @@
 import axios, { isAxiosError } from "axios";
 import { Router } from "express";
 import { client } from "init/client";
+import { getUserMe } from "./lib";
+import netease from './netease';
+import qqmusic from './qqmusic';
+import telemetry from './telemetry';
+import auth from './auth';
 
 const router = Router();
 
@@ -41,17 +46,10 @@ router.post('/guilds', (req, res) => {
         })
     }
 })
-
 router.post('/me', (req, res) => {
     const auth = req.body.auth
     if (auth) {
-        axios({
-            url: 'https://www.kookapp.cn/api/v3/user/me',
-            method: 'GET',
-            headers: {
-                Authorization: auth
-            }
-        }).then(({ data }) => {
+        getUserMe(auth).then((data) => {
             res.send(data)
         }).catch((e) => {
             if (isAxiosError(e)) {
@@ -125,5 +123,10 @@ router.get('/login', async (req, res) => {
         })
     }
 })
+
+router.use('/netease', netease);
+router.use('/qqmusic', qqmusic);
+router.use('/telemetry', telemetry);
+router.use('/auth', auth);
 
 export default router;

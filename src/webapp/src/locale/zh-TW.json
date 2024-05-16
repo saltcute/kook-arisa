@@ -19,7 +19,12 @@
             }
         },
         "header": {
-            "title": "Arisa Dashboard"
+            "title": "Arisa Dashboard",
+            "pages": {
+                "home": "首頁",
+                "settings": "設置",
+                "admin": "管理員"
+            }
         },
         "footer": {
             "MIT": "MIT 授權",
@@ -54,6 +59,21 @@
                 "bilibiliVideo": "Bilibili BV 號"
             },
             "noResults": "沒有結果"
+        },
+        "admin": {
+            "stats": {
+                "header": "統計資料"
+            },
+            "uniqueUsers": {
+                "total": "總共唯一使用者：{count} 位",
+                "lastDay": "过去 24 小时内的独立用户：{count} 位"
+            },
+            "chartHeaders": {
+                "audienceCount": "听众数量",
+                "sessionCount": "会话数量",
+                "memoryUsage": "内存使用量",
+                "cpuUsage": "CPU 占用率"
+            }
         }
     },
     "action": {

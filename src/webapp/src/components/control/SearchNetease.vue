@@ -33,7 +33,7 @@ let searchResult: (Netease.songDetail | QQMusic.Pattern.Song)[] = [];
 async function getNeteaseSearch(keyword: string): Promise<Netease.songDetail[]> {
     return new Promise((resolve, reject) => {
         axios({
-            url: "/netease/search",
+            url: "/api/netease/search",
             params: {
                 keyword
             }
@@ -50,7 +50,7 @@ function isNeteaseSong(payload: any): payload is Netease.songDetail {
 async function getQQMusicSearch(keyword: string): Promise<QQMusic.API.Search> {
     return new Promise((resolve, reject) => {
         axios({
-            url: "/qqmusic/search",
+            url: "/api/qqmusic/search",
             params: {
                 keyword
             }
@@ -254,7 +254,8 @@ defineExpose({
                         </i>
                     </span>
                     <span v-else>
-                        <img class="cover" :src="`https://y.gtimg.cn/music/photo_new/T002R300x300M000${song.albummid}.jpg`"
+                        <img class="cover"
+                            :src="`https://y.gtimg.cn/music/photo_new/T002R300x300M000${song.albummid}.jpg`"
                             @error="(event) => { (event.target as HTMLElement).setAttribute('src', akarin) }" />
                         <span class="track-meta">
                             <p class="title">{{ song.name }}</p>

@@ -1,11 +1,11 @@
 import { client } from "init/client";
 import * as fs from 'fs';
 import upath from 'upath';
-import 'api/main';
-import { controller } from "menu/arisa/index";
+import './backend';
+import { controller } from "menu/arisa";
 import playlist from "menu/arisa/playback/lib/playlist";
 import { Card, MessageType } from "kasumi.js";
-import { ButtonControlPanel } from "menu/arisa/playback/lib/panel/index";
+import { ButtonControlPanel } from "menu/arisa/playback/lib/panel";
 import leaveCommand from "menu/arisa/command/leave";
 
 (async () => {
@@ -20,7 +20,7 @@ import leaveCommand from "menu/arisa/command/leave";
     const menus = fs.readdirSync(basicPath);
     for (const menu of menus) {
         try {
-            require(upath.join(basicPath, menu, "index"));
+            require(upath.join(basicPath, menu));
         } catch (e) {
             client.logger.error('Error loading menu');
             client.logger.error(e);
@@ -49,7 +49,7 @@ import leaveCommand from "menu/arisa/command/leave";
                 await streamer.panel.newPanel(session.invitationTextChannelId);
             }
 
-            if (streamer.audienceIds.size <= 0) await streamer.disconnect("语音频道内无用户");
+            if (streamer.audience.count() <= 0) await streamer.disconnect("语音频道内无用户");
         }
     })
     await Promise.all(promises);

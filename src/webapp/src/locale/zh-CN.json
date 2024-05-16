@@ -19,7 +19,12 @@
             }
         },
         "header": {
-            "title": "Arisa Dashboard"
+            "title": "Arisa Dashboard",
+            "pages": {
+                "home": "主页",
+                "settings": "设置",
+                "admin": "管理员"
+            }
         },
         "footer": {
             "MIT": "MIT 授权",
@@ -54,6 +59,21 @@
                 "bilibiliVideo": "BV 号"
             },
             "noResults": "没有结果"
+        },
+        "admin": {
+            "stats": {
+                "header": "统计数据"
+            },
+            "uniqueUsers": {
+                "total": "总共独立用户：{count} 位",
+                "lastDay": "过去 24 小时内的独立用户：{count} 位"
+            },
+            "chartHeaders": {
+                "audienceCount": "听众数量",
+                "sessionCount": "会话数量",
+                "memoryUsage": "内存使用量",
+                "cpuUsage": "CPU 占用率"
+            }
         }
     },
     "action": {

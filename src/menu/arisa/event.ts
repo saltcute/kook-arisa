@@ -42,14 +42,14 @@ client.on('event.system', async (event) => {
                         await newStreamer.panel.newPanel(textChannelId);
                     }
 
-                    if (newStreamer.audienceIds.size <= 0) await newStreamer.disconnect("语音频道内无用户");
+                    if (newStreamer.audience.count() <= 0) await newStreamer.disconnect("语音频道内无用户");
                 }
             } else {
-                streamer.audienceIds.delete(extra.body.user_id);
+                streamer.audience.remove(extra.body.user_id);
                 if (streamer.INVITATION_AUTHOR_ID == extra.body.user_id) {
                     playlist.user.save(streamer, extra.body.user_id);
                 }
-                if (!streamer.audienceIds.size) { // No audiences left
+                if (!streamer.audience.count()) { // No audiences left
                     streamer.disconnect("语音频道内无用户");
                 }
             }
@@ -58,7 +58,7 @@ client.on('event.system', async (event) => {
         const extra: UserJoinVoiceChannelEventExtra = event.rawEvent.extra;
         const streamer = controller.getChannelStreamer(extra.body.channel_id);
         if (streamer) {
-            if (extra.body.user_id != streamer.kasumi.me.userId) streamer.audienceIds.add(extra.body.user_id);
+            if (extra.body.user_id != streamer.kasumi.me.userId) streamer.audience.add(extra.body.user_id);
         }
     }
 });

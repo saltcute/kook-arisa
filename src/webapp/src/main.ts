@@ -41,7 +41,7 @@ export const i18n = createI18n<[i18nPattern], "en-CA" | "en-US" | "zh-CN" | "zh-
 })
 
 
-import twemoji from 'twemoji';
+import twemoji from '@twemoji/api';
 app.directive('emoji', {
     updated(el: Element, { value }) {
         el.classList.add("twemoji");

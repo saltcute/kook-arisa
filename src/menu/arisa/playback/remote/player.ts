@@ -35,7 +35,6 @@ export class RemoteStreamer extends Streamer {
     clearQueue(): void {
         throw new Error('Method not implemented.');
     }
-    audienceIds: Set<string> = new Set();
     get pausedTime(): number {
         throw new Error('Method not implemented.');
     }

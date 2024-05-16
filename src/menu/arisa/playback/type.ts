@@ -3,6 +3,7 @@ import Kasumi from 'kasumi.js';
 import { Readable } from 'stream';
 import EventEmitter2 from 'eventemitter2';
 import { ButtonControlPanel } from './lib/panel';
+import { client } from 'init/client';
 
 export namespace playback {
     export type source = source.playable;
@@ -69,6 +70,81 @@ export type queueItem = {
     endMark?: boolean
 };
 
+class Audience {
+    private audiences: {
+        id: string,
+        username: string,
+        identifyNum: string,
+        avatar: string
+    }[] = [];
+    get() {
+        return this.audiences;
+    }
+
+    has(id: string): boolean;
+    has(user: { id: string, username: string, identifyNum: string, avatar: string }): boolean;
+    has(user: any): boolean {
+        if (typeof user == 'string') return this.audiences.some(v => v.id == user);
+        else return this.audiences.some(v => {
+            return v.id == user.id
+                && v.username == user.username
+                && v.identifyNum == user.identifyNum
+                && v.avatar == user.avatar;
+        });
+    }
+    add(id: string): void;
+    add(user: { id: string, username: string, identifyNum: string, avatar: string }): void
+    add(id: string | { id: string, username: string, identifyNum: string, avatar: string }): void
+    add(id: any): void {
+        if (typeof id == 'string') {
+            client.API.user.view(id).then(res => {
+                const { data, err } = res;
+                if (err) {
+                    client.logger.error(err);
+                    return;
+                }
+                const user = {
+                    id: data.id,
+                    username: data.username,
+                    identifyNum: data.identify_num,
+                    avatar: data.avatar
+                }
+                if (!this.has(user)) {
+                    this.audiences.push(user);
+                }
+            })
+        } else {
+            if (!this.has(id)) {
+                this.audiences.push(id);
+            }
+        }
+    }
+    remove(id: string): void;
+    remove(user: { id: string, username: string, identifyNum: string, avatar: string }): void
+    remove(user: any): void {
+        if (typeof user == 'string') this.audiences = this.audiences.filter(v => v.id != user);
+        else this.audiences = this.audiences.filter(v => {
+            return !(v.id == user.id
+                && v.username == user.username
+                && v.identifyNum == user.identifyNum
+                && v.avatar == user.avatar);
+        });
+    }
+    count(): number {
+        return this.audiences.length;
+    }
+    reload(ids: ({
+        id: string,
+        username: string,
+        identifyNum: string,
+        avatar: string
+    } | string)[]) {
+        this.audiences = [];
+        for (const id of ids) {
+            this.add(id);
+        }
+    }
+}
 
 interface StreamerEmisions {
     connect: () => void;
@@ -189,9 +265,9 @@ export abstract class Streamer extends EventEmitter2 {
     abstract clearQueue(): void
 
     /**
-     * A set of id of users who are connected to the same voice channel with the streamer.
+     * Users who are connected to the same voice channel with the streamer.
      */
-    abstract audienceIds: Set<string>;
+    audience = new Audience();
 
     /**
      * How long did the last pause elapsed in ms.

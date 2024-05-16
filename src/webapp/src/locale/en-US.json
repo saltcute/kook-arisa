@@ -19,7 +19,12 @@
             }
         },
         "header": {
-            "title": "Arisa Dashboard"
+            "title": "Arisa Dashboard",
+            "pages": {
+                "home": "Home",
+                "settings": "Settings",
+                "admin": "Admin"
+            }
         },
         "footer": {
             "MIT": "MIT License",
@@ -54,6 +59,21 @@
                 "bilibiliVideo": "Bilibili BV ID"
             },
             "noResults": "No Results"
+        },
+        "admin": {
+            "stats": {
+                "header": "Statistics"
+            },
+            "uniqueUsers": {
+                "total": "Total unique users: {count}",
+                "lastDay": "Unique users in last 24 hours: {count}"
+            },
+            "chartHeaders": {
+                "audienceCount": "Audience Count",
+                "sessionCount": "Session Count",
+                "memoryUsage": "Memory Usage",
+                "cpuUsage": "CPU Usage"
+            }
         }
     },
     "action": {

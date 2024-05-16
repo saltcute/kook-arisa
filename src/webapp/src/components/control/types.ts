@@ -1,6 +1,17 @@
 import { playback } from "menu/arisa/playback/type"
 
-export interface streamerDetail {
+export interface DashboardInfo {
+    user: {
+        id: string,
+        username: string,
+        identifyNum: string,
+        avatar: string,
+        isAdmin: boolean
+    },
+    streamers: StreamerInfo[]
+}
+
+export interface StreamerInfo {
     name: string,
     identifyNum: string,
     avatar: string,

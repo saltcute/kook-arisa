@@ -5,7 +5,8 @@ import { getChannelStreamer } from "menu/arisa";
 import { LocalStreamer } from "menu/arisa/playback/local/player";
 import { getVideoDetail } from "./lib/index";
 
-const biliAPI = require('bili-api');
+// @ts-ignore
+import * as biliAPI from 'bili-api';
 
 class PlayCommand extends BaseCommand<typeof client> {
     name = 'play';

@@ -12,7 +12,7 @@ class MessageCommand extends BaseCommand {
             const sessionId = this.client.events.button.createSession('/admin/control/messageSession', { id: streamer.kasumi.me.userId }, true);
             card.addTextWithButton(`**${streamer.kasumi.me.username}#${streamer.kasumi.me.identifyNum}** By: (met)${streamer.INVITATION_AUTHOR_ID}(met)
 In ${streamer.TARGET_GUILD_ID}/${streamer.TARGET_CHANNEL_ID}
-Audiences: ${streamer.audienceIds.size}
+Audiences: ${streamer.audience.count()}
 Streaming started at: ${new Date(streamer.streamStart).toLocaleString()}
 Lasted: ${Time.timeToShortString((Date.now() - streamer.streamStart) / 1000)}`, {
                 buttonContent: "message",

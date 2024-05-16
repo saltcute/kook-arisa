@@ -1,7 +1,7 @@
 import { playback } from "menu/arisa/playback/type";
-import { ClientEvents, ServerEvents, ServerPayload, streamerDetail } from "./types";
+import { ClientEvents, StreamerInfo, ServerEvents, ServerPayload } from "./types";
 import EventEmitter2 from "eventemitter2";
-export interface auth {
+export interface AuthCredentials {
     access_token: string,
     expires_in: number,
     token_type: string,
@@ -9,8 +9,8 @@ export interface auth {
     expires: number
 }
 
-class Backend extends EventEmitter2 {
-    streamers: streamerDetail[] = []
+export class Backend extends EventEmitter2 {
+    streamers: StreamerInfo[] = []
     ws?: WebSocket;
     nowPlaying?: playback.extra;
     currentStreamerIndex = 0;
@@ -48,6 +48,17 @@ class Backend extends EventEmitter2 {
         return payload.meta.title + payload.meta.artists + payload.meta.duration;
     }
 
+    initReload() {
+        if (this.ws?.OPEN) {
+            this.emit('websocketActive');
+        } else {
+            this.ws?.addEventListener('open', () => {
+                this.emit('websocketActive');
+            });
+        }
+        this.emit("newTrack", this.nowPlaying);
+    }
+
     get currentNowPlaying() {
         const streamer = this.currentStreamer;
         if (streamer) {
@@ -81,11 +92,25 @@ class Backend extends EventEmitter2 {
     /**
      * Lantency with server in ms
      */
-    serverLatency = 0;
+    private _serverLatency = 0;
+    public get serverLatency() {
+        return this._serverLatency;
+    }
+    private set serverLatency(payload: number) {
+        this._serverLatency = payload;
+    }
     now() {
         return Date.now() - this.serverLatency;
     }
+
+    private auth!: AuthCredentials;
+
     connect() {
+        const authRaw = localStorage.getItem('auth');
+        if (!(authRaw && (this.auth = JSON.parse(authRaw)) && this.auth.expires - Date.now() > 3600 * 1000)) { // Have auth
+            console.error("Cannot connect to backend. No auth found.")
+            return;
+        }
         try {
             const self = this;
             this.ws = new WebSocket(window.location.protocol.replace('http', 'ws') + location.hostname);
@@ -95,7 +120,7 @@ class Backend extends EventEmitter2 {
                 self.ws?.send(JSON.stringify({
                     t: 0,
                     d: {
-                        access_token: auth.access_token
+                        access_token: self.auth.access_token
                     }
                 }));
                 self.checkWsAlive();
@@ -250,7 +275,7 @@ class Backend extends EventEmitter2 {
         const value = (event.target as HTMLElement).getAttribute('index');
         if (value) {
             const index = parseInt(value);
-            backend.streamerIndex = index;
+            this.streamerIndex = index;
             (event.target as HTMLInputElement).parentElement?.parentElement?.removeAttribute('open');
         }
     }
@@ -324,12 +349,7 @@ class Backend extends EventEmitter2 {
     // }
 }
 
-export let auth: auth;
-const authRaw = localStorage.getItem('auth');
-
 const backend = new Backend();
-if (authRaw && (auth = JSON.parse(authRaw)) && auth.expires - Date.now() > 3600 * 1000) { // Have auth
-    backend.connect();
-}
+backend.connect();
 
 export default backend

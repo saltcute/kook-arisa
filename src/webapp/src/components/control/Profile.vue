@@ -32,6 +32,8 @@ if (userDataRaw) {
 
 <style scoped>
 .profile {
+    grid-area: profile;
+
     display: grid;
     grid-template-columns: 100%;
     grid-template-rows: 70% 1fr;

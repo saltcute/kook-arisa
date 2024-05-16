@@ -241,7 +241,6 @@ client.events.button.registerActivator('search.nextPage', async (event: ButtonCl
     keyword: string,
     provider: string
 }) => {
-    console.log(data);
     if (data.currentPage < 1) return;
     await client.API.message.update(event.targetMsgId, (new Card().addText("正在搜索…")));
     if (data.provider == "netease") await client.API.message.update(event.targetMsgId, await searchNetease(data.keyword, data.currentPage));

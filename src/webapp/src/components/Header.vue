@@ -4,11 +4,12 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSun, faMoon, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons'
 library.add(faSun, faMoon, faMagnifyingGlass);
 
-import type { auth as authType } from './cards/common';
+import type { AuthCredentials } from './control/common';
 import axios from 'axios';
 import { Ref, onMounted, ref } from 'vue';
 
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router';
 const { t, availableLocales, locale } = useI18n()
 
 const props = defineProps<{
@@ -21,24 +22,20 @@ function logout() {
     location.replace('/');
 }
 
-async function getUserMe(token: string): Promise<{
-    code: number,
-    message: string,
-    data: any
-}> {
+async function getUserMe(token: string): Promise<any> {
     return new Promise((resolve, rejects) => {
         axios({
             url: '/api/me',
             method: 'POST',
             data: {
-                auth: `Bearer ${token}`
+                auth: token
             }
-        }).then(({ data }) => {
+        }).then((data) => {
             resolve(data);
         }).catch((e) => { rejects(e) });
     })
 }
-let callbackUrl: Ref<string>, user: Ref<string>, auth: authType | undefined;
+let callbackUrl: Ref<string>, user: Ref<string>, auth: AuthCredentials | undefined;
 user = ref('Loading...');
 callbackUrl = ref('');
 (async () => {
@@ -50,7 +47,7 @@ callbackUrl = ref('');
             const store = data.data;
             store.expires = Date.now() + store.expires_in * 1000;
             localStorage.setItem('auth', JSON.stringify(store));
-            const userData = (await getUserMe(store.access_token)).data
+            const userData = (await getUserMe(store.access_token));
             localStorage.setItem('user', JSON.stringify(userData));
             user.value = `${userData.username}`;
             location.replace('/');
@@ -130,6 +127,17 @@ function getFlagEmoji(country: string) {
         <nav>
             <ul>
                 <li><strong class="title">{{ t("desc.header.title") }}</strong></li>
+            </ul>
+            <ul>
+                <li>
+                    <RouterLink to="/">{{ $t("desc.header.pages.home") }}</RouterLink>
+                </li>
+                <li>
+                    <RouterLink to="/settings">{{ $t("desc.header.pages.settings") }}</RouterLink>
+                </li>
+                <li>
+                    <RouterLink to="/admin">{{ $t("desc.header.pages.admin") }}</RouterLink>
+                </li>
             </ul>
             <ul>
                 <li>
@@ -239,5 +247,9 @@ header {
 
 :root[data-theme="light"] .switch-theme-light {
     display: none;
+}
+
+a[aria-current="page"].router-link-active {
+    --background-color: var(--primary-focus);
 }
 </style>

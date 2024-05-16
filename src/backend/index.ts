@@ -5,38 +5,18 @@ import upath from 'upath';
 import axios from 'axios';
 import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
-import { controller } from 'menu/arisa';
+import { controller } from 'menu/arisa/index';
 import { playback } from 'menu/arisa/playback/type';
-import { ClientEvents, ClientPayload, ServerEvents, streamerDetail } from 'webapp/src/components/cards/types';
-import api from './api';
-import netease from './netease';
-import qqmusic from './qqmusic';
+import { ClientEvents, ClientPayload, ServerEvents, StreamerInfo } from 'webapp/src/components/control/types';
+import api from './api/index';
 import { LocalStreamer } from 'menu/arisa/playback/local/player';
 import { getVideoDetail } from 'menu/arisa/command/bilibili/lib/index';
+import history from 'connect-history-api-fallback';
+import { getUserMe } from './api/lib/index';
 const { app } = expressWs(express());
 
-
-app.ws('/', (ws: WebSocket) => {
+function handleWebsocket(ws: WebSocket) {
     ws.on('message', async (data) => {
-        async function getUserMe(token: string): Promise<{
-            code: number,
-            message: string,
-            data: any
-        }> {
-            const webuiUrl = await client.config.getOne("webuiUrl");
-            return new Promise((resolve, rejects) => {
-                axios({
-                    baseURL: webuiUrl.toString(),
-                    url: '/api/me',
-                    method: 'POST',
-                    data: {
-                        auth: `Bearer ${token}`
-                    }
-                }).then(({ data }) => {
-                    resolve(data);
-                }).catch((e) => { rejects(e) });
-            })
-        }
         try {
             const raw = data.toString();
             const payload: ClientPayload = JSON.parse(raw);
@@ -44,7 +24,7 @@ app.ws('/', (ws: WebSocket) => {
                 case ClientEvents.GET_USER_ID: // Get user ID
                     const accessToken = payload.d.access_token;
                     const user = await getUserMe(accessToken);
-                    userId = user.data.id;
+                    userId = user.id;
                     break;
                 case ClientEvents.PLAYBACK_PAUSE_RESUME: { // Pause and resume 
                     const streamer = getAllStreamers()[payload.d.streamerIndex];
@@ -135,7 +115,8 @@ app.ws('/', (ws: WebSocket) => {
                                     if (bvid) video = await getVideoDetail(bvid);
                                     if (bvid && video) {
                                         if (video.duration > 10 * 60) return;
-                                        const biliAPI = require('bili-api');
+                                        // @ts-ignore
+                                        const biliAPI = await import('bili-api');
                                         lastBilibiliRequest = Date.now();
                                         const { cids } = await biliAPI({ bvid }, ['cids']).catch((e: any) => { client.logger.error(e); });
                                         const cid = cids[0];
@@ -223,14 +204,14 @@ app.ws('/', (ws: WebSocket) => {
         if (userId) {
             const streamers = getAllStreamers();
             if (streamers) {
-                let payload: streamerDetail[] = [];
+                let payload: StreamerInfo[] = [];
                 for (const streamer of streamers) {
                     const me = streamer.kasumi.me;
                     let queue = [], array: playback.extra[] = [];
                     if (streamer.nowPlaying) queue.push(streamer.nowPlaying);
                     queue = queue.concat(streamer.getQueue());
                     array = (queue.filter(v => v.extra).map(v => v.extra) as playback.extra[])
-                    const data: streamerDetail = {
+                    const data: StreamerInfo = {
                         name: me.username,
                         identifyNum: me.identifyNum,
                         avatar: me.avatar,
@@ -260,26 +241,30 @@ app.ws('/', (ws: WebSocket) => {
     }
 
     function getChannelStreamer() {
-        return controller.activeStreamersArray.filter(v => v.audienceIds.has(userId))
+        return controller.activeStreamersArray.filter(v => v.audience.has(userId))
     }
 
     sendStatus();
     let keepAlive = setInterval(() => { ensureConnection() }, 10 * 1000);
     let syncStatus = setInterval(() => { sendStatus() }, 500)
-})
+}
 
 app.use(bodyParser.json());
 
-app.use('/', express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
+app.ws('/', handleWebsocket);
+
 app.get('/login', async (req, res) => {
     res.redirect(`https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${(await client.config.getOne("kookClientID"))}&redirect_uri=${encodeURIComponent((await client.config.getOne("webuiUrl")).toString())}&response_type=code&scope=get_user_info%20get_user_guilds`);
 })
 
 app.use('/api', api)
-app.use('/netease', netease);
-app.use('/qqmusic', qqmusic);
 
-client.config.get("internalWebuiPort").then(({ internalWebuiPort }) => {
+
+app.use(history());
+app.use("/", express.static(upath.join(__dirname, '..', 'webapp', 'dist')))
+
+
+client.config.getOne("internalWebuiPort").then((internalWebuiPort) => {
     app.listen(internalWebuiPort, async () => {
         client.logger.info(`Webui start listening on port ${(await client.config.getOne("internalWebuiPort"))}`);
         client.logger.info(`Access webui at ${await client.config.getOne('webuiUrl')} or http://localhost:${(await client.config.getOne("internalWebuiPort"))}`)

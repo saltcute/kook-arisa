@@ -1,7 +1,7 @@
 import Koice from 'koice';
 import { Controller } from '../type';
 import { PassThrough, Readable } from 'stream';
-import ffmpeg, { ffprobe } from 'fluent-ffmpeg';
+import ffmpeg, * as fluentFfmpeg from 'fluent-ffmpeg';
 import delay from 'delay';
 import * as fs from 'fs';
 import upath from 'upath';
@@ -14,7 +14,8 @@ import { Streamer, playback, queueItem } from '../type';
 import { Time } from '../lib/time';
 import { MessageType } from 'kasumi.js';
 
-const biliAPI = require('bili-api');
+// @ts-ignore
+import * as biliAPI from 'bili-api';
 
 
 export class LocalStreamer extends Streamer {
@@ -66,8 +67,20 @@ export class LocalStreamer extends Streamer {
         if (err) {
             this.kasumi.logger.error(err);
         } else {
-            this.audienceIds = new Set(data.map(v => v.id));
-            this.audienceIds.delete(this.kasumi.me.userId);
+            this.audience.reload(data.map(v => {
+                return {
+                    id: v.id,
+                    username: v.username,
+                    identifyNum: v.identify_num,
+                    avatar: v.avatar
+                }
+            }))
+            this.audience.remove({
+                id: this.kasumi.me.userId,
+                username: this.kasumi.me.username,
+                identifyNum: this.kasumi.me.identifyNum,
+                avatar: this.kasumi.me.avatar
+            });
         }
         return this.initKoice();
     }
@@ -232,7 +245,7 @@ export class LocalStreamer extends Streamer {
             if (fs.lstatSync(path).isDirectory()) {
                 fs.readdirSync(path).forEach((file) => {
                     const fullPath = upath.join(path, file);
-                    ffprobe(fullPath, async (err, data) => {
+                    fluentFfmpeg.ffprobe(fullPath, async (err, data) => {
                         if (err) return;
                         if (data.streams.map(val => val.codec_type).includes('audio')) {
                             let meta = {
@@ -327,8 +340,6 @@ export class LocalStreamer extends Streamer {
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
-    audienceIds: Set<string> = new Set();
-
     private paused: boolean = false;
     private previousPausedTime: number = 0;
 
@@ -383,6 +394,7 @@ export class LocalStreamer extends Streamer {
 
 
     async previous(): Promise<queueItem | undefined> {
+        this.currentChunkStart = 0;
         if (this.hasOngoingSkip) return;
         try {
             this.hasOngoingSkip = true;
@@ -417,6 +429,7 @@ export class LocalStreamer extends Streamer {
     }
     private hasOngoingSkip = false;
     async next(): Promise<queueItem | undefined> {
+        this.currentChunkStart = 0;
         if (this.hasOngoingSkip) return;
         try {
             this.hasOngoingSkip = true;

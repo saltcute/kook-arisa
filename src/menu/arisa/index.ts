@@ -4,6 +4,7 @@ import upath from 'upath';
 import * as fs from 'fs';
 import { LocalController } from "./playback/local/controller";
 import { Streamer } from "./playback/type";
+import { Telemetry } from "./telemetry";
 import './naturalCommands';
 
 class AppMenu extends BaseMenu {
@@ -18,15 +19,18 @@ import './event';
 
 const basicPath = upath.join(__dirname, 'command');
 const commands = fs.readdirSync(basicPath);
-for (const command of commands) {
+for (const commandPath of commands) {
     try {
-        require(upath.join(basicPath, command));
+        let command = require(upath.join(basicPath, commandPath))
+        if (command instanceof BaseCommand) menu.addCommand(command);
     } catch (e) {
         menu.logger.error('Error loading command');
         menu.logger.error(e);
     }
 }
 export const controller = new LocalController(client);
+export const telemetry = new Telemetry();
+telemetry.start();
 
 
 export async function getChannelStreamer(guildId: string, authorId: string): Promise<Streamer> {

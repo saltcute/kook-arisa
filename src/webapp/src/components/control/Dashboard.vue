@@ -5,27 +5,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage, faVolumeXmark, faVolumeLow, faVolumeHigh } from '@fortawesome/free-solid-svg-icons'
 library.add(faForward, faBackward, faPause, faPlay, faArrowUp, faArrowDown, faTrash, faCircleXmark, faRepeat, faShuffle, faGlobe, faLanguage, faVolumeXmark, faVolumeLow, faVolumeHigh);
 
-import { playback } from 'menu/arisa/playback/type';
-import backend from './common';
-import { nextTick, onMounted, reactive, ref } from 'vue';
-import axios from 'axios';
-import { Netease } from 'menu/arisa/command/netease/lib';
-import { QQMusic } from 'menu/arisa/command/qq/lib';
-
-import draggable from "vuedraggable";
-import type { SortableEvent } from "sortablejs"
-
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
-
-const props = defineProps<{
-    setSliderValue: ((value: number) => void) | undefined
-}>()
-const volumeSlider = ref(null);
-
-
-const proxy = "img.kookapp.lolicon.ac.cn";
-
 export declare enum NotificationSetting {
     Default = 0,
     All = 1,
@@ -48,6 +27,42 @@ interface RawGuildListResponseItem {
     level: number;
 }
 
+import { playback } from 'menu/arisa/playback/type';
+
+import backend from './common';
+
+import { nextTick, onMounted, reactive, ref } from 'vue';
+import axios from 'axios';
+import { Netease } from 'menu/arisa/command/netease/lib';
+import { QQMusic } from 'menu/arisa/command/qq/lib';
+
+import draggable from "vuedraggable";
+import type { SortableEvent } from "sortablejs"
+
+import { useI18n } from 'vue-i18n'
+import { onUnmounted } from 'vue';
+const { t } = useI18n()
+
+const volumeSlider = ref(null);
+
+const proxy = "img.kookapp.lolicon.ac.cn";
+
+const currentQueue = reactive({
+    list: backend.currentStreamer?.queue || []
+});
+
+const waitingForWSConnection = ref(true);
+const loadingLyrics = ref(true);
+const userDataRaw = localStorage.getItem('user');
+if (userDataRaw && backend.ws) {
+    const auth = JSON.parse(localStorage.getItem('auth') || "{}");
+    const token = auth.access_token;
+
+    backend.on('websocketActive', () => {
+        waitingForWSConnection.value = false;
+    })
+}
+
 async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> {
     return new Promise((resolve, rejects) => {
         axios({
@@ -65,7 +80,7 @@ async function getGuildList(token: string): Promise<RawGuildListResponseItem[]> 
 async function getNeteaseSongLyrics(id: number): Promise<Netease.lyric> {
     return new Promise((resolve, rejects) => {
         axios({
-            url: '/netease/lyric',
+            url: '/api/netease/lyric',
             method: 'GET',
             params: {
                 id
@@ -78,7 +93,7 @@ async function getNeteaseSongLyrics(id: number): Promise<Netease.lyric> {
 async function getQQMusicSongLyrics(mid: string): Promise<QQMusic.API.Lyric> {
     return new Promise((resolve, rejects) => {
         axios({
-            url: '/qqmusic/lyric',
+            url: '/api/qqmusic/lyric',
             method: 'GET',
             params: {
                 mid
@@ -119,19 +134,6 @@ function parseLyric(rawLyric?: string, rawTranslate?: string, rawRomaji?: string
     return { lyric, kLyric, translate, romaji };
 }
 
-const waitingForWSConnection = ref(true);
-const loadingLyrics = ref(true);
-const userDataRaw = localStorage.getItem('user');
-if (userDataRaw && backend.ws) {
-    const auth = JSON.parse(localStorage.getItem('auth') || "{}");
-    const token = auth.access_token;
-
-    backend.ws.addEventListener('open', () => {
-        waitingForWSConnection.value = false;
-    })
-
-}
-
 
 function getQueueBackground(queue: playback.extra) {
     return `background-image: url("${proxiedKookImage(queue.meta.cover)}")`
@@ -142,57 +144,15 @@ function proxiedKookImage(original: string) {
     return original.replace('img.kaiheila.cn', proxy).replace('img.kookapp.cn', proxy);
 }
 
-const currentQueue = reactive({
-    list: backend.currentStreamer?.queue || []
-});
-
 function getPlaybackProgress() {
     const streamer = backend.currentStreamer
     if (streamer) {
-        const played = streamer.trackPlayedTime
+        const played = streamer.trackPlayedTime + backend.serverLatency;
         const duration = streamer.trackTotalDuration
         if (played && duration) return played / duration * 100
         else return 0;
     } else return 0;
 }
-
-backend.on('newTrack', (nowPlaying?: playback.extra) => {
-    console.log(nowPlaying);
-    if (nowPlaying) {
-        nextTick().then(() => {
-            if (volumeSlider.value) {
-                console.log(volumeSlider.value);
-                // @ts-ignore
-                volumeSlider.value.setSliderValue(fr(backend.currentStreamer?.volumeGain || 0) * 100);
-            }
-        })
-        switch (nowPlaying.type) {
-            case "netease":
-                getNeteaseSongLyrics(nowPlaying.data.songId).then((data) => {
-                    const lyrics = parseLyric(data.lrc?.lyric, data.tlyric?.lyric, data.romalrc?.lyric, data.klyric?.lyric);
-                    currentLyric = lyrics
-                    bilingualLyric = parseBilingual()
-                    currentLyricIndexCache = undefined;
-                    loadingLyrics.value = false;
-                })
-                break;
-            case "qqmusic":
-                getQQMusicSongLyrics(nowPlaying.data.songMId).then((data) => {
-                    const lyrics = parseLyric(data.lyric, data.trans);
-                    currentLyric = lyrics
-                    bilingualLyric = parseBilingual()
-                    currentLyricIndexCache = undefined;
-                    loadingLyrics.value = false;
-                })
-                break;
-            default:
-                currentLyric = { lyric: undefined, translate: undefined, kLyric: undefined, romaji: undefined };
-                bilingualLyric = {};
-                currentLyricIndexCache = undefined;
-                loadingLyrics.value = false;
-        }
-    }
-})
 
 function scrollToActiveLyric() {
     let element = document.getElementById(currentLyricIndex()[1].toString())
@@ -212,18 +172,6 @@ function scrollToActiveLyric() {
         parentContainer.scrollTop = elementRelativeTop - parentContainer.clientHeight / 2 + element.clientHeight / 2;
     }
 }
-
-backend.on('wsEvent', () => {
-    if (backend.currentStreamer?.queue && Date.now() - lastDragEnd > 1 * 1000)
-        currentQueue.list = backend.currentStreamer?.queue;
-    forceRender().then(() => {
-        forceRender().then(() => {
-            if (Date.now() - lastScroll > 2 * 1000) {
-                scrollToActiveLyric();
-            }
-        });
-    })
-})
 
 let lastScroll = 0;
 function onScrollLyric(event: Event) {
@@ -360,16 +308,68 @@ function onDragEnd(event: SortableEvent) {
     }
 }
 
-onMounted(() => {
-    enableRomaji.value = localStorage.getItem('showRomaji') == "true" ? true : false;
-    enableTranslate.value = localStorage.getItem('showTranslate') == "true" ? true : false;
-
-    const lyricTextarea = document.getElementById("lyricTextarea")
-    if (lyricTextarea) {
-        lyricTextarea.addEventListener('wheel', onScrollLyric)
+function handleNewTrack(nowPlaying?: playback.extra) {
+    console.log(nowPlaying);
+    if (nowPlaying) {
+        nextTick().then(() => {
+            if (volumeSlider.value) {
+                // @ts-ignore
+                volumeSlider.value.setSliderValue(fr(backend.currentStreamer?.volumeGain || 0) * 100);
+            }
+        })
+        switch (nowPlaying.type) {
+            case "netease":
+                getNeteaseSongLyrics(nowPlaying.data.songId).then((data) => {
+                    const lyrics = parseLyric(data.lrc?.lyric, data.tlyric?.lyric, data.romalrc?.lyric, data.klyric?.lyric);
+                    currentLyric = lyrics
+                    bilingualLyric = parseBilingual()
+                    currentLyricIndexCache = undefined;
+                    loadingLyrics.value = false;
+                })
+                break;
+            case "qqmusic":
+                getQQMusicSongLyrics(nowPlaying.data.songMId).then((data) => {
+                    const lyrics = parseLyric(data.lyric, data.trans);
+                    currentLyric = lyrics
+                    bilingualLyric = parseBilingual()
+                    currentLyricIndexCache = undefined;
+                    loadingLyrics.value = false;
+                })
+                break;
+            default:
+                currentLyric = { lyric: undefined, translate: undefined, kLyric: undefined, romaji: undefined };
+                bilingualLyric = {};
+                currentLyricIndexCache = undefined;
+                loadingLyrics.value = false;
+        }
     }
-});
+}
 
+function handleWsEvent() {
+    if (backend.currentStreamer?.queue && Date.now() - lastDragEnd > 1 * 1000)
+        currentQueue.list = backend.currentStreamer?.queue;
+    forceRender().then(() => {
+        forceRender().then(() => {
+            if (Date.now() - lastScroll > 2 * 1000) {
+                scrollToActiveLyric();
+            }
+        });
+    })
+}
+
+function registerBackendEventListeners() {
+    backend.on('newTrack', handleNewTrack)
+    backend.on('wsEvent', handleWsEvent)
+}
+
+function removeBackendEventListeners() {
+    backend.off('newTrack', handleNewTrack)
+    backend.off('wsEvent', handleWsEvent)
+}
+
+/**
+ * Volume slider function.
+ */
 function f(x: number) {
     return Math.exp(0.6933 * x) - 1;
     // if (x < 0.63726) return 1.29 * x * x;
@@ -377,6 +377,10 @@ function f(x: number) {
     // return Math.pow(x, 2);
     // return 5 / 9 * x * x * x + 0.05;
 }
+
+/**
+ * Volume slider reverse function.
+ */
 function fr(x: number) {
     return Math.log(x + 1) / 0.6933;
     // if (x < 0.63726) return Math.sqrt(x / 1.29);
@@ -384,17 +388,33 @@ function fr(x: number) {
     // return Math.sqrt(x);
     // return Math.cbrt((x - 0.05) * 9 / 5);
 }
+
+onMounted(() => {
+    enableRomaji.value = localStorage.getItem('showRomaji') == "true" ? true : false;
+    enableTranslate.value = localStorage.getItem('showTranslate') == "true" ? true : false;
+
+    const lyricTextarea = document.getElementById("lyricTextarea")
+    if (lyricTextarea) {
+        lyricTextarea.addEventListener('wheel', onScrollLyric, { passive: true })
+    }
+
+    registerBackendEventListeners();
+    backend.initReload();
+});
+onUnmounted(() => {
+    removeBackendEventListeners();
+})
 </script>
 
 <template>
     <article :aria-busy="waitingForWSConnection" class="dashboard">
         <article v-if="userDataRaw" class="control">
             <div class="song-title">{{
-                backend.currentNowPlaying?.meta?.title || t("desc.controlBoard.notPlaying")
-            }}</div>
+        backend.currentNowPlaying?.meta?.title || t("desc.controlBoard.notPlaying")
+    }}</div>
             <div class="song-artists">{{
-                backend.currentNowPlaying?.meta?.artists
-            }}</div>
+            backend.currentNowPlaying?.meta?.artists
+        }}</div>
             <input type="range" id="playback-progress"
                 @change="(event) => { if (event.target) backend.jumpToPercentage((event.target as any).value / 100) }"
                 :value="getPlaybackProgress()" min="0" max="100" />
@@ -407,8 +427,8 @@ function fr(x: number) {
                     @click="backend.switchCycleMode('repeat_one')">
                     <font-awesome-icon :icon="['fas', 'repeat']" />
                 </i>
-                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')" v-else-if="backend.currentCycleMode == 'repeat_one'"
-                    @click="backend.switchCycleMode('random')">
+                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')"
+                    v-else-if="backend.currentCycleMode == 'repeat_one'" @click="backend.switchCycleMode('random')">
                     <font-awesome-icon :icon="['fas', 'repeat']" fade />
                 </i>
                 <i :data-tooltip="t('tooltip.controlBoard.shufflePlaylist')"
@@ -431,9 +451,9 @@ function fr(x: number) {
                     <font-awesome-icon v-else-if="backend.currentVolumeGain <= 0.4" :icon="['fas', 'volume-low']" />
                     <font-awesome-icon v-else :icon="['fas', 'volume-high']" />
                     <slider-component id="volume-slider" ref="volumeSlider" @inputValue="(value) => {
-                        backend.changeVolumeGain(f(value / 100));
-                    }
-                        " z></slider-component>
+        backend.changeVolumeGain(f(value / 100));
+    }
+        " z></slider-component>
                 </i>
             </div>
         </article>
@@ -464,7 +484,8 @@ function fr(x: number) {
                 </span>
                 &nbsp<span v-if="currentLyric?.romaji" @click="switchRomaji">
                     <i class="click-cursor" v-if="enableRomaji"
-                        :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon :icon="['fas', 'globe']" /></i>
+                        :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon
+                            :icon="['fas', 'globe']" /></i>
                     <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.showRomaji')"><font-awesome-icon
                             :icon="['fas', 'globe']" /></i>
                 </span>
@@ -483,8 +504,8 @@ function fr(x: number) {
                             {{ lyric.original }}<br>
                         </span>
                         <i v-if="!enableRomaji && enableTranslate" :id="timecode.toString()"></i>
-                        <span v-if="lyric.translate && enableTranslate" :class="getLyricStyle(index, timecode, 'bottom')"
-                            class="sub lyric">
+                        <span v-if="lyric.translate && enableTranslate"
+                            :class="getLyricStyle(index, timecode, 'bottom')" class="sub lyric">
                             {{ lyric.translate }}
                         </span>
                     </div>
@@ -505,7 +526,8 @@ function fr(x: number) {
                         <span class="now-playing-sign" v-if="index == 0">{{ t("desc.playlist.nowPlaying") }}</span>
                         <span class="title">
                             <i v-if="element.type == 'netease'" class="iconfont icon-arisa-wangyiyun"></i>
-                            <i v-else-if="element.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
+                            <i v-else-if="element.type == 'qqmusic'"
+                                class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
                             <i v-else-if="element.type == 'bilibili'" class="iconfont icon-arisa-bilibili"></i>
                             {{ element.meta.title }}
                             <span>{{ element.endMark }}</span>
@@ -654,6 +676,8 @@ span.sub.lyric.bottom {
 
 
 .dashboard {
+    grid-area: dashboard;
+
     display: grid;
     grid-template-rows: min-content min-content auto;
     grid-template-areas:
@@ -829,6 +853,8 @@ div:hover {
 }
 
 .playlist {
+    grid-area: playlist;
+
     overflow-y: scroll;
     overflow-x: hidden;
     padding: 1em .25em 1em .25em;
