@@ -435,7 +435,7 @@ export class LocalStreamer extends Streamer {
                     break;
                 case 'repeat_one':
                     if (this.nowPlaying) upnext = this.nowPlaying;
-                    else this.queue.shift();
+                    else upnext = this.queue.shift();
                     break;
                 case 'random':
                 case 'repeat':
