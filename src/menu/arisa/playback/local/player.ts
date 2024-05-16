@@ -46,20 +46,28 @@ export class LocalStreamer extends Streamer {
             this.kasumi.logger.warn(`Koice.js closed unexpectedly on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
             // this.checkKoice();
         }
-        this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
-        await this.koice.startStream(this.stream, {
-            // inputCodec: 'pcm_u8',
-            inputCodec: 'pcm_s16le',
-            // inputCodec: 'pcm_s32le',
-            inputChannels: 2,
-            inputFrequency: 48000
-        });
-        if (this.nowPlaying) {
-            await this.playback(this.nowPlaying);
-        } else {
-            await this.next();
+        try {
+            await this.koice.connectWebSocket(this.TARGET_CHANNEL_ID)
+        } catch (e) {
+            this.kasumi.logger.error(e);
+            this.kasumi.logger.error("Failed to connect to WebSocket for Koice.js, retrying...");
+            this.initKoice();
+        } finally {
+            console.log("123");
+            await this.koice.startStream(this.stream, {
+                // inputCodec: 'pcm_u8',
+                inputCodec: 'pcm_s16le',
+                // inputCodec: 'pcm_s32le',
+                inputChannels: 2,
+                inputFrequency: 48000
+            });
+            if (this.nowPlaying) {
+                await this.playback(this.nowPlaying);
+            } else {
+                await this.next();
+            }
+            return this;
         }
-        return this;
     }
     async doConnect() {
         const { err, data } = await this.kasumi.API.channel.voiceChannelUserList(this.TARGET_CHANNEL_ID)
