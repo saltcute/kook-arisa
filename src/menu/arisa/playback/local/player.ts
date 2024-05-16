@@ -53,7 +53,6 @@ export class LocalStreamer extends Streamer {
             this.kasumi.logger.error("Failed to connect to WebSocket for Koice.js, retrying...");
             this.initKoice();
         } finally {
-            console.log("123");
             await this.koice.startStream(this.stream, {
                 // inputCodec: 'pcm_u8',
                 inputCodec: 'pcm_s16le',
