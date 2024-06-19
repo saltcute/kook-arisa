@@ -9,7 +9,7 @@
     "kasumi::middleware.accessControl.userGroup.enable": true,
 
     "kasumi::config.database": "mongodb",
-    "kasumi::config.mongoConnectionString": "mongodb://localhost:27017",
+    "kasumi::config.mongoConnectionString": "mongodb://127.0.0.1:27017",
     "kasumi::config.mongoDatabaseName": "kasumi",
     "kasumi::config.mongoCollectionName": "config",
 
