@@ -195,8 +195,8 @@ export class LocalStreamer extends Streamer {
     }
 
     async playSpotify(uri: string, meta?: playback.meta, forceSwitch: boolean = false) {
-        const metadata = await spotify.getTrackMetadata(uri);
         if (!meta) {
+            const metadata = await spotify.getTrackMetadata(uri);
             if (spotify.isSuccessData(metadata)) {
                 meta = {
                     title: metadata.title,
