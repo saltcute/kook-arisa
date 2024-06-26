@@ -1,6 +1,7 @@
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import { getChannelStreamer } from "menu/arisa/index";
 import { LocalStreamer } from "menu/arisa/playback/local/player";
+import { akarin } from "../lib/searchList";
 import spotify, { ISpotifyAlbumContent, ISpotifyPlaylistContent } from "./lib/index";
 
 class ImportCommand extends BaseCommand {
@@ -16,7 +17,12 @@ class ImportCommand extends BaseCommand {
     }
     async addToEndOfList(streamer: LocalStreamer, playlist: ISpotifyAlbumContent | ISpotifyPlaylistContent) {
         for (const track of playlist.trackList) {
-            await streamer.playSpotify(track.id);
+            await streamer.playSpotify(track.id, {
+                title: track.title,
+                artists: track.artists,
+                duration: -1,
+                cover: track.cover || akarin,
+            });
         }
     }
     private tutorialCard(hasInput: boolean) {
