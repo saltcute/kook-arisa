@@ -14,7 +14,9 @@ import { Streamer, playback, queueItem } from '../type';
 import { Time } from '../lib/time';
 import { MessageType } from 'kasumi.js';
 
-const biliAPI = require('bili-api');
+// @ts-ignore
+import * as biliAPI from 'bili-api';
+import spotify from 'menu/arisa/command/spotify/lib/index';
 
 
 export class LocalStreamer extends Streamer {
@@ -101,7 +103,7 @@ export class LocalStreamer extends Streamer {
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
-    readonly streamingServices = ['netease', 'bilibili', 'qqmusic'];
+    readonly streamingServices = ['netease', 'bilibili', 'qqmusic', 'spotify'];
     private isStreamingSource(payload: any): payload is playback.extra.streaming {
         return this.streamingServices.includes(payload?.type);
     }
@@ -171,6 +173,20 @@ export class LocalStreamer extends Streamer {
                         }
                     }
                 }
+                case 'spotify': {
+                    const info = await spotify.getTrackDownloadInfo(input.data.uri);
+                    if (!spotify.isSuccessData(info)) return;
+                    const cache = (await axios.get(info.link, { responseType: 'arraybuffer' })).data
+                    return {
+                        source: cache,
+                        meta: meta || {
+                            title: info.metadata.title,
+                            artists: info.metadata.artists,
+                            duration: -1,
+                            cover: info.metadata.cover
+                        }
+                    }
+                }
             }
         } catch (e) {
             this.kasumi.logger.error(e);
@@ -178,37 +194,75 @@ export class LocalStreamer extends Streamer {
         }
     }
 
-    async playNetease(songId: number, meta: playback.meta, forceSwitch: boolean = false) {
+    async playSpotify(uri: string, meta?: playback.meta, forceSwitch: boolean = false) {
+        const metadata = await spotify.getTrackMetadata(uri);
+        if (!meta) {
+            if (spotify.isSuccessData(metadata)) {
+                meta = {
+                    title: metadata.title,
+                    artists: metadata.artists,
+                    duration: -1,
+                    cover: metadata.cover
+                };
+            } else {
+                meta = {
+                    title: `Unknown Spotify audio`,
+                    artists: 'Unknown',
+                    duration: -1,
+                    cover: akarin
+                };
+            }
+            const extra: playback.extra.spotify = {
+                type: 'spotify',
+                data: { uri },
+                meta,
+            }
+            return this.playStreaming(extra, forceSwitch);
+        }
+    }
+
+    async playNetease(songId: number, meta?: playback.meta, forceSwitch: boolean = false) {
         const extra: playback.extra.netease = {
             type: 'netease',
             data: { songId },
-            meta
+            meta: meta || {
+                title: `Unknown Netease Cloud Music audio`,
+                artists: 'Unknown',
+                duration: -1,
+                cover: akarin
+            },
         }
-        return this.playStreaming(meta, extra, forceSwitch);
+        return this.playStreaming(extra, forceSwitch);
     }
-    async playQQMusic(songMId: string, mediaId: string, meta: playback.meta, forceSwitch: boolean = false) {
+    async playQQMusic(songMId: string, mediaId: string, meta?: playback.meta, forceSwitch: boolean = false) {
         const extra: playback.extra.qqmusic = {
             type: 'qqmusic',
             data: { songMId, mediaId },
-            meta
+            meta: meta || {
+                title: `Unknown QQ Music audio`,
+                artists: 'Unknown',
+                duration: -1,
+                cover: akarin
+            },
         }
-        return this.playStreaming(meta, extra, forceSwitch);
+        return this.playStreaming(extra, forceSwitch);
     }
-    async playBilibili(bvid: string, part: number = 0, meta: playback.meta, forceSwitch: boolean = false) {
+    async playBilibili(bvid: string, part: number = 0, meta?: playback.meta, forceSwitch: boolean = false) {
         const extra: playback.extra.bilibili = {
             type: 'bilibili',
             data: { bvid, part },
-            meta
-        }
-        return this.playStreaming(meta, extra, forceSwitch);
-    }
-    async playStreaming(meta: playback.meta, extra: playback.extra.streaming, forceSwitch: boolean = false) {
-        let payload: queueItem = {
             meta: meta || {
-                title: `Unknown streaming service audio`,
+                title: `Unknown Bilibili video`,
                 artists: 'Unknown',
-                duration: 0
+                duration: -1,
+                cover: akarin
             },
+        }
+        return this.playStreaming(extra, forceSwitch);
+    }
+    async playStreaming(extra: playback.extra.streaming, forceSwitch: boolean = false) {
+        let payload: queueItem = {
+            meta: extra.meta,
             extra
         }
         this.pushPayload(payload, forceSwitch);

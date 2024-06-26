@@ -85,6 +85,11 @@ class Playlist {
                             await streamer.playQQMusic(item.data.songMId, item.data.mediaId, item.meta);
                         break;
                     }
+                    case 'spotify': {
+                        if (streamer instanceof LocalStreamer)
+                            await streamer.playSpotify(item.data.uri);
+                        break;
+                    }
                 }
             }
         }
