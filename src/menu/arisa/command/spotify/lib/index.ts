@@ -1,8 +1,9 @@
 import { Axios } from 'axios';
+import { client } from 'init/client';
 
 class Spotify {
 
-    private API_ENDPOINT = "https://api.spotifydown.com/"
+    private API_ENDPOINT = client.config.getSync("arisa::config.spotify.apiEndpoint") || "https://api.spotifydown.com/"
     private axios = new Axios({
         baseURL: this.API_ENDPOINT,
         responseType: "json",
