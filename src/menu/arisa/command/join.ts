@@ -1,6 +1,7 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
-import menu, { controller } from "..";
+import menu from "..";
+import { controller } from "../playback/lib/index";
 import { ButtonControlPanel } from "../playback/lib/panel/index";
 import playlist from "../playback/lib/playlist";
 

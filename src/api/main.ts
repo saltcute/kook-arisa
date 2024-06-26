@@ -5,7 +5,6 @@ import upath from 'upath';
 import axios from 'axios';
 import bodyParser from 'body-parser';
 import { WebSocket } from 'ws';
-import { controller } from 'menu/arisa';
 import { playback } from 'menu/arisa/playback/type';
 import { ClientEvents, ClientPayload, ServerEvents, streamerDetail } from 'webapp/src/components/cards/types';
 import api from './api';
@@ -13,6 +12,7 @@ import netease from './netease';
 import qqmusic from './qqmusic';
 import { LocalStreamer } from 'menu/arisa/playback/local/player';
 import { getVideoDetail } from 'menu/arisa/command/bilibili/lib/index';
+import { controller } from 'menu/arisa/playback/lib/index';
 const { app } = expressWs(express());
 
 

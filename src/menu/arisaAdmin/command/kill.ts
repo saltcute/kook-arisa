@@ -1,6 +1,6 @@
 import delay from "delay";
 import { BaseCommand, BaseSession, CommandFunction } from "kasumi.js";
-import { controller } from "menu/arisa/index";
+import { controller } from "menu/arisa/playback/lib/index";
 import playlist from "menu/arisa/playback/lib/playlist";
 import menu from "..";
 import broadcast from "./message/broadcast";

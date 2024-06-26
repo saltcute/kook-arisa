@@ -9,5 +9,10 @@ class AppMenu extends BaseMenu {
 }
 
 const spotifyMenu = new AppMenu(play, importCommand);
+
+spotifyMenu.on('ready', () => {
+    spotifyMenu.client.middlewares.AccessControl.global.group.setCommandLevel(spotifyMenu, 2333);
+})
+
 export default spotifyMenu;
 menu.addCommand(spotifyMenu);

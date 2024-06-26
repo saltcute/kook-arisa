@@ -1,9 +1,9 @@
 import { client } from "init/client";
-import { controller } from ".";
 import playlist from "./playback/lib/playlist";
 import { Card, MessageType } from "kasumi.js";
 import { ButtonControlPanel } from "./playback/lib/panel/index";
 import leaveCommand from 'menu/arisa/command/leave'
+import { controller } from "./playback/lib/index";
 
 interface UserLeaveVoiceChannelEventExtra {
     type: 'exited_channel',

@@ -1,5 +1,5 @@
 import { BaseCommand, BaseSession, CommandFunction, MessageType } from "kasumi.js";
-import { controller } from "menu/arisa";
+import { controller } from "menu/arisa/playback/lib/index";
 
 class AddCommand extends BaseCommand {
     name = 'broadcast';

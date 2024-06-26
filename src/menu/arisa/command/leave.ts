@@ -1,6 +1,6 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
-import menu, { controller, getChannelStreamer } from "..";
+import menu, { getChannelStreamer } from "..";
 import playlist from "../playback/lib/playlist";
 
 class AppCommand extends BaseCommand {
