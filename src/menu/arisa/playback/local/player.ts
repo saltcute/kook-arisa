@@ -14,9 +14,9 @@ import { Streamer, playback, queueItem } from '../type';
 import { Time } from '../lib/time';
 import { MessageType } from 'kasumi.js';
 
-// @ts-ignore
-import * as biliAPI from 'bili-api';
 import spotify from 'menu/arisa/command/spotify/lib/index';
+
+const biliAPI = require('bili-api');
 
 
 export class LocalStreamer extends Streamer {
