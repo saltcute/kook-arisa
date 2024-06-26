@@ -13,6 +13,8 @@
     "kasumi::config.mongoDatabaseName": "kasumi",
     "kasumi::config.mongoCollectionName": "config",
 
+    "arisa::config.spotify.apiEndpoint": "",
+
     kookClientID: "",
     kookClientSecret: "",
 

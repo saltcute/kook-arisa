@@ -1,8 +1,9 @@
 import { Axios } from 'axios';
+import { client } from 'init/client';
 
 class Spotify {
 
-    private API_ENDPOINT = "https://api.spotifydown.com/"
+    private API_ENDPOINT = client.config.getSync("arisa::config.spotify.apiEndpoint") || "https://api.spotifydown.com/"
     private axios = new Axios({
         baseURL: this.API_ENDPOINT,
         responseType: "json",
@@ -24,7 +25,14 @@ class Spotify {
         return payload.success;
     }
     public async getAlbumContent(uri: string): Promise<ISpotifyAlbumContent | ISpotifyNotFound> {
-        return (await this.axios.get(`/trackList/album/${uri}`)).data;
+        const metadata = await this.getAlbumMetadata(uri);
+        const album = (await this.axios.get(`/trackList/album/${uri}`)).data;
+        if (!this.isSuccessData(metadata)) return album;
+        for (const track of album.trackList) {
+            track.cover = metadata.cover;
+            track.releaseDate = metadata.releaseDate;
+        }
+        return album;
     }
 
     public async getPlaylistContent(uri: string): Promise<ISpotifyPlaylistContent | ISpotifyNotFound> {
@@ -82,8 +90,8 @@ export interface ISpotifyTrackMetadata extends ISpotifyData {
 export interface ISpotifyAlbumMetadata extends ISpotifyData {
     artists: string,
     title: string,
-    cover: string,
-    releaseDate: string,
+    cover: string | null,
+    releaseDate: string | null,
 }
 
 export interface ISpotifyPlaylistMetadata extends ISpotifyData {
@@ -97,7 +105,8 @@ export interface ISpotifyAlbumTrack {
     id: string,
     title: string,
     artists: string
-    cover: string
+    cover: string,
+    releaseDate: string
 }
 
 export interface ISpotifyAlbumContent extends ISpotifyData {
