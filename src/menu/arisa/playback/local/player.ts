@@ -212,13 +212,13 @@ export class LocalStreamer extends Streamer {
                     cover: akarin
                 };
             }
-            const extra: playback.extra.spotify = {
-                type: 'spotify',
-                data: { uri },
-                meta,
-            }
-            return this.playStreaming(extra, forceSwitch);
         }
+        const extra: playback.extra.spotify = {
+            type: 'spotify',
+            data: { uri },
+            meta,
+        }
+        return this.playStreaming(extra, forceSwitch);
     }
 
     async playNetease(songId: number, meta?: playback.meta, forceSwitch: boolean = false) {
