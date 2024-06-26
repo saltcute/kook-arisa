@@ -53,7 +53,11 @@ class Spotify {
     }
 
     public async getTrackDownloadInfo(uri: string): Promise<ISpotifyDownloadInfo | ISpotifyNotFound> {
-        return (await this.axios.get(`/download/${uri}`)).data;
+        const prefix = client.config.getSync("arisa::config.spotify.downloadPrefix") || "";
+        const res = (await this.axios.get(`/download/${uri}`)).data;
+        if (!this.isSuccessData(res)) return res;
+        res.link = prefix + res.link;
+        return res;
     }
 }
 interface ISpotifyResponse {

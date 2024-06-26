@@ -1,5 +1,6 @@
 export interface ArisaStorage {
     "arisa::config.spotify.apiEndpoint"?: string,
+    "arisa::config.spotify.downloadPrefix"?: string,
 
     "kookClientID": string,
     "kookClientSecret": string,
