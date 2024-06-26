@@ -87,7 +87,7 @@ class Playlist {
                     }
                     case 'spotify': {
                         if (streamer instanceof LocalStreamer)
-                            await streamer.playSpotify(item.data.uri);
+                            await streamer.playSpotify(item.data.uri, item.meta);
                         break;
                     }
                 }
