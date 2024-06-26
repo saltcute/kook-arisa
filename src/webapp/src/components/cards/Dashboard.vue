@@ -407,8 +407,8 @@ function fr(x: number) {
                     @click="backend.switchCycleMode('repeat_one')">
                     <font-awesome-icon :icon="['fas', 'repeat']" />
                 </i>
-                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')" v-else-if="backend.currentCycleMode == 'repeat_one'"
-                    @click="backend.switchCycleMode('random')">
+                <i :data-tooltip="t('tooltip.controlBoard.repeatOne')"
+                    v-else-if="backend.currentCycleMode == 'repeat_one'" @click="backend.switchCycleMode('random')">
                     <font-awesome-icon :icon="['fas', 'repeat']" fade />
                 </i>
                 <i :data-tooltip="t('tooltip.controlBoard.shufflePlaylist')"
@@ -444,7 +444,7 @@ function fr(x: number) {
                 <li v-if="!backend.streamers.length">
                     {{ t('desc.dashboard.noStreamers') }}
                 </li>
-                <li v-else class="grid" v-for="(  streamer, index  ) in   backend.streamers  " :index="index"
+                <li v-else class="grid" v-for="(  streamer, index  ) in backend.streamers  " :index="index"
                     @click="backend.selectStreamer">
                     <img :src="proxiedKookImage(streamer.avatar)" />
                     {{ streamer.name }}#{{ streamer.identifyNum }}
@@ -464,7 +464,8 @@ function fr(x: number) {
                 </span>
                 &nbsp<span v-if="currentLyric?.romaji" @click="switchRomaji">
                     <i class="click-cursor" v-if="enableRomaji"
-                        :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon :icon="['fas', 'globe']" /></i>
+                        :data-tooltip="t('tooltip.lyrics.hideRomaji')"><font-awesome-icon
+                            :icon="['fas', 'globe']" /></i>
                     <i class="click-cursor" v-else :data-tooltip="t('tooltip.lyrics.showRomaji')"><font-awesome-icon
                             :icon="['fas', 'globe']" /></i>
                 </span>
@@ -472,7 +473,7 @@ function fr(x: number) {
             <div id="lyricTextarea" :aria-busy="loadingLyrics">
                 <div class="lyrics" v-if="Object.keys(bilingualLyric).length">
                     <div class="line" :class="timecode.toString()"
-                        v-for="(  [timecode, lyric], index  ) in   getBilingualLyricEntry()   ">
+                        v-for="(  [timecode, lyric], index  ) in getBilingualLyricEntry()   ">
                         <span v-if="lyric.romaji && enableRomaji" :class="getLyricStyle(index, timecode, 'top')"
                             class="sub lyric">
                             {{ lyric.romaji }}<br>
@@ -483,8 +484,8 @@ function fr(x: number) {
                             {{ lyric.original }}<br>
                         </span>
                         <i v-if="!enableRomaji && enableTranslate" :id="timecode.toString()"></i>
-                        <span v-if="lyric.translate && enableTranslate" :class="getLyricStyle(index, timecode, 'bottom')"
-                            class="sub lyric">
+                        <span v-if="lyric.translate && enableTranslate"
+                            :class="getLyricStyle(index, timecode, 'bottom')" class="sub lyric">
                             {{ lyric.translate }}
                         </span>
                     </div>
@@ -505,8 +506,10 @@ function fr(x: number) {
                         <span class="now-playing-sign" v-if="index == 0">{{ t("desc.playlist.nowPlaying") }}</span>
                         <span class="title">
                             <i v-if="element.type == 'netease'" class="iconfont icon-arisa-wangyiyun"></i>
-                            <i v-else-if="element.type == 'qqmusic'" class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
+                            <i v-else-if="element.type == 'qqmusic'"
+                                class="iconfont icon-arisa-QQyinleshiliangtubiao"></i>
                             <i v-else-if="element.type == 'bilibili'" class="iconfont icon-arisa-bilibili"></i>
+                            <i v-else-if="element.type == 'spotify'" class="iconfont icon-arisa-spotify"></i>
                             {{ element.meta.title }}
                             <span>{{ element.endMark }}</span>
                         </span>

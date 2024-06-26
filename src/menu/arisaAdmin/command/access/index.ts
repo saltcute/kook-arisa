@@ -10,7 +10,7 @@ class AppMenu extends BaseMenu {
 const controlMenu = new AppMenu(grant, revoke);
 
 controlMenu.on('ready', () => {
-    controlMenu.client.middlewares.AccessControl.global.group.setCommandLevel(menu, 9999);
+    controlMenu.client.middlewares.AccessControl.global.group.setCommandLevel(controlMenu, 9999);
 })
 export default controlMenu;
 menu.addCommand(controlMenu);

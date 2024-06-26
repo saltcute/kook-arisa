@@ -1,6 +1,6 @@
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import menu from "..";
-import { controller } from "menu/arisa";
+import { controller } from "menu/arisa/playback/lib/index";
 import { Time } from "menu/arisa/playback/lib/time";
 
 class AppCommand extends BaseCommand {

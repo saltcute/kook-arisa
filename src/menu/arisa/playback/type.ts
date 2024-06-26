@@ -44,6 +44,12 @@ export namespace playback {
                 part: number
             }
         }
+        export interface spotify extends base {
+            type: 'spotify',
+            data: {
+                uri: string
+            }
+        }
         export interface readable extends base {
             type: 'readable'
         }
@@ -57,7 +63,7 @@ export namespace playback {
 
         export type cache = buffer | readable;
         export type playable = local | cache;
-        export type streaming = netease | bilibili | qqmusic;
+        export type streaming = netease | bilibili | qqmusic | spotify;
     }
 }
 
@@ -156,11 +162,10 @@ export abstract class Streamer extends EventEmitter2 {
 
     /**
      * Play a sound from a supported streaming service.
-     * @param meta Sound metadata.
      * @param extra Extra data useful for the streaming service.
      * @param forceSwitch Switch to this sound immediately and drop current sound.
      */
-    abstract playStreaming(meta: playback.meta, extra: playback.extra.streaming, forceSwitch: boolean): Promise<void>;
+    abstract playStreaming(extra: playback.extra.streaming, forceSwitch: boolean): Promise<void>;
     /**
      * Play a sound from Buffer.
      * @param input Sound Buffer.

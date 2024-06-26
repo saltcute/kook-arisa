@@ -1,7 +1,7 @@
 import { client } from "init/client";
 import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import menu from "..";
-import { controller } from "menu/arisa";
+import { controller } from "menu/arisa/playback/lib/index";
 
 class AppCommand extends BaseCommand {
     name = 'reload';

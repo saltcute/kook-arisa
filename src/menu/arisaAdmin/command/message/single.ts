@@ -1,5 +1,5 @@
 import { BaseCommand, BaseSession, Card, CommandFunction, MessageType } from "kasumi.js";
-import { controller } from "menu/arisa";
+import { controller } from "menu/arisa/playback/lib/index";
 import { Time } from "menu/arisa/playback/lib/time";
 
 
