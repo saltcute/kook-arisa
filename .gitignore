@@ -1,7 +1,5 @@
 node_modules/
 
-package-lock.json
-
 src/config/*.*
 !src/config/template-config.json5
 
