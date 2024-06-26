@@ -46,7 +46,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "isomorphic-ws": "^5.0.0",
     "kasumi.js": "^0.6.0",
-    "koice": "^0.2.4",
+    "koice": "^0.2.5",
     "memory-cache": "^0.2.0",
     "mongodb": "^5.3.0",
     "NeteaseCloudMusicApi": "=4.8.9",
