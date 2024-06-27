@@ -535,7 +535,7 @@ export class LocalStreamer extends Streamer {
         }
         let extra = payload.extra, meta = payload.meta, source;
         if (this.isStreamingSource(extra)) {
-            const stream = (await this.getStreamingSource(extra, payload.meta));
+            const stream = (await this.getStreamingSource(extra, payload.meta).catch(e => { this.kasumi.logger.error(e); return undefined; }));
             if (!stream) return undefined;
             source = stream.source;
             meta = stream.meta;
