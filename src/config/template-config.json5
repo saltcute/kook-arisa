@@ -16,6 +16,18 @@
     "arisa::config.spotify.apiEndpoint": "",
     "arisa::config.spotify.downloadPrefix": "",
 
+    "arisa::config.assets.progress.start": "(emj)start(emj)[8397910479422202/UNNZ7ndBtv06y03c]",
+    "arisa::config.assets.progress.bar": "(emj)bar(emj)[8397910479422202/UN7V1ocVvG06y03c]",
+    "arisa::config.assets.progress.end": "(emj)end(emj)[8397910479422202/Uf4WCTRyH406y03c]",
+    "arisa::config.assets.progress.start-dot": "(emj)startdot(emj)[8397910479422202/9GbaYVvSyk06y03c]",
+    "arisa::config.assets.progress.bar-dot": "(emj)dot(emj)[8397910479422202/qeYU7Wfs0H06y03c]",
+    "arisa::config.assets.progress.end-dot": "(emj)enddot(emj)[8397910479422202/OAsPpPzewc06y03c]",
+
+    "arisa::config.assets.logo.bilibili": "(emj)bilibili(emj)[8397910479422202/o7MMXsjB2Z05k05k] ",
+    "arisa::config.assets.logo.qqmusic": "(emj)qqmusic(emj)[8397910479422202/oZuAQUBm1305k05k]",
+    "arisa::config.assets.logo.neteasecloud": "(emj)netease(emj)[8397910479422202/VzgKzo9YsY05k05k]",
+    "arisa::config.assets.logo.spotify": "(emj)spotify(emj)[8397910479422202/7TcBCyjDDN05k05k]",
+
     kookClientID: "",
     kookClientSecret: "",
 

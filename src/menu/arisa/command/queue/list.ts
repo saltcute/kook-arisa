@@ -3,20 +3,65 @@ import { BaseCommand, BaseSession, Card, CommandFunction } from "kasumi.js";
 import { getChannelStreamer } from "../..";
 import { Time } from "../../playback/lib/time";
 import queueMenu from ".";
+import { queueItem } from "menu/arisa/playback/type";
 
 class ListCommand extends BaseCommand {
     name = "list";
     description = "查看当前播放列表";
-    func: CommandFunction<BaseSession, any> = async (session) => {
+
+    private getIcon (item?: queueItem) {
+        if (!item) return "";
+        let icon = "";
+        switch (item.extra.type) {
+            case "bilibili":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.bilibili"
+                );
+                break;
+            case "qqmusic":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.qqmusic"
+                );
+                break;
+            case "netease":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.neteasecloud"
+                );
+                break;
+            case "spotify":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.spotify"
+                );
+                break;
+        }
+        return icon;
+    }
+
+    private getTitle (item?: queueItem, isWithIcon = true) {
+        if (!item) return "无";
+        const icon = this.getIcon(item);
+        if (isWithIcon && icon) return `${icon} ${item.meta.title}`;
+        else return item.meta.title;
+    }
+    func: CommandFunction<BaseSession, any> = async session => {
         if (!session.guildId)
             return session.reply("只能在服务器频道中使用此命令");
         getChannelStreamer(session.guildId, session.authorId)
-            .then(async (streamer) => {
+            .then(async streamer => {
                 const card = new Card().addTitle("Now Playing");
                 const queue = streamer.getQueue();
                 if (streamer.nowPlaying) {
                     card.addText(
-                        `${streamer.nowPlaying.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ""}(font)${Time.timeToString(streamer.nowPlaying.meta.duration / 1000)}(font)[secondary]`
+                        `${this.getTitle(streamer.nowPlaying)} ${
+                            streamer.playbackStart
+                                ? `(font)${Time.timeToString(
+                                      (Date.now() - streamer.playbackStart) /
+                                          1000
+                                  )} / (font)[secondary]`
+                                : ""
+                        }(font)${Time.timeToString(
+                            streamer.nowPlaying.meta.duration / 1000
+                        )}(font)[secondary]`
                     ).addContext(streamer.nowPlaying.meta.artists);
                 } else {
                     card.addText("None");
@@ -32,14 +77,22 @@ class ListCommand extends BaseCommand {
                             card.addDivider()
                                 .addText("**Up Next**")
                                 .addText(
-                                    `${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)} (font)[secondary]`
+                                    `${this.getTitle(
+                                        song
+                                    )} (font)${Time.timeToString(
+                                        song.meta.duration / 1000
+                                    )} (font)[secondary]`
                                 )
                                 .addContext(song.meta.artists);
                             flg = false;
                         } else {
                             card.addDivider()
                                 .addText(
-                                    `${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)} (font)[secondary]`
+                                    `${this.getTitle(
+                                        song
+                                    )} (font)${Time.timeToString(
+                                        song.meta.duration / 1000
+                                    )} (font)[secondary]`
                                 )
                                 .addContext(song.meta.artists);
                         }
@@ -54,7 +107,7 @@ class ListCommand extends BaseCommand {
                 }
                 session.reply(card);
             })
-            .catch((e) => {
+            .catch(e => {
                 switch (e.err) {
                     case "network_failure":
                     case "no_streamer":

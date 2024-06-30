@@ -1,6 +1,6 @@
 import { ArisaStorage } from "init/type";
 import Kasumi, { Card, MessageType } from "kasumi.js";
-import { Controller, Streamer } from "menu/arisa/playback/type";
+import { Controller, queueItem, Streamer } from "menu/arisa/playback/type";
 import { Time } from "menu/arisa/playback/lib/time";
 import hash from "object-hash";
 
@@ -17,19 +17,19 @@ export class ButtonControlPanel {
 
     private panels: Set<PanelDetail> = new Set();
     private readonly MAX_CONCURRENT_PANEL_NUMBER = 2;
-    get panelArray() {
+    get panelArray () {
         return [...this.panels];
     }
-    get panelMessageArray() {
-        const array = this.panelArray.map((v) => v.id);
+    get panelMessageArray () {
+        const array = this.panelArray.map(v => v.id);
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
-    get panelChannelArray() {
-        const array = [...new Set(this.panelArray.map((v) => v.channelId))];
+    get panelChannelArray () {
+        const array = [...new Set(this.panelArray.map(v => v.channelId))];
         return array.slice(-this.MAX_CONCURRENT_PANEL_NUMBER);
     }
 
-    constructor(
+    constructor (
         controller: Controller,
         streamer: Streamer,
         client: Kasumi<any>
@@ -44,36 +44,44 @@ export class ButtonControlPanel {
 
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/next`,
-            async (event) => {
+            async event => {
                 await streamer.next();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/previous`,
-            async (event) => {
+            async event => {
                 await streamer.previous();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/pause`,
-            async (event) => {
+            async event => {
                 streamer.pause();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/resume`,
-            async (event) => {
+            async event => {
                 streamer.resume();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/showqueue`,
-            async (event) => {
+            async event => {
                 const card = new Card().addTitle("正在播放");
                 const queue = streamer.getQueue();
                 if (streamer.nowPlaying) {
                     card.addText(
-                        `${streamer.nowPlaying.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString(streamer.playedTime)} / (font)[secondary]` : ""}(font)${Time.timeToString(streamer.duration)}(font)[secondary]`
+                        `${this.getTitle(streamer.nowPlaying)} ${
+                            streamer.playbackStart
+                                ? `(font)${Time.timeToString(
+                                      streamer.playedTime
+                                  )} / (font)[secondary]`
+                                : ""
+                        }(font)${Time.timeToString(
+                            streamer.duration
+                        )}(font)[secondary]`
                     ).addContext(streamer.nowPlaying.meta.artists);
                 } else {
                     card.addText("无");
@@ -89,14 +97,22 @@ export class ButtonControlPanel {
                             card.addDivider()
                                 .addText("**即将播放**")
                                 .addText(
-                                    `${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)} (font)[secondary]`
+                                    `${this.getTitle(
+                                        song
+                                    )} (font)${Time.timeToString(
+                                        song.meta.duration / 1000
+                                    )} (font)[secondary]`
                                 )
                                 .addContext(song.meta.artists);
                             flg = false;
                         } else {
                             card.addDivider()
                                 .addText(
-                                    `${song.meta.title} (font)${Time.timeToString(song.meta.duration / 1000)} (font)[secondary]`
+                                    `${this.getTitle(
+                                        song
+                                    )} (font)${Time.timeToString(
+                                        song.meta.duration / 1000
+                                    )} (font)[secondary]`
                                 )
                                 .addContext(song.meta.artists);
                         }
@@ -153,15 +169,15 @@ export class ButtonControlPanel {
         });
     }
 
-    addPanel(id: string, channelId: string) {
+    addPanel (id: string, channelId: string) {
         this.panels.add({ id, channelId });
     }
-    async newPanel(targetChannel: string): Promise<boolean> {
+    async newPanel (targetChannel: string): Promise<boolean> {
         if (this.panelChannelArray.includes(targetChannel)) {
             await Promise.all(
                 this.panelArray
-                    .filter((v) => v.channelId == targetChannel)
-                    .map((v) => this.deletePanel(v.id))
+                    .filter(v => v.channelId == targetChannel)
+                    .map(v => this.deletePanel(v.id))
             );
         }
         const { err, data } = await this.client.API.message.create(
@@ -177,8 +193,8 @@ export class ButtonControlPanel {
         this.maintainPanel();
         return true;
     }
-    async deletePanel(id: string) {
-        const panel = this.panelArray.find((v) => v.id == id);
+    async deletePanel (id: string) {
+        const panel = this.panelArray.find(v => v.id == id);
         if (panel) {
             this.panels.delete(panel);
             await this.client.API.message.delete(panel.id);
@@ -186,10 +202,10 @@ export class ButtonControlPanel {
     }
 
     readonly MAINTAIN_INTERVAL = 5 * 1000;
-    async maintainPanel(customCard?: Card) {
+    async maintainPanel (customCard?: Card) {
         if (Date.now() - this.lastMaintain < 500) return;
         clearTimeout(this.maintainCounter);
-        const promises = this.panelMessageArray.map((id) =>
+        const promises = this.panelMessageArray.map(id =>
             this.client.API.message.update(id, customCard || this.toCard())
         );
         await Promise.all(promises);
@@ -201,10 +217,10 @@ export class ButtonControlPanel {
     private maintainCounter?: NodeJS.Timeout;
     private lastMaintain = -1;
 
-    async close() {
+    async close () {
         clearTimeout(this.maintainCounter);
 
-        const promises = this.panelMessageArray.map((id) =>
+        const promises = this.panelMessageArray.map(id =>
             this.client.API.message.delete(id)
         );
         await Promise.all(promises);
@@ -228,21 +244,109 @@ export class ButtonControlPanel {
         );
     }
 
+    private getProgressBar (playedTime: number, duration: number) {
+        const EMOJI_COUNT = 16;
+        const dotPos = Math.floor((playedTime / duration) * EMOJI_COUNT) || 0;
+        let res = "";
+        for (let i = 0; i < EMOJI_COUNT; ++i) {
+            if (i == 0) {
+                if (dotPos == i)
+                    res += this.client.config.getSync(
+                        "arisa::config.assets.progress.start-dot"
+                    );
+                else
+                    res += this.client.config.getSync(
+                        "arisa::config.assets.progress.start"
+                    );
+            } else if (i == EMOJI_COUNT - 1) {
+                if (dotPos == i)
+                    res += this.client.config.getSync(
+                        "arisa::config.assets.progress.end-dot"
+                    );
+                else
+                    res += this.client.config.getSync(
+                        "arisa::config.assets.progress.end"
+                    );
+            } else {
+                if (dotPos == i)
+                    res += this.client.config.getSync(
+                        "arisa::config.assets.progress.bar-dot"
+                    );
+                else
+                    res += this.client.config.getSync(
+                        "arisa::config.assets.progress.bar"
+                    );
+            }
+        }
+        return res;
+    }
+
+    private getIcon (item?: queueItem) {
+        if (!item) return "";
+        let icon = "";
+        switch (item.extra.type) {
+            case "bilibili":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.bilibili"
+                );
+                break;
+            case "qqmusic":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.qqmusic"
+                );
+                break;
+            case "netease":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.neteasecloud"
+                );
+                break;
+            case "spotify":
+                icon = this.client.config.getSync(
+                    "arisa::config.assets.logo.spotify"
+                );
+                break;
+        }
+        return icon;
+    }
+
+    private getTitle (item?: queueItem, isWithIcon = true) {
+        if (!item) return "无";
+        const icon = this.getIcon(item);
+        if (isWithIcon && icon) return `${icon} ${item.meta.title}`;
+        else return item.meta.title;
+    }
+
     private previousButton;
     private nextButton;
     private pauseButton;
     private resumeButton;
     private showqueueButton;
-    toCard(): Card {
+    toCard (): Card {
         const upNext = this.streamer.getQueue().at(0);
         const card = new Card();
-        card.addText("正在播放")
-            .addTitle(this.streamer.nowPlaying?.meta.title || "无")
-            .addContext(
-                `下一首：${`${upNext?.meta.title} - ${upNext?.meta.artists}` || "无"}`
-            )
+        card.addText(`正在播放 ${this.getIcon(this.streamer.nowPlaying)}`)
+            .addTitle(this.getTitle(this.streamer.nowPlaying, false))
             .addText(
-                `${Time.timeToShortString(this.streamer.playedTime)}/${Time.timeToShortString(this.streamer.duration)}`
+                `(font)下一首：(font)[secondary]${
+                    upNext
+                        ? `${this.getIcon(upNext)} (font)${this.getTitle(
+                              upNext,
+                              false
+                          )}${
+                              upNext?.meta.artists
+                                  ? `- ${upNext?.meta.artists}`
+                                  : ""
+                          }(font)[secondary]`
+                        : "(font)无(font)[secondary]"
+                }`
+            )
+            .addContext(
+                `${Time.timeToShortString(
+                    this.streamer.playedTime
+                )} ${this.getProgressBar(
+                    this.streamer.playedTime,
+                    this.streamer.duration
+                )} ${Time.timeToShortString(this.streamer.duration)}`
             );
 
         card.addModule({
@@ -306,7 +410,9 @@ export class ButtonControlPanel {
             ],
         });
         card.addDivider().addContext(
-            `也可使用[网页面板](${this.client.config.getSync("webuiUrl")})，功能更加完善\n` +
+            `也可使用[网页面板](${this.client.config.getSync(
+                "webuiUrl"
+            )})，功能更加完善\n` +
                 "© 2023-2024 saltcute, the source code is distributed under the [MIT License](https://github.com/saltcute/kook-arisa/blob/main/LICENSE)"
         );
         return card;
