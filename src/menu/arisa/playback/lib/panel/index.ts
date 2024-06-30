@@ -334,7 +334,7 @@ export class ButtonControlPanel {
                               false
                           )}${
                               upNext?.meta.artists
-                                  ? `- ${upNext?.meta.artists}`
+                                  ? ` - ${upNext?.meta.artists}`
                                   : ""
                           }(font)[secondary]`
                         : "(font)无(font)[secondary]"
