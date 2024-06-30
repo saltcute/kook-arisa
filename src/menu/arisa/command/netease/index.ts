@@ -12,33 +12,46 @@ import { searchNetease } from "../lib";
 import play from "./play";
 
 class AppMenu extends BaseMenu {
-    name = 'netease';
-    description = '点歌网易云';
+    name = "netease";
+    description = "点歌网易云";
 }
 
 const neteaseMenu = new AppMenu(search, importPlaylist, play);
 export default neteaseMenu;
 menu.addCommand(neteaseMenu);
 
-client.events.button.registerActivator('netease.queue.add', (event: ButtonClickedEvent, data: {
-    songId: number
-    meta: playback.meta
-}) => {
-    let session = new BaseSession([], event, client), songId = data.songId;
-
-    if (!session.guildId || !songId) return;
-    getChannelStreamer(session.guildId, session.authorId).then(async (streamer) => {
-        session.sendTemp(new Card().addText(`已将「${data.meta.title}」添加到播放列表！`));
-        if (streamer instanceof LocalStreamer)
-            streamer.playNetease(songId, data.meta)
-    }).catch((e) => {
-        switch (e.err) {
-            case 'network_failure':
-            case 'no_streamer':
-            case 'no_joinedchannel':
-                return session.sendTemp(e.msg);
-            default:
-                client.logger.error(e);
+client.events.button.registerActivator(
+    "netease.queue.add",
+    (
+        event: ButtonClickedEvent,
+        data: {
+            songId: number;
+            meta: playback.meta;
         }
-    });
-});
+    ) => {
+        let session = new BaseSession([], event, client),
+            songId = data.songId;
+
+        if (!session.guildId || !songId) return;
+        getChannelStreamer(session.guildId, session.authorId)
+            .then(async (streamer) => {
+                session.sendTemp(
+                    new Card().addText(
+                        `已将「${data.meta.title}」添加到播放列表！`
+                    )
+                );
+                if (streamer instanceof LocalStreamer)
+                    streamer.playNetease(songId, data.meta);
+            })
+            .catch((e) => {
+                switch (e.err) {
+                    case "network_failure":
+                    case "no_streamer":
+                    case "no_joinedchannel":
+                        return session.sendTemp(e.msg);
+                    default:
+                        client.logger.error(e);
+                }
+            });
+    }
+);

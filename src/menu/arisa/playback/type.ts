@@ -1,16 +1,16 @@
-import { ArisaStorage } from 'init/type';
-import Kasumi from 'kasumi.js';
-import { Readable } from 'stream';
-import EventEmitter2 from 'eventemitter2';
-import { ButtonControlPanel } from './lib/panel';
+import { ArisaStorage } from "init/type";
+import Kasumi from "kasumi.js";
+import { Readable } from "stream";
+import EventEmitter2 from "eventemitter2";
+import { ButtonControlPanel } from "./lib/panel";
 
 export namespace playback {
     export type source = source.playable;
     export interface meta {
-        title: string,
-        artists: string,
-        duration: number,
-        cover: string
+        title: string;
+        artists: string;
+        duration: number;
+        cover: string;
     }
     export namespace source {
         export type none = null;
@@ -20,45 +20,45 @@ export namespace playback {
     export type extra = extra.playable | extra.streaming;
     export namespace extra {
         export interface base {
-            type: string,
-            data?: any
-            meta: meta
+            type: string;
+            data?: any;
+            meta: meta;
         }
         export interface netease extends base {
-            type: 'netease',
+            type: "netease";
             data: {
-                songId: number
-            }
+                songId: number;
+            };
         }
         export interface qqmusic extends base {
-            type: 'qqmusic',
+            type: "qqmusic";
             data: {
-                songMId: string,
-                mediaId: string
-            }
+                songMId: string;
+                mediaId: string;
+            };
         }
         export interface bilibili extends base {
-            type: 'bilibili',
+            type: "bilibili";
             data: {
-                bvid: string,
-                part: number
-            }
+                bvid: string;
+                part: number;
+            };
         }
         export interface spotify extends base {
-            type: 'spotify',
+            type: "spotify";
             data: {
-                uri: string
-            }
+                uri: string;
+            };
         }
         export interface readable extends base {
-            type: 'readable'
+            type: "readable";
         }
         export interface buffer extends base {
-            type: 'buffer'
+            type: "buffer";
         }
         export interface local extends base {
-            type: 'local',
-            path: string
+            type: "local";
+            path: string;
         }
 
         export type cache = buffer | readable;
@@ -67,14 +67,12 @@ export namespace playback {
     }
 }
 
-
 export type queueItem = {
-    source?: playback.source.cache | playback.source.none,
-    meta: playback.meta,
-    extra: playback.extra,
-    endMark?: boolean
+    source?: playback.source.cache | playback.source.none;
+    meta: playback.meta;
+    extra: playback.extra;
+    endMark?: boolean;
 };
-
 
 interface StreamerEmisions {
     connect: () => void;
@@ -84,8 +82,14 @@ interface StreamerEmisions {
     play: (payload: queueItem) => void;
 }
 export interface Streamer extends EventEmitter2 {
-    on<T extends keyof StreamerEmisions>(event: T, listener: StreamerEmisions[T]): this;
-    emit<T extends keyof StreamerEmisions>(event: T, ...args: Parameters<StreamerEmisions[T]>): boolean;
+    on<T extends keyof StreamerEmisions>(
+        event: T,
+        listener: StreamerEmisions[T]
+    ): this;
+    emit<T extends keyof StreamerEmisions>(
+        event: T,
+        ...args: Parameters<StreamerEmisions[T]>
+    ): boolean;
 }
 export abstract class Streamer extends EventEmitter2 {
     readonly STREAMER_TOKEN: string;
@@ -99,7 +103,11 @@ export abstract class Streamer extends EventEmitter2 {
      * @param value Boolean
      */
     private static writable(value: boolean) {
-        return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        return function (
+            target: any,
+            propertyKey: string,
+            descriptor: PropertyDescriptor
+        ) {
             descriptor.writable = value;
         };
     }
@@ -107,21 +115,37 @@ export abstract class Streamer extends EventEmitter2 {
     panel?: ButtonControlPanel;
 
     private _streamStart = 0;
-    public get streamStart() { return this._streamStart; }
-    protected set streamStart(payload: number) { this._streamStart = payload };
+    public get streamStart() {
+        return this._streamStart;
+    }
+    protected set streamStart(payload: number) {
+        this._streamStart = payload;
+    }
 
-    constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
+    constructor(
+        token: string,
+        guildId: string,
+        channelId: string,
+        authorId: string,
+        controller: Controller
+    ) {
         super({ wildcard: true });
         this.STREAMER_TOKEN = token;
         this.TARGET_CHANNEL_ID = channelId;
-        this.TARGET_GUILD_ID = guildId
+        this.TARGET_GUILD_ID = guildId;
         this.INVITATION_AUTHOR_ID = authorId;
-        this.kasumi = new Kasumi({
-            type: 'websocket',
-            token: this.STREAMER_TOKEN,
-            disableSnOrderCheck: true,
-            customEnpoint: controller.client.config.getSync('kasumi::config.customEndpoint')
-        }, false, false);
+        this.kasumi = new Kasumi(
+            {
+                type: "websocket",
+                token: this.STREAMER_TOKEN,
+                disableSnOrderCheck: true,
+                customEnpoint: controller.client.config.getSync(
+                    "kasumi::config.customEndpoint"
+                ),
+            },
+            false,
+            false
+        );
         this.kasumi.fetchMe();
         this.streamStart = Date.now();
     }
@@ -137,7 +161,7 @@ export abstract class Streamer extends EventEmitter2 {
     @Streamer.writable(false)
     async connect(): Promise<this> {
         const res = this.doConnect();
-        this.emit('connect');
+        this.emit("connect");
         return res;
     }
     /**
@@ -151,7 +175,7 @@ export abstract class Streamer extends EventEmitter2 {
     @Streamer.writable(false)
     async disconnect(message?: string | null): Promise<boolean> {
         const res = await this.doDisconnect(message);
-        this.emit('disconnect');
+        this.emit("disconnect");
         return res;
     }
 
@@ -165,20 +189,30 @@ export abstract class Streamer extends EventEmitter2 {
      * @param extra Extra data useful for the streaming service.
      * @param forceSwitch Switch to this sound immediately and drop current sound.
      */
-    abstract playStreaming(extra: playback.extra.streaming, forceSwitch: boolean): Promise<void>;
+    abstract playStreaming(
+        extra: playback.extra.streaming,
+        forceSwitch: boolean
+    ): Promise<void>;
     /**
      * Play a sound from Buffer.
      * @param input Sound Buffer.
      * @param meta Sound metadata.
      * @param forceSwitch Switch to this sound immediately and drop current sound.
      */
-    abstract playBuffer(input: playback.source.cache, meta: playback.meta, forceSwitch: boolean): Promise<void>
+    abstract playBuffer(
+        input: playback.source.cache,
+        meta: playback.meta,
+        forceSwitch: boolean
+    ): Promise<void>;
     /**
      * Play a sound from a local file.
      * @param input Sound Buffer.
      * @param forceSwitch Switch to this sound immediately and drop current sound.
      */
-    abstract playLocal(input: playback.extra.local, forceSwitch: boolean): Promise<void>
+    abstract playLocal(
+        input: playback.extra.local,
+        forceSwitch: boolean
+    ): Promise<void>;
 
     /**
      * Shuffle the queue.
@@ -191,7 +225,7 @@ export abstract class Streamer extends EventEmitter2 {
     /**
      * Clear the queue.
      */
-    abstract clearQueue(): void
+    abstract clearQueue(): void;
 
     /**
      * A set of id of users who are connected to the same voice channel with the streamer.
@@ -226,20 +260,20 @@ export abstract class Streamer extends EventEmitter2 {
     @Streamer.writable(false)
     pause(): void {
         this.doPause();
-        this.emit('pause');
+        this.emit("pause");
     }
 
     /**
      * Resueme the playback. Does nothing when already playing.
      */
-    protected abstract doResume(): void
+    protected abstract doResume(): void;
     /**
      * Resueme the playback. Does nothing when already playing.
      */
     @Streamer.writable(false)
     resume(): void {
         this.doResume();
-        this.emit('resume');
+        this.emit("resume");
     }
 
     protected queue: Array<queueItem> = [];
@@ -250,7 +284,8 @@ export abstract class Streamer extends EventEmitter2 {
      */
     queueMoveUp(index: number): void {
         if (index) {
-            const item = this.queue[index], previous = this.queue[index - 1];
+            const item = this.queue[index],
+                previous = this.queue[index - 1];
             if (item && previous) {
                 this.queue[index] = previous;
                 this.queue[index - 1] = item;
@@ -268,7 +303,8 @@ export abstract class Streamer extends EventEmitter2 {
      */
     queueMoveDown(index: number): void {
         if (index != this.queue.length - 1) {
-            const item = this.queue[index], next = this.queue[index + 1];
+            const item = this.queue[index],
+                next = this.queue[index + 1];
             if (item && next) {
                 this.queue[index] = next;
                 this.queue[index + 1] = item;
@@ -286,16 +322,25 @@ export abstract class Streamer extends EventEmitter2 {
      */
     queueDelete(index: number): void {
         const item = this.queue[index];
-        this.queue = this.queue.filter(v => v != item);
+        this.queue = this.queue.filter((v) => v != item);
     }
 
-    protected cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' | 'random' = 'repeat';
+    protected cycleMode: "repeat_one" | "repeat" | "no_repeat" | "random" =
+        "repeat";
     /**
      * Set the cycle mode for the current user.
      * @param payload Desired cycle mode.
      */
-    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' | 'random'): void {
-        if (payload !== 'repeat_one' && payload !== 'repeat' && payload != 'no_repeat' && payload != 'random') payload = 'no_repeat';
+    setCycleMode(
+        payload: "repeat_one" | "repeat" | "no_repeat" | "random"
+    ): void {
+        if (
+            payload !== "repeat_one" &&
+            payload !== "repeat" &&
+            payload != "no_repeat" &&
+            payload != "random"
+        )
+            payload = "no_repeat";
         this.cycleMode = payload;
     }
     /**
@@ -314,12 +359,12 @@ export abstract class Streamer extends EventEmitter2 {
      * Play the previous sound in the queue. Usually be the last sound in the queue.
      * @returns The sound that will be played.
      */
-    abstract previous(): Promise<queueItem | undefined>
+    abstract previous(): Promise<queueItem | undefined>;
     /**
      * Play the next sound in the queue.
      * @returns The sound that will be played.
      */
-    abstract next(): Promise<queueItem | undefined>
+    abstract next(): Promise<queueItem | undefined>;
 
     /**
      * Timestamp when current playback started.
@@ -335,13 +380,14 @@ export abstract class Streamer extends EventEmitter2 {
      * Jump to the percentage position of the sound.
      * @param percent The desired position.
      */
-    abstract jumpToPercentage(percent: number): void
-
+    abstract jumpToPercentage(percent: number): void;
 
     private _volume_gain = 0.2;
-    public get volumeGain() { return this._volume_gain; }
+    public get volumeGain() {
+        return this._volume_gain;
+    }
     public set volumeGain(payload: number) {
-        if (typeof payload != 'number') payload = 0.2;
+        if (typeof payload != "number") payload = 0.2;
         if (payload >= 1) payload = 1;
         if (payload <= 0) payload = 0;
         this._volume_gain = payload;
@@ -351,17 +397,16 @@ export abstract class Streamer extends EventEmitter2 {
      * Play a item.
      * @param payload The item to be played.
      */
-    abstract doPlayback(payload: queueItem): Promise<void>
+    abstract doPlayback(payload: queueItem): Promise<void>;
     /**
      * Resueme the playback. Does nothing when already playing.
      */
     @Streamer.writable(false)
     async playback(payload: queueItem): Promise<void> {
         await this.doPlayback(payload);
-        this.emit('play', payload);
+        this.emit("play", payload);
     }
 }
-
 
 export abstract class Controller extends EventEmitter2 {
     client: Kasumi<ArisaStorage>;
@@ -370,7 +415,7 @@ export abstract class Controller extends EventEmitter2 {
 
     constructor(client: Kasumi<any>) {
         super({ wildcard: true });
-        this.controllerToken = client.TOKEN
+        this.controllerToken = client.TOKEN;
         this.client = client;
     }
 
@@ -393,23 +438,28 @@ export abstract class Controller extends EventEmitter2 {
      * @param streamer The sreamer to be returned.
      * @returns If the operation was successful.
      */
-    abstract returnStreamer(streamer: Streamer): Promise<boolean>
+    abstract returnStreamer(streamer: Streamer): Promise<boolean>;
 
     /**
      * Assign a streamer to a channel.
-     * 
+     *
      * Bot token should be auto assigned.
      * @param channelId ChannelID
      * @returns The assigned streamer if successful, or undefined if not,
      */
-    abstract joinChannel(guildId: string, channelId: string, authorId: string, textChannelId: string): Promise<Streamer | undefined>;
+    abstract joinChannel(
+        guildId: string,
+        channelId: string,
+        authorId: string,
+        textChannelId: string
+    ): Promise<Streamer | undefined>;
 
     /**
      * Abort a ongoing playback in a voice channel.
      * @param channelId The target channel.
      * @returns If the operation was successful.
      */
-    abstract abortStream(channelId: string): Promise<boolean>
+    abstract abortStream(channelId: string): Promise<boolean>;
 
     /**
      * Get all the active streamers in a server.

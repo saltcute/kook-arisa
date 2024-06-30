@@ -23,7 +23,7 @@ export class Time {
     }
 
     static timeToString(time: number) {
-        if(time < 0) return "未知";
+        if (time < 0) return "未知";
         let res = "";
         const [d, h, m, s] = this.timeDivision(time);
         if (d) res += `${d}天`;
@@ -34,7 +34,7 @@ export class Time {
     }
 
     static timeToShortString(time: number) {
-        if(time < 0) return "unknown";
+        if (time < 0) return "unknown";
         let res = "";
         const [d, h, m, s] = this.timeDivision(time);
         if (d) res += `${d}d,`;

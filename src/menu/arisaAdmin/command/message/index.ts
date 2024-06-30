@@ -1,10 +1,10 @@
 import { BaseMenu } from "kasumi.js";
 import menu from "menu/arisaAdmin";
-import broadcast from './broadcast';
-import message from './single';
+import broadcast from "./broadcast";
+import message from "./single";
 class AppMenu extends BaseMenu {
-    name = 'message';
-    description = 'Send a message to users.';
+    name = "message";
+    description = "Send a message to users.";
 }
 
 const controlMenu = new AppMenu(broadcast, message);

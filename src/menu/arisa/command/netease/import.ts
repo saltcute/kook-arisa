@@ -5,9 +5,9 @@ import { akarin } from "../lib";
 import { LocalStreamer } from "menu/arisa/playback/local/player";
 
 class ImportCommand extends BaseCommand {
-    name = 'import';
-    description = '导入网易云歌单';
-    pattern = /https:\/\/music\.163\.com.*\/playlist\?id=(\d+)/
+    name = "import";
+    description = "导入网易云歌单";
+    pattern = /https:\/\/music\.163\.com.*\/playlist\?id=(\d+)/;
     async processing(song: Netease.songDetail, order: number) {
         let url = song.al.picUrl;
         // try {
@@ -27,8 +27,8 @@ class ImportCommand extends BaseCommand {
             order,
             songId: song.id,
             song,
-            url
-        }
+            url,
+        };
     }
     async replaceQueue(streamer: LocalStreamer, playlist: Netease.playlist) {
         streamer.clearQueue();
@@ -38,50 +38,71 @@ class ImportCommand extends BaseCommand {
     }
     async addToEndOfList(streamer: LocalStreamer, playlist: Netease.playlist) {
         let counter = 0;
-        const promises: Promise<Awaited<ReturnType<typeof this.processing>>>[] = [];
+        const promises: Promise<Awaited<ReturnType<typeof this.processing>>>[] =
+            [];
         for (const track of playlist) {
             counter++;
             promises.push(this.processing(track, counter));
         }
-        const awaiteds = (await Promise.all(promises)).sort((a, b) => { return a.order - b.order; });
+        const awaiteds = (await Promise.all(promises)).sort((a, b) => {
+            return a.order - b.order;
+        });
         for (let { url, song, songId } of awaiteds) {
             await streamer.playNetease(songId, {
                 title: song.name,
                 cover: url || akarin,
                 duration: song.dt,
-                artists: song.ar.map(v => v.name).join(", ")
-            })
+                artists: song.ar.map((v) => v.name).join(", "),
+            });
         }
     }
     func: CommandFunction<BaseSession, any> = async (session) => {
         if (!session.guildId) return;
-        const streamer = await getChannelStreamer(session.guildId, session.authorId);
+        const streamer = await getChannelStreamer(
+            session.guildId,
+            session.authorId
+        );
         if (!(streamer instanceof LocalStreamer)) return;
-        const playlistId = this.pattern.exec(session.args[0])?.[1]
+        const playlistId = this.pattern.exec(session.args[0])?.[1];
         if (playlistId) {
-            let mode: "replace" | "add" = "replace"
+            let mode: "replace" | "add" = "replace";
             if (session.args[1] == "add") mode = "add";
-            const playlist = await netease.getPlaylist(playlistId).catch(async (e) => {
-                await session.send(`获取歌单出错，请稍后再试或换一个歌单再试。\n错误信息：${e.body.message}`);
-                return;
-            })
+            const playlist = await netease
+                .getPlaylist(playlistId)
+                .catch(async (e) => {
+                    await session.send(
+                        `获取歌单出错，请稍后再试或换一个歌单再试。\n错误信息：${e.body.message}`
+                    );
+                    return;
+                });
             if (!(playlist instanceof Array)) return;
             switch (mode) {
                 case "replace": {
                     if (streamer.getQueue().length) {
-                        await session.send(`当前播放列表不为空，如果继续，现在的播放列表将被转入的播放列表替换。要继续吗？\n（发送 "y" 确认、"n" 取消、"a" 将传入的播放列表添加到当前列表末尾）`);
-                        const response = await this.client.events.callback.createAsyncCallback("message.text", e => e.authorId == session.authorId, e => e.content);
+                        await session.send(
+                            `当前播放列表不为空，如果继续，现在的播放列表将被转入的播放列表替换。要继续吗？\n（发送 "y" 确认、"n" 取消、"a" 将传入的播放列表添加到当前列表末尾）`
+                        );
+                        const response =
+                            await this.client.events.callback.createAsyncCallback(
+                                "message.text",
+                                (e) => e.authorId == session.authorId,
+                                (e) => e.content
+                            );
                         switch (response) {
                             case "y": {
                                 await session.send("正在添加…");
                                 await this.replaceQueue(streamer, playlist);
-                                await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
+                                await session.send(
+                                    `添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`
+                                );
                                 break;
                             }
                             case "a": {
                                 await session.send("正在添加…");
                                 await this.addToEndOfList(streamer, playlist);
-                                await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
+                                await session.send(
+                                    `添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`
+                                );
                                 break;
                             }
                             case "n":
@@ -93,7 +114,9 @@ class ImportCommand extends BaseCommand {
                     } else {
                         await session.send("正在添加…");
                         await this.addToEndOfList(streamer, playlist);
-                        await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
+                        await session.send(
+                            `添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`
+                        );
                         break;
                     }
                     break;
@@ -101,14 +124,16 @@ class ImportCommand extends BaseCommand {
                 case "add": {
                     await session.send("正在添加…");
                     await this.addToEndOfList(streamer, playlist);
-                    await session.send(`添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`);
+                    await session.send(
+                        `添加完成。当前列表共 ${streamer.getQueue().length + 1} 首歌。`
+                    );
                     break;
                 }
             }
         } else {
             await session.reply("没有检测到合法的网易云链接");
         }
-    }
+    };
 }
 
 const importPlaylist = new ImportCommand();

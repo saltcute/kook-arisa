@@ -1,21 +1,21 @@
-import { playback } from "menu/arisa/playback/type"
+import { playback } from "menu/arisa/playback/type";
 
 export interface streamerDetail {
-    name: string,
-    identifyNum: string,
-    avatar: string,
-    trackPlayedTime: number,
-    trackTotalDuration: number,
-    isPaused: boolean,
-    nowPlaying?: playback.extra,
-    queue: playback.extra[],
-    cycleMode: 'repeat_one' | 'repeat' | 'no_repeat' | 'random',
+    name: string;
+    identifyNum: string;
+    avatar: string;
+    trackPlayedTime: number;
+    trackTotalDuration: number;
+    isPaused: boolean;
+    nowPlaying?: playback.extra;
+    queue: playback.extra[];
+    cycleMode: "repeat_one" | "repeat" | "no_repeat" | "random";
     volumeGain: number;
 }
 
 interface Payload {
-    t: number,
-    d: any
+    t: number;
+    d: any;
 }
 
 export interface ClientPayload extends Payload {
@@ -36,9 +36,9 @@ export enum ClientEvents {
     PLAYBACK_JUMP_TO_PERCENT,
     PLAYBACK_VOLUME,
     SELECT_GUILD,
-    CLIENT_PING
+    CLIENT_PING,
 }
 export enum ServerEvents {
     STREAMER_DATA,
-    SERVER_PONG
+    SERVER_PONG,
 }

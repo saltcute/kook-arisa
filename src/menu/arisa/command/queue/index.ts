@@ -6,8 +6,8 @@ import save from "./save";
 import load from "./load";
 
 class AppMenu extends BaseMenu {
-    name = 'queue';
-    description = '播放列表操作';
+    name = "queue";
+    description = "播放列表操作";
 }
 
 const queueMenu = new AppMenu(list, clear, load, save);

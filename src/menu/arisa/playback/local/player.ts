@@ -1,23 +1,23 @@
-import Koice from 'koice';
-import { Controller } from '../type';
-import { PassThrough, Readable } from 'stream';
-import ffmpeg, { ffprobe } from 'fluent-ffmpeg';
-import delay from 'delay';
-import * as fs from 'fs';
-import upath from 'upath';
-import netease from '../../command/netease/lib';
-import qqmusic from '../../command/qq/lib';
-import axios from 'axios';
-import { akarin } from 'menu/arisa/command/lib';
-import playlist from '../lib/playlist';
-import { Streamer, playback, queueItem } from '../type';
-import { Time } from '../lib/time';
-import { MessageType } from 'kasumi.js';
+import Koice from "koice";
+import { Controller } from "../type";
+import { PassThrough, Readable } from "stream";
+import ffmpeg, { ffprobe } from "fluent-ffmpeg";
+import delay from "delay";
+import * as fs from "fs";
+import upath from "upath";
+import netease from "../../command/netease/lib";
+import qqmusic from "../../command/qq/lib";
+import axios from "axios";
+import { akarin } from "menu/arisa/command/lib";
+import playlist from "../lib/playlist";
+import { Streamer, playback, queueItem } from "../type";
+import { Time } from "../lib/time";
+import { MessageType } from "kasumi.js";
 
-import spotify from 'menu/arisa/command/spotify/lib/index';
+import spotify from "menu/arisa/command/spotify/lib/index";
+import { resolve } from "path";
 
-const biliAPI = require('bili-api');
-
+const biliAPI = require("bili-api");
 
 export class LocalStreamer extends Streamer {
     private controller: Controller;
@@ -25,7 +25,13 @@ export class LocalStreamer extends Streamer {
 
     private isClosed = false;
 
-    constructor(token: string, guildId: string, channelId: string, authorId: string, controller: Controller) {
+    constructor(
+        token: string,
+        guildId: string,
+        channelId: string,
+        authorId: string,
+        controller: Controller
+    ) {
         super(token, guildId, channelId, authorId, controller);
         this.controller = controller;
         this.koice = new Koice(this.STREAMER_TOKEN);
@@ -41,26 +47,30 @@ export class LocalStreamer extends Streamer {
             read(size) {
                 return true;
             },
-        })
+        });
         this.streamHasHead = false;
 
         this.koice.onclose = () => {
-            this.kasumi.logger.warn(`Koice.js closed unexpectedly on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`);
+            this.kasumi.logger.warn(
+                `Koice.js closed unexpectedly on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`
+            );
             // this.checkKoice();
-        }
+        };
         try {
-            await this.koice.connectWebSocket(this.TARGET_CHANNEL_ID)
+            await this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
         } catch (e) {
             this.kasumi.logger.error(e);
-            this.kasumi.logger.error("Failed to connect to WebSocket for Koice.js, retrying...");
+            this.kasumi.logger.error(
+                "Failed to connect to WebSocket for Koice.js, retrying..."
+            );
             this.initKoice();
         } finally {
             await this.koice.startStream(this.stream, {
                 // inputCodec: 'pcm_u8',
-                inputCodec: 'pcm_s16le',
+                inputCodec: "pcm_s16le",
                 // inputCodec: 'pcm_s32le',
                 inputChannels: 2,
-                inputFrequency: 48000
+                inputFrequency: 48000,
             });
             if (this.nowPlaying) {
                 await this.playback(this.nowPlaying);
@@ -71,11 +81,14 @@ export class LocalStreamer extends Streamer {
         }
     }
     async doConnect() {
-        const { err, data } = await this.kasumi.API.channel.voiceChannelUserList(this.TARGET_CHANNEL_ID)
+        const { err, data } =
+            await this.kasumi.API.channel.voiceChannelUserList(
+                this.TARGET_CHANNEL_ID
+            );
         if (err) {
             this.kasumi.logger.error(err);
         } else {
-            this.audienceIds = new Set(data.map(v => v.id));
+            this.audienceIds = new Set(data.map((v) => v.id));
             this.audienceIds.delete(this.kasumi.me.userId);
         }
         return this.initKoice();
@@ -87,13 +100,23 @@ export class LocalStreamer extends Streamer {
 
     async doDisconnect(message?: string | null): Promise<boolean> {
         if (this.panel && message !== null) {
-            await Promise.all(this.panel?.panelChannelArray.map(v => {
-                return this.panel?.client.API.message.create(MessageType.MarkdownMessage, v, `播放结束，总时长 ${Time.timeToShortString((Date.now() - this.streamStart) / 1000)}，原因：${message ? message : "无"}`);
-            }))
+            await Promise.all(
+                this.panel?.panelChannelArray.map((v) => {
+                    return this.panel?.client.API.message.create(
+                        MessageType.MarkdownMessage,
+                        v,
+                        `播放结束，总时长 ${Time.timeToShortString(
+                            (Date.now() - this.streamStart) / 1000
+                        )}，原因：${message ? message : "无"}`
+                    );
+                })
+            );
         }
         this.isClosed = true;
         this.koice.onclose = () => {
-            this.kasumi.logger.warn(`Koice.js closed with method call on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}, message: ${message}`);
+            this.kasumi.logger.warn(
+                `Koice.js closed with method call on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}, message: ${message}`
+            );
         };
         this.endPlayback();
         for (const item of this.queue) {
@@ -103,98 +126,152 @@ export class LocalStreamer extends Streamer {
         await this.koice.close();
         return this.controller.returnStreamer(this);
     }
-    readonly streamingServices = ['netease', 'bilibili', 'qqmusic', 'spotify'];
-    private isStreamingSource(payload: any): payload is playback.extra.streaming {
+    readonly streamingServices = ["netease", "bilibili", "qqmusic", "spotify"];
+    private isStreamingSource(
+        payload: any
+    ): payload is playback.extra.streaming {
         return this.streamingServices.includes(payload?.type);
     }
     private async getStreamingSource(
         input: playback.extra,
-        meta?: playback.meta
-    ): Promise<{
-        source: playback.source.playable,
-        meta: playback.meta
-    } | undefined> {
-        try {
-            switch (input.type) {
-                case 'netease': {
-                    const song = await netease.getSong(input.data.songId);
-                    const url = await netease.getSongUrl(input.data.songId);
-                    const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
-                    return {
-                        source: cache,
-                        meta: meta || {
-                            title: song.name,
-                            artists: song.ar.map(v => v.name).join(', '),
-                            duration: song.dt,
-                            cover: song.al.picUrl
+        meta?: playback.meta,
+        timeout: number = 30 * 1000
+    ): Promise<
+        | {
+              source: playback.source.playable;
+              meta: playback.meta;
+          }
+        | undefined
+    > {
+        return new Promise(async (resolve, reject) => {
+            const timer = setTimeout(() => {
+                reject("Timeout while getting streaming source");
+            }, timeout);
+            const resolver = (payload: any) => {
+                clearTimeout(timer);
+                resolve(payload);
+            };
+            try {
+                switch (input.type) {
+                    case "netease": {
+                        const song = await netease.getSong(input.data.songId);
+                        const url = await netease.getSongUrl(input.data.songId);
+                        const cache = (
+                            await axios.get(url, {
+                                responseType: "arraybuffer",
+                            })
+                        ).data;
+                        resolver({
+                            source: cache,
+                            meta: meta || {
+                                title: song.name,
+                                artists: song.ar.map((v) => v.name).join(", "),
+                                duration: song.dt,
+                                cover: song.al.picUrl,
+                            },
+                        });
+                        break;
+                    }
+                    case "bilibili": {
+                        const { cids } = await biliAPI(
+                            { bvid: input.data.bvid },
+                            ["cids"]
+                        ).catch((e: any) => {
+                            this.kasumi.logger.error(e);
+                        });
+                        let part = 0;
+                        if (cids[input.data.part]) {
+                            part = input.data.part;
                         }
+                        const cid = cids[part];
+                        if (!cid) return;
+                        const { data: res } = await axios({
+                            url: "https://api.bilibili.com/x/player/playurl",
+                            params: {
+                                bvid: input.data.bvid,
+                                cid,
+                                fnval: 16,
+                            },
+                        });
+                        const data = res.data;
+                        const url = data.dash.audio[part].baseUrl;
+                        const cache = (
+                            await axios.get(url, {
+                                responseType: "arraybuffer",
+                                headers: {
+                                    referer: "https://www.bilibili.com",
+                                },
+                            })
+                        ).data;
+                        resolver({
+                            source: cache,
+                            meta: meta || {
+                                title: `${input.data.bvid} P${input.data.part}}`,
+                                artists: "Unknown",
+                                duration: data.timelength,
+                                cover: akarin,
+                            },
+                        });
+                        break;
+                    }
+                    case "qqmusic": {
+                        const song = await qqmusic.getSong(input.data.songMId);
+                        const url = await qqmusic.getSongUrl(
+                            input.data.songMId,
+                            "128",
+                            input.data.mediaId
+                        );
+                        const cache = (
+                            await axios.get(url, {
+                                responseType: "arraybuffer",
+                            })
+                        ).data;
+                        resolver({
+                            source: cache,
+                            meta: meta || {
+                                title: song.track_info.name,
+                                artists: song.track_info.singer
+                                    .map((v) => v.name)
+                                    .join(", "),
+                                duration: song.track_info.interval,
+                                cover: akarin,
+                            },
+                        });
+                        break;
+                    }
+                    case "spotify": {
+                        const info = await spotify.getTrackDownloadInfo(
+                            input.data.uri
+                        );
+                        if (!spotify.isSuccessData(info)) return;
+                        const cache = (
+                            await axios.get(info.link, {
+                                responseType: "arraybuffer",
+                            })
+                        ).data;
+                        resolver({
+                            source: cache,
+                            meta: meta || {
+                                title: info.metadata.title,
+                                artists: info.metadata.artists,
+                                duration: -1,
+                                cover: info.metadata.cover,
+                            },
+                        });
+                        break;
                     }
                 }
-                case 'bilibili': {
-                    const { cids } = await biliAPI({ bvid: input.data.bvid }, ['cids']).catch((e: any) => { this.kasumi.logger.error(e); });
-                    let part = 0;
-                    if (cids[input.data.part]) {
-                        part = input.data.part
-                    }
-                    const cid = cids[part];
-                    if (!cid) return;
-                    const { data: res } = await axios({
-                        url: "https://api.bilibili.com/x/player/playurl",
-                        params: {
-                            bvid: input.data.bvid,
-                            cid,
-                            fnval: 16
-                        }
-                    });
-                    const data = res.data
-                    const url = data.dash.audio[part].baseUrl;
-                    const cache = (await axios.get(url, { responseType: 'arraybuffer', headers: { referer: "https://www.bilibili.com" } })).data;
-                    return {
-                        source: cache,
-                        meta: meta || {
-                            title: `${input.data.bvid} P${input.data.part}}`,
-                            artists: "Unknown",
-                            duration: data.timelength,
-                            cover: akarin
-                        }
-                    }
-                }
-                case 'qqmusic': {
-                    const song = await qqmusic.getSong(input.data.songMId);
-                    const url = await qqmusic.getSongUrl(input.data.songMId, "128", input.data.mediaId);
-                    const cache = (await axios.get(url, { responseType: 'arraybuffer' })).data
-                    return {
-                        source: cache,
-                        meta: meta || {
-                            title: song.track_info.name,
-                            artists: song.track_info.singer.map(v => v.name).join(', '),
-                            duration: song.track_info.interval,
-                            cover: akarin
-                        }
-                    }
-                }
-                case 'spotify': {
-                    const info = await spotify.getTrackDownloadInfo(input.data.uri);
-                    if (!spotify.isSuccessData(info)) return;
-                    const cache = (await axios.get(info.link, { responseType: 'arraybuffer' })).data
-                    return {
-                        source: cache,
-                        meta: meta || {
-                            title: info.metadata.title,
-                            artists: info.metadata.artists,
-                            duration: -1,
-                            cover: info.metadata.cover
-                        }
-                    }
-                }
+            } catch (e) {
+                reject(e);
             }
-        } catch (e) {
-            this.kasumi.logger.error(e);
-            return undefined;
-        }
+        });
     }
 
-    async playSpotify(uri: string, meta?: playback.meta, forceSwitch: boolean = false) {
+    async playSpotify(
+        uri: string,
+        meta?: playback.meta,
+        forceSwitch: boolean = false
+    ) {
         if (!meta) {
             const metadata = await spotify.getTrackMetadata(uri);
             if (spotify.isSuccessData(metadata)) {
@@ -202,78 +279,95 @@ export class LocalStreamer extends Streamer {
                     title: metadata.title,
                     artists: metadata.artists,
                     duration: -1,
-                    cover: metadata.cover
+                    cover: metadata.cover,
                 };
             } else {
                 meta = {
                     title: `Unknown Spotify audio`,
-                    artists: 'Unknown',
+                    artists: "Unknown",
                     duration: -1,
-                    cover: akarin
+                    cover: akarin,
                 };
             }
         }
         const extra: playback.extra.spotify = {
-            type: 'spotify',
+            type: "spotify",
             data: { uri },
             meta,
-        }
+        };
         return this.playStreaming(extra, forceSwitch);
     }
 
-    async playNetease(songId: number, meta?: playback.meta, forceSwitch: boolean = false) {
+    async playNetease(
+        songId: number,
+        meta?: playback.meta,
+        forceSwitch: boolean = false
+    ) {
         const extra: playback.extra.netease = {
-            type: 'netease',
+            type: "netease",
             data: { songId },
             meta: meta || {
                 title: `Unknown Netease Cloud Music audio`,
-                artists: 'Unknown',
+                artists: "Unknown",
                 duration: -1,
-                cover: akarin
+                cover: akarin,
             },
-        }
+        };
         return this.playStreaming(extra, forceSwitch);
     }
-    async playQQMusic(songMId: string, mediaId: string, meta?: playback.meta, forceSwitch: boolean = false) {
+    async playQQMusic(
+        songMId: string,
+        mediaId: string,
+        meta?: playback.meta,
+        forceSwitch: boolean = false
+    ) {
         const extra: playback.extra.qqmusic = {
-            type: 'qqmusic',
+            type: "qqmusic",
             data: { songMId, mediaId },
             meta: meta || {
                 title: `Unknown QQ Music audio`,
-                artists: 'Unknown',
+                artists: "Unknown",
                 duration: -1,
-                cover: akarin
+                cover: akarin,
             },
-        }
+        };
         return this.playStreaming(extra, forceSwitch);
     }
-    async playBilibili(bvid: string, part: number = 0, meta?: playback.meta, forceSwitch: boolean = false) {
+    async playBilibili(
+        bvid: string,
+        part: number = 0,
+        meta?: playback.meta,
+        forceSwitch: boolean = false
+    ) {
         const extra: playback.extra.bilibili = {
-            type: 'bilibili',
+            type: "bilibili",
             data: { bvid, part },
             meta: meta || {
                 title: `Unknown Bilibili video`,
-                artists: 'Unknown',
+                artists: "Unknown",
                 duration: -1,
-                cover: akarin
+                cover: akarin,
             },
-        }
+        };
         return this.playStreaming(extra, forceSwitch);
     }
-    async playStreaming(extra: playback.extra.streaming, forceSwitch: boolean = false) {
+    async playStreaming(
+        extra: playback.extra.streaming,
+        forceSwitch: boolean = false
+    ) {
         let payload: queueItem = {
             meta: extra.meta,
-            extra
-        }
+            extra,
+        };
         this.pushPayload(payload, forceSwitch);
     }
     async playBuffer(
         input: playback.source.cache,
         meta: playback.meta = {
             title: `Unknown file`,
-            artists: 'Unknown',
+            artists: "Unknown",
             duration: 0,
-            cover: akarin
+            cover: akarin,
         },
         forceSwitch: boolean = false
     ) {
@@ -281,61 +375,70 @@ export class LocalStreamer extends Streamer {
             source: input,
             meta: meta,
             extra: {
-                type: 'buffer',
-                meta
-            }
-        }
+                type: "buffer",
+                meta,
+            },
+        };
         this.pushPayload(payload, forceSwitch);
     }
     async playLocal(input: playback.extra.local, forceSwitch: boolean = false) {
-        const path = input.path.trim().replace(/^['"](.*)['"]$/, '$1').trim();
+        const path = input.path
+            .trim()
+            .replace(/^['"](.*)['"]$/, "$1")
+            .trim();
         if (fs.existsSync(path)) {
             if (fs.lstatSync(path).isDirectory()) {
                 fs.readdirSync(path).forEach((file) => {
                     const fullPath = upath.join(path, file);
                     ffprobe(fullPath, async (err, data) => {
                         if (err) return;
-                        if (data.streams.map(val => val.codec_type).includes('audio')) {
+                        if (
+                            data.streams
+                                .map((val) => val.codec_type)
+                                .includes("audio")
+                        ) {
                             let meta = {
-                                title: `Local file: ${upath.parse(fullPath).base}`,
-                                artists: 'Unknown',
+                                title: `Local file: ${
+                                    upath.parse(fullPath).base
+                                }`,
+                                artists: "Unknown",
                                 duration: 0,
-                                cover: akarin
+                                cover: akarin,
                             };
                             let payload: queueItem = {
                                 meta,
                                 extra: {
-                                    type: 'local',
+                                    type: "local",
                                     path: fullPath,
-                                    meta
-                                }
-                            }
+                                    meta,
+                                },
+                            };
                             this.pushPayload(payload, forceSwitch);
                         }
-                    })
-                })
+                    });
+                });
             } else {
                 let meta = {
                     title: `Local file: ${upath.parse(path).base}`,
-                    artists: 'Unknown',
+                    artists: "Unknown",
                     duration: 0,
-                    cover: akarin
+                    cover: akarin,
                 };
                 let payload: queueItem = {
                     meta,
                     extra: {
-                        type: 'local',
+                        type: "local",
                         path,
-                        meta
-                    }
-                }
+                        meta,
+                    },
+                };
                 this.pushPayload(payload, forceSwitch);
             }
         }
     }
     private pushPayload(payload: any, forceSwitch: boolean = false) {
         this.preload();
-        this.queue.push(payload)
+        this.queue.push(payload);
         if (!(this.previousStream && !forceSwitch)) {
             this.next();
         }
@@ -348,12 +451,16 @@ export class LocalStreamer extends Streamer {
         } else {
             this.lastOperation = Date.now();
         }
-        setTimeout(() => { this.ensureUsage() }, 15 * 60 * 1000);
+        setTimeout(
+            () => {
+                this.ensureUsage();
+            },
+            15 * 60 * 1000
+        );
     }
 
     private fileP = new PassThrough();
     private ffmpegInstance: ffmpeg.FfmpegCommand | undefined;
-
 
     private previousStream: boolean = false;
     currentMusic?: queueItem;
@@ -363,15 +470,18 @@ export class LocalStreamer extends Streamer {
         read(size) {
             return true;
         },
-    })
+    });
 
     private _shuffle(array: any[]) {
-        let currentIndex = array.length, randomIndex;
+        let currentIndex = array.length,
+            randomIndex;
         while (currentIndex != 0) {
             randomIndex = Math.floor(Math.random() * currentIndex);
             currentIndex--;
             [array[currentIndex], array[randomIndex]] = [
-                array[randomIndex], array[currentIndex]];
+                array[randomIndex],
+                array[currentIndex],
+            ];
         }
         return array;
     }
@@ -394,15 +504,20 @@ export class LocalStreamer extends Streamer {
     private previousPausedTime: number = 0;
 
     get pausedTime() {
-        if (this.pauseStart) return this.previousPausedTime + (Date.now() - this.pauseStart);
+        if (this.pauseStart)
+            return this.previousPausedTime + (Date.now() - this.pauseStart);
         else return this.previousPausedTime;
     }
     get duration() {
-        const bytesPerSecond = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8
+        const bytesPerSecond =
+            (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
+            8;
         return this.currentBufferSize / bytesPerSecond;
     }
     get playedTime() {
-        const bytesPerSecond = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8
+        const bytesPerSecond =
+            (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
+            8;
         return this.currentChunkStart / bytesPerSecond;
         // if (this.playbackStart) return (Date.now() - this.playbackStart) - this.pausedTime;
         // else return 0;
@@ -437,11 +552,12 @@ export class LocalStreamer extends Streamer {
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
-    setCycleMode(payload: 'repeat_one' | 'repeat' | 'no_repeat' | 'random' = 'no_repeat') {
+    setCycleMode(
+        payload: "repeat_one" | "repeat" | "no_repeat" | "random" = "no_repeat"
+    ) {
         super.setCycleMode(payload);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
-
 
     async previous(): Promise<queueItem | undefined> {
         if (this.hasOngoingSkip) return;
@@ -449,14 +565,14 @@ export class LocalStreamer extends Streamer {
             this.hasOngoingSkip = true;
             let upnext: queueItem | undefined;
             switch (this.cycleMode) {
-                case 'no_repeat':
+                case "no_repeat":
                     upnext = this.queue.pop();
                     break;
-                case 'repeat_one':
+                case "repeat_one":
                     upnext = this.nowPlaying || this.queue.pop();
                     break;
-                case 'random':
-                case 'repeat':
+                case "random":
+                case "repeat":
                     if (this.nowPlaying) this.queue.unshift(this.nowPlaying);
                     upnext = this.queue.pop();
                     break;
@@ -474,7 +590,7 @@ export class LocalStreamer extends Streamer {
             this.hasOngoingSkip = false;
         } catch (e) {
             this.kasumi.logger.error(e);
-        };
+        }
     }
     private hasOngoingSkip = false;
     async next(): Promise<queueItem | undefined> {
@@ -483,16 +599,16 @@ export class LocalStreamer extends Streamer {
             this.hasOngoingSkip = true;
             let upnext: queueItem | undefined;
             switch (this.cycleMode) {
-                case 'no_repeat':
+                case "no_repeat":
                     if (this.nowPlaying) delete this.nowPlaying.source;
                     upnext = this.queue.shift();
                     break;
-                case 'repeat_one':
+                case "repeat_one":
                     if (this.nowPlaying) upnext = this.nowPlaying;
                     else upnext = this.queue.shift();
                     break;
-                case 'random':
-                case 'repeat':
+                case "random":
+                case "repeat":
                     if (this.nowPlaying) {
                         this.queue.push(this.nowPlaying);
                         delete this.nowPlaying.source;
@@ -513,7 +629,7 @@ export class LocalStreamer extends Streamer {
             this.hasOngoingSkip = false;
         } catch (e) {
             this.kasumi.logger.error(e);
-        };
+        }
     }
 
     private async preload() {
@@ -524,18 +640,29 @@ export class LocalStreamer extends Streamer {
         // }
     }
 
-    private async preparePayload(payload: queueItem): Promise<{
-        source: playback.source,
-        meta: playback.meta,
-        extra: playback.extra
-    } | undefined> {
+    private async preparePayload(payload: queueItem): Promise<
+        | {
+              source: playback.source;
+              meta: playback.meta;
+              extra: playback.extra;
+          }
+        | undefined
+    > {
         if (payload.source instanceof Buffer) {
             // @ts-ignore
             return payload;
         }
-        let extra = payload.extra, meta = payload.meta, source;
+        let extra = payload.extra,
+            meta = payload.meta,
+            source;
         if (this.isStreamingSource(extra)) {
-            const stream = (await this.getStreamingSource(extra, payload.meta).catch(e => { this.kasumi.logger.error(e); return undefined; }));
+            const stream = await this.getStreamingSource(
+                extra,
+                payload.meta
+            ).catch((e) => {
+                this.kasumi.logger.error(e);
+                return undefined;
+            });
             if (!stream) return undefined;
             source = stream.source;
             meta = stream.meta;
@@ -545,7 +672,6 @@ export class LocalStreamer extends Streamer {
             // @ts-ignore
             return payload;
         } else return undefined;
-
     }
 
     async endPlayback() {
@@ -570,8 +696,11 @@ export class LocalStreamer extends Streamer {
 
     jumpToPercentage(percent: number) {
         if (percent >= 0 && percent <= 1) {
-            let newUsablePosition = Math.trunc(this.currentUsableStreamData * percent);
-            newUsablePosition = newUsablePosition - newUsablePosition % this.BYTES_PER_SAMPLE;
+            let newUsablePosition = Math.trunc(
+                this.currentUsableStreamData * percent
+            );
+            newUsablePosition =
+                newUsablePosition - (newUsablePosition % this.BYTES_PER_SAMPLE);
             this.currentChunkStart = this.currentHeadSize + newUsablePosition;
         }
     }
@@ -594,10 +723,13 @@ export class LocalStreamer extends Streamer {
     private get BYTES_PER_SAMPLE() {
         return this.OUTPUT_BITS / 8;
     }
-    private readonly RATE = (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) / 8 / (1000 / this.PUSH_INTERVAL)
+    private readonly RATE =
+        (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
+        8 /
+        (1000 / this.PUSH_INTERVAL);
     async doPlayback(payload: queueItem): Promise<void> {
         try {
-            if (this.queue.length && !this.queue.find(v => v.endMark)) {
+            if (this.queue.length && !this.queue.find((v) => v.endMark)) {
                 this.queue[this.queue.length - 1].endMark = true;
             }
             await this.checkKoice();
@@ -624,14 +756,14 @@ export class LocalStreamer extends Streamer {
             this.ffmpegInstance = ffmpeg()
                 .input(fileC)
                 // .audioCodec('pcm_u8')
-                .audioCodec('pcm_s16le')
+                .audioCodec("pcm_s16le")
                 // .audioCodec('pcm_s32le')
                 .audioChannels(this.OUTPUT_CHANNEL)
-                .audioFilter('volume=0.5')
+                .audioFilter("volume=0.5")
                 .audioFrequency(this.OUTPUT_FREQUENCY)
-                .outputFormat('wav')
-                .removeAllListeners('error')
-                .on('error', async (err) => {
+                .outputFormat("wav")
+                .removeAllListeners("error")
+                .on("error", async (err) => {
                     this.kasumi.logger.error(err);
                     if (this.previousStream) {
                         await this.endPlayback();
@@ -643,10 +775,10 @@ export class LocalStreamer extends Streamer {
                 });
             this.ffmpegInstance.stream(this.fileP);
             var bfs: any[] = [];
-            this.fileP.on('data', (chunk) => {
-                bfs.push(chunk)
-            })
-            this.fileP.on('end', async () => {
+            this.fileP.on("data", (chunk) => {
+                bfs.push(chunk);
+            });
+            this.fileP.on("end", async () => {
                 this.previousPausedTime = 0;
                 this.playbackStart = Date.now();
                 this.lastOperation = Date.now();
@@ -655,7 +787,7 @@ export class LocalStreamer extends Streamer {
                 this.currentChunkStart = 0;
                 this.currentBufferSize = cache.length;
                 for (let i = 0; i < cache.length; ++i) {
-                    if (cache.subarray(i, i + 4).toString() == 'data') {
+                    if (cache.subarray(i, i + 4).toString() == "data") {
                         this.currentChunkStart = i + 4;
                         break;
                     }
@@ -664,8 +796,8 @@ export class LocalStreamer extends Streamer {
                     await this.endPlayback();
                     return;
                 }
-                /** 
-                 * Rate for PCM audio 
+                /**
+                 * Rate for PCM audio
                  * 48000hz * 8 bit * 2 channel = 768kbps = 96KB/s
                  * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms
                  */
@@ -680,20 +812,32 @@ export class LocalStreamer extends Streamer {
                     this.streamHasHead = true;
                 }
 
-                while (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
+                while (
+                    this.previousStream &&
+                    this.currentChunkStart <= this.currentBufferSize
+                ) {
                     if (!this.paused) {
                         this.lastRead = Date.now();
-                        const chunk = cache.subarray(this.currentChunkStart, this.currentChunkStart + this.RATE);
-                        if (this.previousStream && this.currentChunkStart <= this.currentBufferSize) {
+                        const chunk = cache.subarray(
+                            this.currentChunkStart,
+                            this.currentChunkStart + this.RATE
+                        );
+                        if (
+                            this.previousStream &&
+                            this.currentChunkStart <= this.currentBufferSize
+                        ) {
                             let tmpChunk = Buffer.alloc(chunk.length);
-                            for (let i = 0; i < chunk.length; i += this.BYTES_PER_SAMPLE) {
+                            for (
+                                let i = 0;
+                                i < chunk.length;
+                                i += this.BYTES_PER_SAMPLE
+                            ) {
                                 let v = chunk.readInt16LE(i);
                                 let after = v * this.volumeGain; // pcm_s16le
                                 tmpChunk.writeInt16LE(after, i);
                             }
                             this.stream.push(tmpChunk);
-                        }
-                        else {
+                        } else {
                             break;
                         }
                         this.currentChunkStart += this.RATE;

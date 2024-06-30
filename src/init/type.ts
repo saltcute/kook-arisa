@@ -1,32 +1,32 @@
 export interface ArisaStorage {
-    "arisa::config.spotify.apiEndpoint"?: string,
-    "arisa::config.spotify.downloadPrefix"?: string,
+    "arisa::config.spotify.apiEndpoint"?: string;
+    "arisa::config.spotify.downloadPrefix"?: string;
 
-    "kookClientID": string,
-    "kookClientSecret": string,
+    kookClientID: string;
+    kookClientSecret: string;
 
-    "internalWebuiPort": number,
-    "webuiUrl": string,
+    internalWebuiPort: number;
+    webuiUrl: string;
 
-    "neteaseVIP": boolean,
-    "neteaseEmail": string,
-    "neteasePassword": string,
+    neteaseVIP: boolean;
+    neteaseEmail: string;
+    neteasePassword: string;
 
-    "QQCookieCode": string,
+    QQCookieCode: string;
 
     "arisa::session.ongoing": {
-        targetChannelId: string,
-        targetGuildId: string,
-        invitationAuthorId: string,
-        invitationTextChannelId?: string
-    }[],
+        targetChannelId: string;
+        targetGuildId: string;
+        invitationAuthorId: string;
+        invitationTextChannelId?: string;
+    }[];
 
-    "globalAdmins": string[],
+    globalAdmins: string[];
 
-    "streamerMiddlemanID": string,
-    "streamerMiddlemanToken": string,
+    streamerMiddlemanID: string;
+    streamerMiddlemanToken: string;
 
-    "realIP"?: string,
+    realIP?: string;
 
-    "streamers": string[]
+    streamers: string[];
 }

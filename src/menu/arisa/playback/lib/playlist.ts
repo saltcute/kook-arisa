@@ -5,11 +5,11 @@ import { LocalStreamer } from "../local/player";
 
 namespace Playlist {
     export interface collectionItem {
-        _id: string,
-        id: string,
-        cycle: 'repeat' | 'repeat_one' | 'no_repeat' | 'random',
-        volumeGain: number,
-        playlist: playback.extra[]
+        _id: string;
+        id: string;
+        cycle: "repeat" | "repeat_one" | "no_repeat" | "random";
+        volumeGain: number;
+        playlist: playback.extra[];
     }
 }
 
@@ -21,20 +21,31 @@ class Playlist {
     constructor(name: string) {
         this.name = name;
         if (client.config.hasSync("kasumi::config.mongoConnectionString")) {
-            this.mongodb = new MongoClient(client.config.getSync("kasumi::config.mongoConnectionString").toString(), {
-                serverApi: {
-                    version: ServerApiVersion.v1,
-                    strict: true,
-                    deprecationErrors: true,
+            this.mongodb = new MongoClient(
+                client.config
+                    .getSync("kasumi::config.mongoConnectionString")
+                    .toString(),
+                {
+                    serverApi: {
+                        version: ServerApiVersion.v1,
+                        strict: true,
+                        deprecationErrors: true,
+                    },
                 }
-            });
-        } else throw new Error("kasumi::config.mongoConnectionString does not exist in config");
+            );
+        } else
+            throw new Error(
+                "kasumi::config.mongoConnectionString does not exist in config"
+            );
         this.database = this.mongodb.db("playlist");
-        this.colletion = this.database.collection<Playlist.collectionItem>(this.name);
+        this.colletion = this.database.collection<Playlist.collectionItem>(
+            this.name
+        );
     }
     private map: Map<string, Playlist.collectionItem> = new Map();
     async save(streamer: Streamer, id: string) {
-        let queue = [], array: playback.extra[] = [];
+        let queue = [],
+            array: playback.extra[] = [];
         if (streamer.nowPlaying) queue.push(streamer.nowPlaying);
         queue = queue.concat(streamer.getQueue());
         for (const item of queue) {
@@ -45,18 +56,23 @@ class Playlist {
             id,
             cycle: streamer.getCycleMode(),
             volumeGain: streamer.volumeGain,
-            playlist: array
+            playlist: array,
         });
         await this.syncToDataBase(id);
     }
     async syncToDataBase(id: string) {
         let collectionItem = this.map.get(id);
         if (collectionItem) {
-            await this.colletion.findOneAndUpdate({ _id: id }, { $set: collectionItem }, { upsert: true });
+            await this.colletion.findOneAndUpdate(
+                { _id: id },
+                { $set: collectionItem },
+                { upsert: true }
+            );
         }
     }
     async syncFromDataBase(id: string) {
-        let collectionItem = await this.colletion.findOne<Playlist.collectionItem>({ _id: id });
+        let collectionItem =
+            await this.colletion.findOne<Playlist.collectionItem>({ _id: id });
         if (collectionItem) {
             this.map.set(id, collectionItem);
         }
@@ -70,24 +86,38 @@ class Playlist {
             let array = collectionItem.playlist;
             for (const item of array) {
                 switch (item.type) {
-                    case 'netease': {
+                    case "netease": {
                         if (streamer instanceof LocalStreamer)
-                            await streamer.playNetease(item.data.songId, item.meta);
+                            await streamer.playNetease(
+                                item.data.songId,
+                                item.meta
+                            );
                         break;
                     }
-                    case 'bilibili': {
+                    case "bilibili": {
                         if (streamer instanceof LocalStreamer)
-                            await streamer.playBilibili(item.data.bvid, item.data.part, item.meta);
+                            await streamer.playBilibili(
+                                item.data.bvid,
+                                item.data.part,
+                                item.meta
+                            );
                         break;
                     }
-                    case 'qqmusic': {
+                    case "qqmusic": {
                         if (streamer instanceof LocalStreamer)
-                            await streamer.playQQMusic(item.data.songMId, item.data.mediaId, item.meta);
+                            await streamer.playQQMusic(
+                                item.data.songMId,
+                                item.data.mediaId,
+                                item.meta
+                            );
                         break;
                     }
-                    case 'spotify': {
+                    case "spotify": {
                         if (streamer instanceof LocalStreamer)
-                            await streamer.playSpotify(item.data.uri, item.meta);
+                            await streamer.playSpotify(
+                                item.data.uri,
+                                item.meta
+                            );
                         break;
                     }
                 }
@@ -97,7 +127,7 @@ class Playlist {
 }
 
 namespace playlist {
-    export const user = new Playlist('user');
-    export const channel = new Playlist('channel');
+    export const user = new Playlist("user");
+    export const channel = new Playlist("channel");
 }
 export default playlist;
