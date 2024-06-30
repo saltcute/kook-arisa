@@ -25,7 +25,7 @@ export class LocalStreamer extends Streamer {
 
     private isClosed = false;
 
-    constructor (
+    constructor(
         token: string,
         guildId: string,
         channelId: string,
@@ -39,12 +39,12 @@ export class LocalStreamer extends Streamer {
         this.ensureUsage();
     }
     streamHasHead = false;
-    private async initKoice () {
+    private async initKoice() {
         await this.endPlayback();
         await this.koice.close();
         this.koice = new Koice(this.STREAMER_TOKEN);
         this.stream = new Readable({
-            read (size) {
+            read(size) {
                 return true;
             },
         });
@@ -80,7 +80,7 @@ export class LocalStreamer extends Streamer {
             return this;
         }
     }
-    async doConnect () {
+    async doConnect() {
         const { err, data } =
             await this.kasumi.API.channel.voiceChannelUserList(
                 this.TARGET_CHANNEL_ID
@@ -88,20 +88,20 @@ export class LocalStreamer extends Streamer {
         if (err) {
             this.kasumi.logger.error(err);
         } else {
-            this.audienceIds = new Set(data.map(v => v.id));
+            this.audienceIds = new Set(data.map((v) => v.id));
             this.audienceIds.delete(this.kasumi.me.userId);
         }
         return this.initKoice();
     }
 
-    async reconnect () {
+    async reconnect() {
         return this.initKoice();
     }
 
-    async doDisconnect (message?: string | null): Promise<boolean> {
+    async doDisconnect(message?: string | null): Promise<boolean> {
         if (this.panel && message !== null) {
             await Promise.all(
-                this.panel?.panelChannelArray.map(v => {
+                this.panel?.panelChannelArray.map((v) => {
                     return this.panel?.client.API.message.create(
                         MessageType.MarkdownMessage,
                         v,
@@ -127,12 +127,12 @@ export class LocalStreamer extends Streamer {
         return this.controller.returnStreamer(this);
     }
     readonly streamingServices = ["netease", "bilibili", "qqmusic", "spotify"];
-    private isStreamingSource (
+    private isStreamingSource(
         payload: any
     ): payload is playback.extra.streaming {
         return this.streamingServices.includes(payload?.type);
     }
-    private async getStreamingSource (
+    private async getStreamingSource(
         input: playback.extra,
         meta?: playback.meta,
         timeout: number = 15 * 1000
@@ -165,7 +165,7 @@ export class LocalStreamer extends Streamer {
                             source: cache,
                             meta: meta || {
                                 title: song.name,
-                                artists: song.ar.map(v => v.name).join(", "),
+                                artists: song.ar.map((v) => v.name).join(", "),
                                 duration: song.dt,
                                 cover: song.al.picUrl,
                             },
@@ -231,7 +231,7 @@ export class LocalStreamer extends Streamer {
                             meta: meta || {
                                 title: song.track_info.name,
                                 artists: song.track_info.singer
-                                    .map(v => v.name)
+                                    .map((v) => v.name)
                                     .join(", "),
                                 duration: song.track_info.interval,
                                 cover: akarin,
@@ -267,7 +267,7 @@ export class LocalStreamer extends Streamer {
         });
     }
 
-    async playSpotify (
+    async playSpotify(
         uri: string,
         meta?: playback.meta,
         forceSwitch: boolean = false
@@ -298,7 +298,7 @@ export class LocalStreamer extends Streamer {
         return this.playStreaming(extra, forceSwitch);
     }
 
-    async playNetease (
+    async playNetease(
         songId: number,
         meta?: playback.meta,
         forceSwitch: boolean = false
@@ -315,7 +315,7 @@ export class LocalStreamer extends Streamer {
         };
         return this.playStreaming(extra, forceSwitch);
     }
-    async playQQMusic (
+    async playQQMusic(
         songMId: string,
         mediaId: string,
         meta?: playback.meta,
@@ -333,7 +333,7 @@ export class LocalStreamer extends Streamer {
         };
         return this.playStreaming(extra, forceSwitch);
     }
-    async playBilibili (
+    async playBilibili(
         bvid: string,
         part: number = 0,
         meta?: playback.meta,
@@ -351,7 +351,7 @@ export class LocalStreamer extends Streamer {
         };
         return this.playStreaming(extra, forceSwitch);
     }
-    async playStreaming (
+    async playStreaming(
         extra: playback.extra.streaming,
         forceSwitch: boolean = false
     ) {
@@ -361,7 +361,7 @@ export class LocalStreamer extends Streamer {
         };
         this.pushPayload(payload, forceSwitch);
     }
-    async playBuffer (
+    async playBuffer(
         input: playback.source.cache,
         meta: playback.meta = {
             title: `Unknown file`,
@@ -381,20 +381,20 @@ export class LocalStreamer extends Streamer {
         };
         this.pushPayload(payload, forceSwitch);
     }
-    async playLocal (input: playback.extra.local, forceSwitch: boolean = false) {
+    async playLocal(input: playback.extra.local, forceSwitch: boolean = false) {
         const path = input.path
             .trim()
             .replace(/^['"](.*)['"]$/, "$1")
             .trim();
         if (fs.existsSync(path)) {
             if (fs.lstatSync(path).isDirectory()) {
-                fs.readdirSync(path).forEach(file => {
+                fs.readdirSync(path).forEach((file) => {
                     const fullPath = upath.join(path, file);
                     ffprobe(fullPath, async (err, data) => {
                         if (err) return;
                         if (
                             data.streams
-                                .map(val => val.codec_type)
+                                .map((val) => val.codec_type)
                                 .includes("audio")
                         ) {
                             let meta = {
@@ -436,7 +436,7 @@ export class LocalStreamer extends Streamer {
             }
         }
     }
-    private pushPayload (payload: any, forceSwitch: boolean = false) {
+    private pushPayload(payload: any, forceSwitch: boolean = false) {
         this.preload();
         this.queue.push(payload);
         if (!(this.previousStream && !forceSwitch)) {
@@ -445,15 +445,18 @@ export class LocalStreamer extends Streamer {
     }
 
     private lastOperation: number;
-    private ensureUsage () {
+    private ensureUsage() {
         if (Date.now() - this.lastOperation > 30 * 60 * 1000) {
             this.disconnect("机器人闲置");
         } else {
             this.lastOperation = Date.now();
         }
-        setTimeout(() => {
-            this.ensureUsage();
-        }, 15 * 60 * 1000);
+        setTimeout(
+            () => {
+                this.ensureUsage();
+            },
+            15 * 60 * 1000
+        );
     }
 
     private fileP = new PassThrough();
@@ -464,12 +467,12 @@ export class LocalStreamer extends Streamer {
     private lastRead: number = -1;
 
     private stream = new Readable({
-        read (size) {
+        read(size) {
             return true;
         },
     });
 
-    private _shuffle (array: any[]) {
+    private _shuffle(array: any[]) {
         let currentIndex = array.length,
             randomIndex;
         while (currentIndex != 0) {
@@ -483,14 +486,14 @@ export class LocalStreamer extends Streamer {
         return array;
     }
 
-    shuffle () {
+    shuffle() {
         this.queue = this._shuffle(this.queue);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
-    getQueue () {
+    getQueue() {
         return this.queue;
     }
-    clearQueue () {
+    clearQueue() {
         this.queue = [];
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
@@ -500,18 +503,18 @@ export class LocalStreamer extends Streamer {
     private paused: boolean = false;
     private previousPausedTime: number = 0;
 
-    get pausedTime () {
+    get pausedTime() {
         if (this.pauseStart)
             return this.previousPausedTime + (Date.now() - this.pauseStart);
         else return this.previousPausedTime;
     }
-    get duration () {
+    get duration() {
         const bytesPerSecond =
             (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
             8;
         return this.currentBufferSize / bytesPerSecond;
     }
-    get playedTime () {
+    get playedTime() {
         const bytesPerSecond =
             (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
             8;
@@ -520,15 +523,15 @@ export class LocalStreamer extends Streamer {
         // else return 0;
     }
 
-    isPaused () {
+    isPaused() {
         return this.paused;
     }
     private pauseStart?: number;
-    doPause () {
+    doPause() {
         this.pauseStart = Date.now();
         this.paused = true;
     }
-    doResume () {
+    doResume() {
         if (this.pauseStart) {
             this.previousPausedTime += Date.now() - this.pauseStart;
             delete this.pauseStart;
@@ -536,27 +539,27 @@ export class LocalStreamer extends Streamer {
         this.paused = false;
     }
 
-    queueMoveUp (index: number) {
+    queueMoveUp(index: number) {
         super.queueMoveUp(index);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
-    queueMoveDown (index: number) {
+    queueMoveDown(index: number) {
         super.queueMoveDown(index);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
-    queueDelete (index: number) {
+    queueDelete(index: number) {
         super.queueDelete(index);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
-    setCycleMode (
+    setCycleMode(
         payload: "repeat_one" | "repeat" | "no_repeat" | "random" = "no_repeat"
     ) {
         super.setCycleMode(payload);
         playlist.user.save(this, this.INVITATION_AUTHOR_ID);
     }
 
-    async previous (): Promise<queueItem | undefined> {
+    async previous(): Promise<queueItem | undefined> {
         if (this.hasOngoingSkip) return;
         try {
             this.hasOngoingSkip = true;
@@ -590,7 +593,7 @@ export class LocalStreamer extends Streamer {
         }
     }
     private hasOngoingSkip = false;
-    async next (bypass?: boolean): Promise<queueItem | undefined> {
+    async next(bypass?: boolean): Promise<queueItem | undefined> {
         if (!bypass && this.hasOngoingSkip) return;
         try {
             this.hasOngoingSkip = true;
@@ -629,7 +632,7 @@ export class LocalStreamer extends Streamer {
         }
     }
 
-    private async preload () {
+    private async preload() {
         // let item = this.queue[0];
         // if (item) {
         //     let prepared = await this.preparePayload(item);
@@ -637,7 +640,7 @@ export class LocalStreamer extends Streamer {
         // }
     }
 
-    private async preparePayload (payload: queueItem): Promise<
+    private async preparePayload(payload: queueItem): Promise<
         | {
               source: playback.source;
               meta: playback.meta;
@@ -656,7 +659,7 @@ export class LocalStreamer extends Streamer {
             const stream = await this.getStreamingSource(
                 extra,
                 payload.meta
-            ).catch(e => {
+            ).catch((e) => {
                 this.kasumi.logger.error(e);
                 return undefined;
             });
@@ -671,7 +674,7 @@ export class LocalStreamer extends Streamer {
         } else return undefined;
     }
 
-    async endPlayback () {
+    async endPlayback() {
         let lastFfmpegInstance = this.ffmpegInstance;
         if (this.currentMusic) {
             delete this.currentMusic.source;
@@ -687,11 +690,11 @@ export class LocalStreamer extends Streamer {
         this.fileP = new PassThrough();
     }
 
-    private get currentUsableStreamData () {
+    private get currentUsableStreamData() {
         return this.currentBufferSize - this.currentHeadSize;
     }
 
-    jumpToPercentage (percent: number) {
+    jumpToPercentage(percent: number) {
         if (percent >= 0 && percent <= 1) {
             let newUsablePosition = Math.trunc(
                 this.currentUsableStreamData * percent
@@ -702,7 +705,7 @@ export class LocalStreamer extends Streamer {
         }
     }
 
-    async checkKoice () {
+    async checkKoice() {
         if (!this.isClosed) {
             if (this.koice.isClose) {
                 return this.reconnect();
@@ -717,16 +720,16 @@ export class LocalStreamer extends Streamer {
     private readonly OUTPUT_CHANNEL = 2;
     private readonly OUTPUT_BITS = 16;
     private readonly PUSH_INTERVAL = 20;
-    private get BYTES_PER_SAMPLE () {
+    private get BYTES_PER_SAMPLE() {
         return this.OUTPUT_BITS / 8;
     }
     private readonly RATE =
         (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
         8 /
         (1000 / this.PUSH_INTERVAL);
-    async doPlayback (payload: queueItem): Promise<void> {
+    async doPlayback(payload: queueItem): Promise<void> {
         try {
-            if (this.queue.length && !this.queue.find(v => v.endMark)) {
+            if (this.queue.length && !this.queue.find((v) => v.endMark)) {
                 this.queue[this.queue.length - 1].endMark = true;
             }
             await this.checkKoice();
@@ -760,7 +763,7 @@ export class LocalStreamer extends Streamer {
                 .audioFrequency(this.OUTPUT_FREQUENCY)
                 .outputFormat("wav")
                 .removeAllListeners("error")
-                .on("error", async err => {
+                .on("error", async (err) => {
                     this.kasumi.logger.error(err);
                     if (this.previousStream) {
                         await this.endPlayback();
@@ -772,7 +775,7 @@ export class LocalStreamer extends Streamer {
                 });
             this.ffmpegInstance.stream(this.fileP);
             var bfs: any[] = [];
-            this.fileP.on("data", chunk => {
+            this.fileP.on("data", (chunk) => {
                 bfs.push(chunk);
             });
             this.fileP.on("end", async () => {

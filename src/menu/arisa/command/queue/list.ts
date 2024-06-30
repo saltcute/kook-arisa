@@ -9,7 +9,7 @@ class ListCommand extends BaseCommand {
     name = "list";
     description = "查看当前播放列表";
 
-    private getIcon (item?: queueItem) {
+    private getIcon(item?: queueItem) {
         if (!item) return "";
         let icon = "";
         switch (item.extra.type) {
@@ -37,17 +37,17 @@ class ListCommand extends BaseCommand {
         return icon;
     }
 
-    private getTitle (item?: queueItem, isWithIcon = true) {
+    private getTitle(item?: queueItem, isWithIcon = true) {
         if (!item) return "无";
         const icon = this.getIcon(item);
         if (isWithIcon && icon) return `${icon} ${item.meta.title}`;
         else return item.meta.title;
     }
-    func: CommandFunction<BaseSession, any> = async session => {
+    func: CommandFunction<BaseSession, any> = async (session) => {
         if (!session.guildId)
             return session.reply("只能在服务器频道中使用此命令");
         getChannelStreamer(session.guildId, session.authorId)
-            .then(async streamer => {
+            .then(async (streamer) => {
                 const card = new Card().addTitle("Now Playing");
                 const queue = streamer.getQueue();
                 if (streamer.nowPlaying) {
@@ -107,7 +107,7 @@ class ListCommand extends BaseCommand {
                 }
                 session.reply(card);
             })
-            .catch(e => {
+            .catch((e) => {
                 switch (e.err) {
                     case "network_failure":
                     case "no_streamer":
