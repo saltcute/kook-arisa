@@ -52,7 +52,7 @@ export class ButtonControlPanel {
                 .addTitle("正在播放");
             const queue = streamer.getQueue();
             if (streamer.nowPlaying) {
-                card.addText(`${streamer.nowPlaying.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString((Date.now() - streamer.playbackStart) / 1000)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.nowPlaying.meta.duration / 1000)}(font)[secondary]`)
+                card.addText(`${streamer.nowPlaying.meta.title} ${streamer.playbackStart ? `(font)${Time.timeToString(streamer.playedTime)} / (font)[secondary]` : ''}(font)${Time.timeToString(streamer.duration)}(font)[secondary]`)
                     .addContext(streamer.nowPlaying.meta.artists)
             } else {
                 card.addText("无");
