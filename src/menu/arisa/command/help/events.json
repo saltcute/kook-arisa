@@ -7,13 +7,17 @@
     },
     {
         "title": "更新日志",
+        "timestamp": 1719717360000,
+        "content": "**2024/06/29 更新内容：**\n○ (font)在卡片面板中添加了进度条。(font)[primary]\n○ (font)在卡片面板的歌曲名称前添加了来源串流平台的图标。(font)[primary]\n○ (font)现在无法获取歌曲资源时会自动跳过当前歌曲。(font)[primary]\n○ (font)添加了 Spotify 支持。（尚未开放使用）(font)[primary]\n　使用例：\n```plain\n/arisa spotify play spotify:track:1kbvJ9ovjKzoibiWzeBkaB```\n```plain\n/arisa spotify play https://open.spotify.com/track/37uJsqSgt2jRYWQO5z4A03```\n```plain\n/arisa spotify import spotify:playlist:1K1LWUji9mPpPzFN1DMawA```\n```plain\n/arisa spotify import https://open.spotify.com/playlist/370a9oxeV6IFQWSl3RcFrG```\n○ (font)修复了 Bilibili 视频无法下载时会使机器人无响应的问题。(font)[warning]\n○ (font)修复了单曲循环时如果播放列表为空，无法添加新的歌曲的问题。(font)[warning]\n○ (font)改善了推流无法开始的问题。(font)[warning]\n○ (font)改善了加入语音频道时的错误处理。(font)[warning]\n○ (font)机器人现在在停止前会等待播放列表同步完成。(font)[warning]\n○ (font)版本更新后，旧版卡片可能不再能使用。(font)[danger]" },
+    {
+        "title": "更新日志",
         "timestamp": 1709422941000,
         "content": "**2024/03/02 更新内容：**\n○ (font)新增了一些中文快捷指令。(font)[primary]\n　使用例：\n```plain\n播放 https://music.163.com/#/song?id=1446321695```\n```plain\n播放 https://music.163.com/#/playlist?id=9373464493```\n```plain\n播放 ロケットサイダー```\n○ (font)使用指令搜索网易云与 QQ 音乐的歌曲时可以翻页。(font)[primary]\n○ (font)可以直接使用链接播放网易云的歌曲。(font)[primary]\n　使用例：\n```plain\n/arisa netease play https://music.163.com/#/song?id=546722667```\n○ (font)优化了搜索时的加载速度。(font)[warning]\n○ (font)版本更新后，旧版卡片可能不再能使用。(font)[danger]"
     },
     {
         "title": "推流机器人",
         "timestamp": 1709425057000,
-        "content": "由于 KOOK 的近期变化，推流机器人的名字可能会变为「こなた的测试机器人」。但这并不会对机器人的任何功能造成影响，请放心使用。"
+        "content": "由于 KOOK 的近期变化，推流机器人的名字可能会变为「こなた的测试机器人」。但这并不会对机器人的任何功能造成影响，请放心使用。\n更新：问题已解决。"
     },
     {
         "title": "更新日志",
