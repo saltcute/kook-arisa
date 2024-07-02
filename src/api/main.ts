@@ -15,6 +15,7 @@ import {
 import api from "./api";
 import netease from "./netease";
 import qqmusic from "./qqmusic";
+import puchiriri from "./puchiriri";
 import { LocalStreamer } from "menu/arisa/playback/local/player";
 import { getVideoDetail } from "menu/arisa/command/bilibili/lib/index";
 import { controller } from "menu/arisa/playback/lib/index";
@@ -336,6 +337,7 @@ app.get("/login", async (req, res) => {
 app.use("/api", api);
 app.use("/netease", netease);
 app.use("/qqmusic", qqmusic);
+app.use("/puchiriri", puchiriri);
 
 client.config.get("internalWebuiPort").then(({ internalWebuiPort }) => {
     app.listen(internalWebuiPort, async () => {

@@ -88,6 +88,35 @@ async function getQQMusicSongLyrics(mid: string): Promise<QQMusic.API.Lyric> {
         }).catch((e) => { rejects(e) });
     })
 }
+async function getPuchiririLyrics({
+    name,
+    artist,
+    album,
+    duration = 0,
+}: {
+    name?: string;
+    artist?: string;
+    album?: string;
+    /**
+     * Length of the song in milliseconds
+     */
+    duration?: number;
+}): Promise<string> {
+    return new Promise((resolve, rejects) => {
+        axios({
+            url: '/puchiriri/lrc',
+            method: 'GET',
+            params: {
+                name,
+                artist,
+                album,
+                duration
+            }
+        }).then(({ data }) => {
+            resolve(data.data);
+        }).catch((e) => { rejects(e) });
+    })
+}
 
 function parseLRC(rawLyric: string) {
     const lineByLineLyric = rawLyric.split('\n');
@@ -186,10 +215,34 @@ backend.on('newTrack', (nowPlaying?: playback.extra) => {
                 })
                 break;
             default:
-                currentLyric = { lyric: undefined, translate: undefined, kLyric: undefined, romaji: undefined };
-                bilingualLyric = {};
-                currentLyricIndexCache = undefined;
-                loadingLyrics.value = false;
+                getPuchiririLyrics({
+                    name: nowPlaying.meta.title,
+                    artist: nowPlaying.meta.artists,
+                    duration: nowPlaying.meta.duration * 1000
+                }).then((data) => {
+                    const lyrics = parseLyric(data);
+                    currentLyric = lyrics
+                    bilingualLyric = parseBilingual()
+                    currentLyricIndexCache = undefined;
+                    loadingLyrics.value = false;
+                }).catch(() => {
+                    getPuchiririLyrics({
+                        name: nowPlaying.meta.title,
+                        artist: nowPlaying.meta.artists,
+                        // duration: nowPlaying.meta.duration * 1000
+                    }).then((data) => {
+                        const lyrics = parseLyric(data);
+                        currentLyric = lyrics
+                        bilingualLyric = parseBilingual()
+                        currentLyricIndexCache = undefined;
+                        loadingLyrics.value = false;
+                    }).catch(() => {
+                        currentLyric = { lyric: undefined, translate: undefined, kLyric: undefined, romaji: undefined };
+                        bilingualLyric = {};
+                        currentLyricIndexCache = undefined;
+                        loadingLyrics.value = false;
+                    })
+                })
         }
     }
 })

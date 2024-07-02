@@ -1,44 +1,7 @@
-import { NextFunction, Request, Response, Router } from "express";
-import { client } from "init/client";
-import mcache from "memory-cache";
+import { Router } from "express";
+import { cache, forceReferer } from "./lib/index";
+
 import netease from "menu/arisa/command/netease/lib";
-
-const cache = (duration: number) => {
-    return (req: Request, res: any, next: NextFunction) => {
-        const key = "__express__" + req.originalUrl || req.url;
-        const cachedBody = mcache.get(key);
-        if (cachedBody) {
-            res.send(cachedBody);
-            return;
-        } else {
-            res.sendResponse = res.send;
-            res.send = (body: any) => {
-                mcache.put(key, body, duration * 1000);
-                res.sendResponse(body);
-            };
-            next();
-        }
-    };
-};
-
-const forceReferer = () => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        next();
-        return;
-        if (
-            req.headers.referer?.startsWith(client.config.getSync("webuiUrl"))
-        ) {
-            next();
-        } else {
-            res.status(400).send({
-                code: 400,
-                message: "bad request",
-            });
-            return;
-        }
-    };
-};
-
 const router = Router();
 
 router.use(cache(60 * 15), forceReferer());
