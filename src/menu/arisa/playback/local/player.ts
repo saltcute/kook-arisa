@@ -796,6 +796,11 @@ export class LocalStreamer extends Streamer {
                     await this.endPlayback();
                     return;
                 }
+                if (this.nowPlaying) {
+                    if (this.nowPlaying.meta.duration < 0) {
+                        this.nowPlaying.meta.duration = this.duration;
+                    }
+                }
                 /**
                  * Rate for PCM audio
                  * 48000hz * 8 bit * 2 channel = 768kbps = 96KB/s
