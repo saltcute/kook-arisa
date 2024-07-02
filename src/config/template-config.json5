@@ -14,7 +14,6 @@
     "kasumi::config.mongoCollectionName": "config",
 
     "arisa::config.spotify.apiEndpoint": "",
-    "arisa::config.spotify.downloadPrefix": "",
 
     "arisa::config.assets.progress.start": "(emj)start(emj)[8397910479422202/UNNZ7ndBtv06y03c]",
     "arisa::config.assets.progress.bar": "(emj)bar(emj)[8397910479422202/UN7V1ocVvG06y03c]",

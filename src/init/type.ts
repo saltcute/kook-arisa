@@ -1,6 +1,5 @@
 export interface ArisaStorage {
     "arisa::config.spotify.apiEndpoint"?: string;
-    "arisa::config.spotify.downloadPrefix"?: string;
 
     "arisa::config.assets.progress.start": string;
     "arisa::config.assets.progress.bar": string;
