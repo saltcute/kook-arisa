@@ -31,6 +31,11 @@
         "content": "**2024/06/29 更新内容：**\n○ (font)在卡片面板中添加了进度条。(font)[primary]\n○ (font)在卡片面板的歌曲名称前添加了来源串流平台的图标。(font)[primary]\n○ (font)现在无法获取歌曲资源时会自动跳过当前歌曲。(font)[primary]\n○ (font)添加了 Spotify 支持。（尚未开放使用）(font)[primary]\n　使用例：\n```plain\n/arisa spotify play spotify:track:1kbvJ9ovjKzoibiWzeBkaB```\n```plain\n/arisa spotify play https://open.spotify.com/track/37uJsqSgt2jRYWQO5z4A03```\n```plain\n/arisa spotify import spotify:playlist:1K1LWUji9mPpPzFN1DMawA```\n```plain\n/arisa spotify import https://open.spotify.com/playlist/370a9oxeV6IFQWSl3RcFrG```\n○ (font)修复了 Bilibili 视频无法下载时会使机器人无响应的问题。(font)[warning]\n○ (font)修复了单曲循环时如果播放列表为空，无法添加新的歌曲的问题。(font)[warning]\n○ (font)改善了推流无法开始的问题。(font)[warning]\n○ (font)改善了加入语音频道时的错误处理。(font)[warning]\n○ (font)机器人现在在停止前会等待播放列表同步完成。(font)[warning]\n○ (font)版本更新后，旧版卡片可能不再能使用。(font)[danger]"
     },
     {
+        "title": "更新日志",
+        "timestamp": 1719904670000,
+        "content": "**2024/07/02 更新内容：**\n○ (font)网页面板中歌曲对应的串流平台没有提供歌词时，会自动尝试在互联网上匹配对应的歌词显示。(font)[primary]\n○ (font)时长未知的歌曲会在得知歌曲文件的实际长度后补全。(font)[warning]"
+    },
+    {
         "title": "置顶消息",
         "timestamp": 1709425293000,
         "content": "(font)如果你喜欢这个机器人(font)[pink]，欢迎来[我的爱发电](https://afdian.net/a/saltcute)赞助！虽然现在赞助并不会有什么福利，(font)但是您的任何支持都是我继续开发的动力！(font)[primary]\nArisa 也在 [GitHub](https://github.com/saltcute/kook-arisa) 以 [MIT 协议](https://github.com/saltcute/kook-arisa/blob/main/LICENSE) 开源\n问题、建议→[KOOK服务器](https://kook.top/iOOsLu)"
