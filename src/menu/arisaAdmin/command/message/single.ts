@@ -18,7 +18,7 @@ class MessageCommand extends BaseCommand {
         for (const streamer of controller.activeStreamersArray) {
             const sessionId = this.client.events.button.createSession(
                 "/admin/control/messageSession",
-                { id: streamer.kasumi.me.userId },
+                { id: streamer.TARGET_CHANNEL_ID },
                 true
             );
             card.addTextWithButton(
@@ -58,7 +58,7 @@ message.on("ready", () => {
                     event.author
                 );
             if (user.level > 2333) {
-                const streamer = controller.getStreamerById(data.id);
+                const streamer = controller.getChannelStreamer(data.id);
                 if (!streamer) {
                     await message.client.API.message.create(
                         MessageType.MarkdownMessage,

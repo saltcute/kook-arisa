@@ -38,7 +38,7 @@ export class ButtonControlPanel {
         this.streamer = streamer;
         this.client = client;
         this.sessionId = hash(
-            streamer.TARGET_CHANNEL_ID + streamer.STREAMER_TOKEN,
+            streamer.TARGET_CHANNEL_ID + streamer.TARGET_GUILD_ID,
             { algorithm: "sha256", encoding: "hex", ignoreUnknown: true }
         );
 

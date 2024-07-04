@@ -29,6 +29,7 @@ client.on("event.system", async (event) => {
         if (streamer) {
             // has arisa
             if (extra.body.user_id == streamer.kasumi.me.userId) {
+                if (1) return;
                 if (streamer.panel) {
                     const promises = streamer.panel.panelChannelArray.map(
                         (id) =>
@@ -63,7 +64,7 @@ client.on("event.system", async (event) => {
                             MessageType.CardMessage,
                             textChannelId,
                             new Card().addText(
-                                `(met)${newStreamer.kasumi.me.userId}(met) 已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`
+                                `已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`
                             )
                         );
                         newStreamer.panel = new ButtonControlPanel(
@@ -76,6 +77,13 @@ client.on("event.system", async (event) => {
 
                     if (newStreamer.audienceIds.size <= 0)
                         await newStreamer.disconnect("语音频道内无用户");
+                } else {
+                    if (textChannelId)
+                        await client.API.message.create(
+                            MessageType.CardMessage,
+                            textChannelId,
+                            new Card().addText("机器人重连失败。")
+                        );
                 }
             } else {
                 streamer.audienceIds.delete(extra.body.user_id);

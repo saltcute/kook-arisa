@@ -121,7 +121,7 @@ import { controller } from "./playback/lib/index";
                     MessageType.CardMessage,
                     session.invitationTextChannelId,
                     new Card().addText(
-                        `(met)${streamer.kasumi.me.userId}(met) 已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`
+                        `已恢复推流。\n播放结束时，请使用 \`${client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`
                     )
                 );
                 streamer.panel = new ButtonControlPanel(

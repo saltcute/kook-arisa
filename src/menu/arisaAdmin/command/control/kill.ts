@@ -23,7 +23,7 @@ class AddCommand extends BaseCommand {
         for (const streamer of controller.activeStreamersArray) {
             const sessionId = this.client.events.button.createSession(
                 "/admin/control/killSession",
-                { id: streamer.kasumi.me.userId },
+                { id: streamer.TARGET_CHANNEL_ID },
                 true
             );
             card.addTextWithButton(
@@ -55,7 +55,7 @@ kill.on("ready", () => {
                     event.author
                 );
             if (user.level > 2333) {
-                const streamer = controller.getStreamerById(data.id);
+                const streamer = controller.getChannelStreamer(data.id);
                 if (!streamer) {
                     await kill.client.API.message.create(
                         MessageType.MarkdownMessage,

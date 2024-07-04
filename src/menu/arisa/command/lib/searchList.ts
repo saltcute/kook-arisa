@@ -305,7 +305,6 @@ client.events.button.registerActivator(
             provider: string;
         }
     ) => {
-        console.log(data);
         if (data.currentPage < 1) return;
         await client.API.message.update(
             event.targetMsgId,

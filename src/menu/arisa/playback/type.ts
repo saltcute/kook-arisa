@@ -92,7 +92,6 @@ export interface Streamer extends EventEmitter2 {
     ): boolean;
 }
 export abstract class Streamer extends EventEmitter2 {
-    readonly STREAMER_TOKEN: string;
     readonly TARGET_CHANNEL_ID: string;
     readonly TARGET_GUILD_ID: string;
     readonly INVITATION_AUTHOR_ID: string;
@@ -123,43 +122,29 @@ export abstract class Streamer extends EventEmitter2 {
     }
 
     constructor(
-        token: string,
         guildId: string,
         channelId: string,
         authorId: string,
         controller: Controller
     ) {
         super({ wildcard: true });
-        this.STREAMER_TOKEN = token;
         this.TARGET_CHANNEL_ID = channelId;
         this.TARGET_GUILD_ID = guildId;
         this.INVITATION_AUTHOR_ID = authorId;
-        this.kasumi = new Kasumi(
-            {
-                type: "websocket",
-                token: this.STREAMER_TOKEN,
-                disableSnOrderCheck: true,
-                customEnpoint: controller.client.config.getSync(
-                    "kasumi::config.customEndpoint"
-                ),
-            },
-            false,
-            false
-        );
-        this.kasumi.fetchMe();
+        this.kasumi = controller.client;
         this.streamStart = Date.now();
     }
 
     /**
      * Connect the streamer to KOOK server.
      */
-    protected abstract doConnect(): Promise<this>;
+    protected abstract doConnect(): Promise<boolean>;
 
     /**
      * Connect the streamer to KOOK server.
      */
     @Streamer.writable(false)
-    async connect(): Promise<this> {
+    async connect(): Promise<boolean> {
         const res = this.doConnect();
         this.emit("connect");
         return res;
@@ -409,6 +394,8 @@ export abstract class Streamer extends EventEmitter2 {
 }
 
 export abstract class Controller extends EventEmitter2 {
+    public readonly MAX_CONCURRENT_STREAMS = 15;
+
     client: Kasumi<ArisaStorage>;
 
     protected controllerToken: string;
@@ -418,20 +405,6 @@ export abstract class Controller extends EventEmitter2 {
         this.controllerToken = client.TOKEN;
         this.client = client;
     }
-
-    /**
-     * Get the token of all the streamers.
-     */
-    abstract get allStreamerTokens(): string[];
-    /**
-     * Get the token of all available streamers.
-     */
-    abstract get allAvailableStreamersTokens(): string[];
-
-    /**
-     * Load streamer list.
-     */
-    abstract loadStreamer(): void;
 
     /**
      * Return a streamer to the controller and make it available for other user.
@@ -481,9 +454,4 @@ export abstract class Controller extends EventEmitter2 {
      * @param token Token of the target streamer.
      */
     abstract getStreamerChannel(token: string): string | undefined;
-    /**
-     * Get the streamer instance by user id. Can only get active streamers.
-     * @param id User id of the streamer.
-     */
-    abstract getStreamerById(id: string): Streamer | undefined;
 }

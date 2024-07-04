@@ -53,15 +53,13 @@ class AppCommand extends BaseCommand {
         }
         if (joinedChannel) {
             if (!controller.getChannelStreamer(joinedChannel.id)) {
-                let streamer;
-                if (
-                    (streamer = await controller.joinChannel(
-                        session.guildId,
-                        joinedChannel.id,
-                        session.authorId,
-                        session.channelId
-                    ))
-                ) {
+                let streamer = await controller.joinChannel(
+                    session.guildId,
+                    joinedChannel.id,
+                    session.authorId,
+                    session.channelId
+                );
+                if (streamer) {
                     const { err, data } = await streamer.kasumi.API.user.me();
                     if (err) {
                         this.logger.error(err);
@@ -83,7 +81,7 @@ class AppCommand extends BaseCommand {
                     await session.update(
                         msg.msg_id,
                         new Card().addText(
-                            `(met)${data.id}(met) 已开始在 #${joinedChannel.name} 推流。\n播放结束时，请使用 \`${this.client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`
+                            `已开始在 #${joinedChannel.name} 推流。\n播放结束时，请使用 \`${this.client.plugin.primaryPrefix}${leaveCommand.hierarchyName}\`结束推流。机器人在频道内无其他用户时也会自动停止。`
                         )
                     );
 
@@ -96,7 +94,7 @@ class AppCommand extends BaseCommand {
                 } else {
                     return session.update(
                         msg.msg_id,
-                        new Card().addText("没有更多可用推流机器人，请稍后再试")
+                        new Card().addText("无法开始推流，请稍后再试")
                     );
                 }
             } else {
