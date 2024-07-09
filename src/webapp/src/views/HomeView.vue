@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Dashboard from '../components/cards/Dashboard.vue';
-import Profile from '../components/cards/Profile.vue';
+import Dashboard from "../components/cards/Dashboard.vue";
+import Profile from "../components/cards/Profile.vue";
 </script>
 
 <template>
@@ -32,8 +32,7 @@ main {
         "dashboard playlist";
 }
 
-@media screen and (max-aspect-ratio: 1/1),
-screen and (max-height: 500px) {
+@media screen and (max-aspect-ratio: 1/1), screen and (max-height: 500px) {
     .container {
         height: unset;
         grid-template-columns: auto;
@@ -75,8 +74,7 @@ screen and (max-height: 500px) {
     }
 }
 
-
-.container>article {
+.container > article {
     margin: 0px;
 }
 

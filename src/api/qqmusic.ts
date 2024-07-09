@@ -5,7 +5,6 @@ import { cache } from "./lib/index";
 import { client } from "init/client";
 import qqmusic from "menu/arisa/command/qq/lib";
 
-
 const router = Router();
 
 router.use(bodyParser.json());

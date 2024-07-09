@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import { ref } from 'vue';
-import HeaderComponent from './components/Header.vue'
-import FooterComponent from './components/Footer.vue';
-import SearchNetease from './components/cards/SearchNetease.vue';
+import { RouterView } from "vue-router";
+import { ref } from "vue";
+import HeaderComponent from "./components/Header.vue";
+import FooterComponent from "./components/Footer.vue";
+import SearchNetease from "./components/cards/SearchNetease.vue";
 
 const searchNetease = ref<InstanceType<typeof SearchNetease> | null>(null);
 defineExpose({
-    searchNetease
-})
+    searchNetease,
+});
 
 const view = ref<InstanceType<typeof RouterView> | null>(null);
 </script>
@@ -22,13 +22,13 @@ const view = ref<InstanceType<typeof RouterView> | null>(null);
 </template>
 
 <style lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans+TC&family=Noto+Sans+JP&family=Comfortaa&family=Josefin+Sans&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans+TC&family=Noto+Sans+JP&family=Comfortaa&family=Josefin+Sans&display=swap");
 
 :root {
     --body-weight: 400;
     --header-weight: 600;
 
-    --transition: .4s cubic-bezier(0.6, 0.07, 0, 0.99);
+    --transition: 0.4s cubic-bezier(0.6, 0.07, 0, 0.99);
 
     --font-size: 14;
 
@@ -38,23 +38,29 @@ const view = ref<InstanceType<typeof RouterView> | null>(null);
     --card-panel-background-color-dark: #16242f;
     --card-panel-background-color-light: #ffffff;
 
-    --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "GenSenRounded TW R", sans-serif;
+    --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "GenSenRounded TW R",
+        sans-serif;
     --header-font: "Josefin Sans", "Noto Sans JP", sans-serif;
 
     &[lang^="zh"],
     &[lang^="zh-TW"] {
-        --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "GenSenRounded TW R", sans-serif;
+        --body-font: "Comfortaa", "Gen Jyuu Gothic Regular",
+            "GenSenRounded TW R", sans-serif;
         --header-font: "Josefin Sans", "Noto Sans TC", sans-serif;
     }
 
     &[lang^="zh-CN"] {
-        --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "JiangChengYuanTi", sans-serif;
+        --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "JiangChengYuanTi",
+            sans-serif;
         --header-font: "Josefin Sans", "Noto Sans SC", sans-serif;
     }
 }
 
 * {
-    transition: background-color var(--transition), background-image var(--transition), box-shadow var(--transition);
+    transition:
+        background-color var(--transition),
+        background-image var(--transition),
+        box-shadow var(--transition);
 }
 
 body {
@@ -76,8 +82,8 @@ h6 {
     display: inline-block;
     height: 1.2em;
     width: auto;
-    margin-left: .2em;
-    margin-right: .2em;
+    margin-left: 0.2em;
+    margin-right: 0.2em;
 
     img {
         height: 100%;

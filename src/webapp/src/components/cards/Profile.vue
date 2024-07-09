@@ -1,28 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
-import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+import { useI18n } from "vue-i18n";
+const { t } = useI18n();
 
 const proxy = "img.kookapp.lolicon.ac.cn";
-const userDataRaw = localStorage.getItem('user');
+const userDataRaw = localStorage.getItem("user");
 let username = ref("");
 let avatar = ref(`https://${proxy}/assets/2022-07/vlOSxPNReJ0dw0dw.jpg`);
 if (userDataRaw) {
     const userData = JSON.parse(userDataRaw);
     username.value = `${userData.username}#${userData.identify_num}`;
-    avatar.value = userData.avatar.replace('img.kaheila.cn', proxy).replace('img.kookapp.cn', proxy);
+    avatar.value = userData.avatar
+        .replace("img.kaheila.cn", proxy)
+        .replace("img.kookapp.cn", proxy);
 }
 </script>
 
 <template>
     <article class="profile grid">
         <article class="avatar">
-            <img :src="avatar">
+            <img :src="avatar" />
         </article>
         <div v-if="username" class="username">
             <span>{{ username.split("#")[0] }}</span>
-            <span style="font-size: 0.75rem; font-weight: var(--header-weight); color: gray;">
+            <span
+                style="
+                    font-size: 0.75rem;
+                    font-weight: var(--header-weight);
+                    color: gray;
+                "
+            >
                 #{{ username.split("#")[1] }}
             </span>
         </div>
@@ -45,7 +53,6 @@ if (userDataRaw) {
     justify-items: center;
 }
 
-
 .username {
     text-align: center;
     grid-area: username;
@@ -61,7 +68,7 @@ if (userDataRaw) {
     grid-area: avatar;
 }
 
-.avatar>img {
+.avatar > img {
     aspect-ratio: 1 / 1;
     height: 100%;
     /* width: 150%; */
