@@ -58,6 +58,7 @@ export class LocalController extends Controller {
         authorId: string,
         textChannelId?: string
     ) {
+        await this.client.API.voice.leave(channelId);
         const streamer: Streamer = new LocalStreamer(
             guildId,
             channelId,
