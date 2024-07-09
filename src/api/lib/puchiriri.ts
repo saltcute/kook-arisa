@@ -1,5 +1,6 @@
 import axios from "axios";
 import { XMLParser } from "fast-xml-parser";
+import he from "he";
 const XML = new XMLParser();
 
 enum LyricsType {
@@ -194,7 +195,7 @@ export class Puchiriri {
             const firstWord = words.sort(
                 (a, b) => a.starttime - b.starttime
             )[0];
-            lrc += `${this.timeToShortString(firstWord.starttime)}${line.linestring}\n`;
+            lrc += `${this.timeToShortString(firstWord.starttime)}${he.decode(line.linestring)}\n`;
         }
         return lrc;
     }
