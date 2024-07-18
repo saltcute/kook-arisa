@@ -87,7 +87,7 @@ export async function requireStreamer(
 import leaveCommand from "menu/arisa/command/leave";
 import { controller } from "./playback/lib/index";
 
-(async () => {
+client.on("connect.*", async () => {
     let sessions = (await client.config.getOne("arisa::session.ongoing")) || [];
     sessions = sessions.reduce((p: typeof sessions, c) => {
         if (
@@ -137,4 +137,4 @@ import { controller } from "./playback/lib/index";
         }
     });
     await Promise.all(promises);
-})();
+});
