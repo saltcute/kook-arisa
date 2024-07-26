@@ -100,11 +100,12 @@ export class LocalStreamer extends Streamer {
         }
         this.isClosed = true;
         if (this.koice) {
-            this.koice.onclose = () => {
+            this.koice.removeAllListeners("close");
+            this.koice.on("close", () => {
                 this.kasumi.logger.warn(
                     `Koice.js closed with method call on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}, message: ${message}`
                 );
-            };
+            });
         }
         this.endPlayback();
         for (const item of this.queue) {
