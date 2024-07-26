@@ -43,7 +43,8 @@ export class LocalStreamer extends Streamer {
                 this.controller.client,
                 this.TARGET_CHANNEL_ID,
                 {
-                    inputCodec: "pcm_s16le"
+                    rtcpMux: false,
+                    inputCodec: "pcm_s16le",
                 }
             );
         }
@@ -53,7 +54,7 @@ export class LocalStreamer extends Streamer {
         }
         this.koice.on("close", (event) => {
             this.disconnect(event);
-        })
+        });
         this.streamHasHead = false;
         if (this.nowPlaying) {
             await this.playback(this.nowPlaying);
