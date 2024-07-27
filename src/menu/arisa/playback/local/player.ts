@@ -44,7 +44,8 @@ export class LocalStreamer extends Streamer {
                 this.TARGET_CHANNEL_ID,
                 {
                     rtcpMux: false,
-                    inputCodec: "pcm_s16le",
+                    bitrateFactor: 0.85,
+                    // inputCodec: "s16le",
                 }
             );
         }
@@ -53,7 +54,8 @@ export class LocalStreamer extends Streamer {
             return false;
         }
         this.koice.on("close", (event) => {
-            this.disconnect(event);
+            this.kasumi.logger.error(event);
+            this.initKoice();
         });
         this.streamHasHead = false;
         if (this.nowPlaying) {
