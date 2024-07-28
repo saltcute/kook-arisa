@@ -43,7 +43,7 @@ export const i18n = createI18n<
     },
 });
 
-import twemoji from "twemoji";
+import twemoji from "@twemoji/api";
 app.directive("emoji", {
     updated(el: Element, { value }) {
         el.classList.add("twemoji");
