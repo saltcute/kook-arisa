@@ -4,9 +4,9 @@ import menu from "menu/arisa";
 import fs from "fs";
 import upath from "upath";
 
-class ArisaHelp extends BaseCommand {
-    name = "help";
-    description = "查看帮助";
+export class ArisaNote extends BaseCommand {
+    name = "note";
+    description = "查看公告与帮助";
     private static _events: {
         title: string;
         timestamp: number;
@@ -14,7 +14,7 @@ class ArisaHelp extends BaseCommand {
         disabled?: boolean;
     }[] = [];
     static loadEvents() {
-        ArisaHelp._events = JSON.parse(
+        ArisaNote._events = JSON.parse(
             fs.readFileSync(upath.join(__dirname, "events.json"), {
                 encoding: "utf8",
             })
@@ -30,14 +30,14 @@ class ArisaHelp extends BaseCommand {
         return this.events[this.events.length - page];
     }
     static getCard(pageNumber: number) {
-        let page = ArisaHelp.getPage(pageNumber);
+        let page = ArisaNote.getPage(pageNumber);
         while (
             pageNumber >= 1 &&
-            pageNumber <= ArisaHelp.eventSize &&
+            pageNumber <= ArisaNote.eventSize &&
             (!page || page?.disabled)
         ) {
             pageNumber++;
-            page = ArisaHelp.getPage(pageNumber);
+            page = ArisaNote.getPage(pageNumber);
         }
         const card = new Card();
         if (!page) {
@@ -54,7 +54,7 @@ class ArisaHelp extends BaseCommand {
                         click: Card.Parts.ButtonClickType.RETURN_VALUE,
                         value: JSON.stringify({
                             sessionId: client.events.button.createSession(
-                                "help.showPage",
+                                "note.showPage",
                                 { targetPage: 1, currentPage: pageNumber },
                                 true
                             ),
@@ -90,7 +90,7 @@ class ArisaHelp extends BaseCommand {
                                     ? JSON.stringify({
                                           sessionId:
                                               client.events.button.createSession(
-                                                  "help.showPage",
+                                                  "note.showPage",
                                                   {
                                                       targetPage:
                                                           pageNumber - 1,
@@ -108,19 +108,19 @@ class ArisaHelp extends BaseCommand {
                                 content: "下一页",
                             },
                             theme:
-                                pageNumber < ArisaHelp.events.length
+                                pageNumber < ArisaNote.events.length
                                     ? Card.Theme.PRIMARY
                                     : Card.Theme.SECONDARY,
                             click:
-                                pageNumber < ArisaHelp.events.length
+                                pageNumber < ArisaNote.events.length
                                     ? Card.Parts.ButtonClickType.RETURN_VALUE
                                     : undefined,
                             value:
-                                pageNumber < ArisaHelp.events.length
+                                pageNumber < ArisaNote.events.length
                                     ? JSON.stringify({
                                           sessionId:
                                               client.events.button.createSession(
-                                                  "help.showPage",
+                                                  "note.showPage",
                                                   {
                                                       targetPage:
                                                           pageNumber + 1,
@@ -135,7 +135,7 @@ class ArisaHelp extends BaseCommand {
                             type: Card.Parts.AccessoryType.BUTTON,
                             text: {
                                 type: Card.Parts.TextType.KMARKDOWN,
-                                content: `第 ${pageNumber} 页 / 共 ${ArisaHelp.eventSize} 页`,
+                                content: `第 ${pageNumber} 页 / 共 ${ArisaNote.eventSize} 页`,
                             },
                             theme: Card.Theme.SECONDARY,
                         },
@@ -148,14 +148,14 @@ class ArisaHelp extends BaseCommand {
         const arg = session.args[0];
         let page = parseInt(arg);
         if (isNaN(page)) page = 1;
-        ArisaHelp.loadEvents();
-        await session.reply(ArisaHelp.getCard(page));
+        ArisaNote.loadEvents();
+        await session.reply(ArisaNote.getCard(page));
     };
 }
-ArisaHelp.loadEvents();
+ArisaNote.loadEvents();
 
 client.events.button.registerActivator(
-    "help.showPage",
+    "note.showPage",
     async (
         event,
         data: {
@@ -165,11 +165,11 @@ client.events.button.registerActivator(
     ) => {
         await client.API.message.update(
             event.targetMsgId,
-            ArisaHelp.getCard(data.targetPage)
+            ArisaNote.getCard(data.targetPage)
         );
     }
 );
 
-const command = new ArisaHelp();
-export default command;
-menu.addCommand(command);
+const arisaNote = new ArisaNote();
+export default arisaNote;
+menu.addCommand(arisaNote);

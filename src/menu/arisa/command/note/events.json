@@ -41,8 +41,13 @@
         "content": "**2024/07/18 更新内容：**\n○ (font)切换使用官方的推流接口。Arisa 现在不再需要管理员权限与单独的推流机器人就可以正常推流。(font)[primary]\n○ (font)WebUI 现在可以正确显示プチリリ歌词中的 HTML Entity。(font)[warning]\n---\n**开发者与自架服务：**\n○ (font)WebUI 现在会正确适用设置的自定义端口(font)[warning]"
     },
     {
+        "title": "更新日志",
+        "timestamp": 1722124214000,
+        "content": "**2024/07/27 更新内容：**\n○ (font)机器人异常断连重连时不再使用重新加入的逻辑，而是会紧接着断开的位置继续播放。(font)[primary]\n○ (font)在控制面板卡片上增加了官方服务器的邀请链接。(font)[warning]\n○ (font)更改了帮助命令的触发名称。(font)[warning]\n---\n**开发者与自架服务：**\n○ (font)由于怀疑造成无法正常推流的问题，RTCP Mux 已被关闭。(font)[warning]"
+    },
+    {
         "title": "置顶消息",
         "timestamp": 1709425293000,
-        "content": "(font)如果你喜欢这个机器人(font)[pink]，欢迎来[我的爱发电](https://afdian.net/a/saltcute)赞助！虽然现在赞助并不会有什么福利，(font)但是您的任何支持都是我继续开发的动力！(font)[primary]\nArisa 也在 [GitHub](https://github.com/saltcute/kook-arisa) 以 [MIT 协议](https://github.com/saltcute/kook-arisa/blob/main/LICENSE) 开源\n问题、建议→[KOOK服务器](https://kook.top/iOOsLu)"
+        "content": "(font)如果你喜欢这个机器人(font)[pink]，欢迎来[我的爱发电](https://afdian.com/a/saltcute)赞助！虽然现在赞助并不会有什么福利，(font)但是您的任何支持都是我继续开发的动力！(font)[primary]\nArisa 也在 [GitHub](https://github.com/saltcute/kook-arisa) 以 [MIT 协议](https://github.com/saltcute/kook-arisa/blob/main/LICENSE) 开源\n问题、建议→[KOOK服务器](https://kook.top/iOOsLu)"
     }
 ]
