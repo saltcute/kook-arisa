@@ -44,7 +44,7 @@ export class LocalStreamer extends Streamer {
                 this.TARGET_CHANNEL_ID,
                 {
                     rtcpMux: false,
-                    bitrateFactor: 0.85,
+                    // bitrateFactor: 0.85,
                     // inputCodec: "s16le",
                 }
             );
@@ -85,7 +85,9 @@ export class LocalStreamer extends Streamer {
 
     async doDisconnect(message?: string | null): Promise<boolean> {
         const messageTarget = [
-            ...(this.panel?.panelChannelArray || []),
+            ...(this.panel?.panelChannelArray || []).filter(
+                (v) => v != this.TARGET_CHANNEL_ID
+            ),
             this.TARGET_CHANNEL_ID,
         ];
         if (messageTarget && message !== null) {
@@ -795,7 +797,7 @@ export class LocalStreamer extends Streamer {
                 this.currentHeadSize = this.currentChunkStart;
                 const headerChunk = cache.subarray(0, this.currentChunkStart);
                 if (!this.streamHasHead) {
-                    this.koice?.push(headerChunk);
+                    this.koice?.setFileHead(headerChunk);
                     this.streamHasHead = true;
                 }
 
