@@ -43,7 +43,7 @@ export class LocalStreamer extends Streamer {
                 this.controller.client,
                 this.TARGET_CHANNEL_ID,
                 {
-                    rtcpMux: false,
+                    // rtcpMux: false,
                     // bitrateFactor: 0.85,
                     // inputCodec: "s16le",
                 }
