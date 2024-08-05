@@ -34,7 +34,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@fortawesome/vue-fontawesome": "^3.0.3",
     "@kyvg/vue3-notification": "^2.9.0",
-    "@saltcute/kasumi-essential": "^0.1.2",
+    "@saltcute/kasumi-essential": "^0.1.4",
     "@saltcute/qq-music-api": "^1.1.3",
     "@twemoji/api": "^15.1.0",
     "@types/sortablejs": "^1.15.7",
@@ -85,6 +85,7 @@
     "@vue/tsconfig": "^0.1.3"
   },
   "localDependencies": {
-    "koice": "../koice.js"
+    "koice": "../koice.js",
+    "@saltcute/kasumi-essential": "../kasumi-essential"
   }
 }
