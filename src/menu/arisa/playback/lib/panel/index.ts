@@ -3,6 +3,7 @@ import Kasumi, { Card, MessageType } from "kasumi.js";
 import { Controller, queueItem, Streamer } from "menu/arisa/playback/type";
 import { Time } from "menu/arisa/playback/lib/time";
 import hash from "object-hash";
+import type { ArisaNote } from "menu/arisa/command/note";
 
 interface PanelDetail {
     id: string;
@@ -38,7 +39,7 @@ export class ButtonControlPanel {
         this.streamer = streamer;
         this.client = client;
         this.sessionId = hash(
-            streamer.TARGET_CHANNEL_ID + streamer.STREAMER_TOKEN,
+            streamer.TARGET_CHANNEL_ID + streamer.TARGET_GUILD_ID,
             { algorithm: "sha256", encoding: "hex", ignoreUnknown: true }
         );
 
@@ -409,11 +410,10 @@ export class ButtonControlPanel {
                 },
             ],
         });
+        const arisaNote: ArisaNote = require("menu/arisa/command/note").default;
         card.addDivider().addContext(
-            `也可使用[网页面板](${this.client.config.getSync(
-                "webuiUrl"
-            )})，功能更加完善\n` +
-                "© 2023-2024 saltcute, the source code is distributed under the [MIT License](https://github.com/saltcute/kook-arisa/blob/main/LICENSE)"
+            `发送 \`${this.client.plugin.primaryPrefix}${arisaNote.hierarchyName}\` 查看更新日志与帮助\n` +
+                `推荐使用[网页面板](${this.client.config.getSync("webuiUrl")})，功能更加完善。问题、建议→[KOOK服务器](https://kook.top/iOOsLu)\n`
         );
         return card;
     }

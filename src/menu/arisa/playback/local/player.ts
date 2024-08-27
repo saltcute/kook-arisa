@@ -15,70 +15,55 @@ import { Time } from "../lib/time";
 import { MessageType } from "kasumi.js";
 
 import spotify from "menu/arisa/command/spotify/lib/index";
-import { resolve } from "path";
-
 const biliAPI = require("bili-api");
 
 export class LocalStreamer extends Streamer {
     private controller: Controller;
-    private koice: Koice;
+    private koice: Koice | null = null;
 
     private isClosed = false;
 
     constructor(
-        token: string,
         guildId: string,
         channelId: string,
         authorId: string,
         controller: Controller
     ) {
-        super(token, guildId, channelId, authorId, controller);
+        super(guildId, channelId, authorId, controller);
         this.controller = controller;
-        this.koice = new Koice(this.STREAMER_TOKEN);
         this.lastOperation = Date.now();
         this.ensureUsage();
     }
-    streamHasHead = false;
+    private streamHasHead = false;
     private async initKoice() {
         await this.endPlayback();
-        await this.koice.close();
-        this.koice = new Koice(this.STREAMER_TOKEN);
-        this.stream = new Readable({
-            read(size) {
-                return true;
-            },
+        await this.koice?.close();
+        for (let i = 0; i < 1 && this.koice == null; ++i) {
+            this.koice = await Koice.create(
+                this.controller.client,
+                this.TARGET_CHANNEL_ID,
+                {
+                    // rtcpMux: false,
+                    // bitrateFactor: 0.85,
+                    // inputCodec: "s16le",
+                }
+            );
+        }
+        if (!(this.koice instanceof Koice)) {
+            await this.disconnect("无法创建 Koice.js 实例");
+            return false;
+        }
+        this.koice.on("close", (event) => {
+            this.kasumi.logger.error(event);
+            this.initKoice();
         });
         this.streamHasHead = false;
-
-        this.koice.onclose = () => {
-            this.kasumi.logger.warn(
-                `Koice.js closed unexpectedly on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}`
-            );
-            // this.checkKoice();
-        };
-        try {
-            await this.koice.connectWebSocket(this.TARGET_CHANNEL_ID);
-        } catch (e) {
-            this.kasumi.logger.error(e);
-            this.kasumi.logger.error(
-                "Failed to connect to WebSocket for Koice.js, retrying..."
-            );
-            this.initKoice();
-        } finally {
-            await this.koice.startStream(this.stream, {
-                // inputCodec: 'pcm_u8',
-                inputCodec: "pcm_s16le",
-                // inputCodec: 'pcm_s32le',
-                inputChannels: 2,
-                inputFrequency: 48000,
-            });
-            if (this.nowPlaying) {
-                await this.playback(this.nowPlaying);
-            } else {
-                await this.next();
-            }
-            return this;
+        if (this.nowPlaying) {
+            await this.playback(this.nowPlaying);
+        } else {
+            await this.next();
         }
+        return true;
     }
     async doConnect() {
         const { err, data } =
@@ -99,9 +84,15 @@ export class LocalStreamer extends Streamer {
     }
 
     async doDisconnect(message?: string | null): Promise<boolean> {
-        if (this.panel && message !== null) {
+        const messageTarget = [
+            ...(this.panel?.panelChannelArray || []).filter(
+                (v) => v != this.TARGET_CHANNEL_ID
+            ),
+            this.TARGET_CHANNEL_ID,
+        ];
+        if (messageTarget && message !== null) {
             await Promise.all(
-                this.panel?.panelChannelArray.map((v) => {
+                messageTarget.map((v) => {
                     return this.panel?.client.API.message.create(
                         MessageType.MarkdownMessage,
                         v,
@@ -113,17 +104,20 @@ export class LocalStreamer extends Streamer {
             );
         }
         this.isClosed = true;
-        this.koice.onclose = () => {
-            this.kasumi.logger.warn(
-                `Koice.js closed with method call on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}, message: ${message}`
-            );
-        };
+        if (this.koice) {
+            this.koice.removeAllListeners("close");
+            this.koice.on("close", () => {
+                this.kasumi.logger.warn(
+                    `Koice.js closed with method call on ${this.TARGET_GUILD_ID}/${this.TARGET_CHANNEL_ID}, message: ${message}`
+                );
+            });
+        }
         this.endPlayback();
         for (const item of this.queue) {
             item.source = null;
         }
         await playlist.user.save(this, this.INVITATION_AUTHOR_ID);
-        await this.koice.close();
+        await this.koice?.close();
         return this.controller.returnStreamer(this);
     }
     readonly streamingServices = ["netease", "bilibili", "qqmusic", "spotify"];
@@ -459,18 +453,11 @@ export class LocalStreamer extends Streamer {
         );
     }
 
-    private fileP = new PassThrough();
     private ffmpegInstance: ffmpeg.FfmpegCommand | undefined;
 
     private previousStream: boolean = false;
     currentMusic?: queueItem;
     private lastRead: number = -1;
-
-    private stream = new Readable({
-        read(size) {
-            return true;
-        },
-    });
 
     private _shuffle(array: any[]) {
         let currentIndex = array.length,
@@ -685,9 +672,6 @@ export class LocalStreamer extends Streamer {
         this.previousStream = false;
         lastFfmpegInstance?.kill("SIGINT");
         await delay(this.PUSH_INTERVAL + 50);
-        this.fileP?.removeAllListeners();
-        this.fileP?.destroy();
-        this.fileP = new PassThrough();
     }
 
     private get currentUsableStreamData() {
@@ -707,7 +691,7 @@ export class LocalStreamer extends Streamer {
 
     async checkKoice() {
         if (!this.isClosed) {
-            if (this.koice.isClose) {
+            if (!this.koice || this.koice.isClose) {
                 return this.reconnect();
             }
         }
@@ -724,15 +708,14 @@ export class LocalStreamer extends Streamer {
         return this.OUTPUT_BITS / 8;
     }
     private readonly RATE =
-        (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.OUTPUT_BITS) /
-        8 /
+        (this.OUTPUT_FREQUENCY * this.OUTPUT_CHANNEL * this.BYTES_PER_SAMPLE) /
         (1000 / this.PUSH_INTERVAL);
     async doPlayback(payload: queueItem): Promise<void> {
         try {
             if (this.queue.length && !this.queue.find((v) => v.endMark)) {
                 this.queue[this.queue.length - 1].endMark = true;
             }
-            await this.checkKoice();
+            // await this.checkKoice();
             this.preload();
             if (this.previousStream) {
                 await this.endPlayback();
@@ -773,12 +756,13 @@ export class LocalStreamer extends Streamer {
                     // await this.disconnect();
                     // await controller.joinChannel(guildId, channelId, userId);
                 });
-            this.ffmpegInstance.stream(this.fileP);
+            const fileP = new PassThrough();
+            this.ffmpegInstance.stream(fileP);
             var bfs: any[] = [];
-            this.fileP.on("data", (chunk) => {
+            fileP.on("data", (chunk) => {
                 bfs.push(chunk);
             });
-            this.fileP.on("end", async () => {
+            fileP.on("end", async () => {
                 this.previousPausedTime = 0;
                 this.playbackStart = Date.now();
                 this.lastOperation = Date.now();
@@ -813,7 +797,7 @@ export class LocalStreamer extends Streamer {
                 this.currentHeadSize = this.currentChunkStart;
                 const headerChunk = cache.subarray(0, this.currentChunkStart);
                 if (!this.streamHasHead) {
-                    this.stream.push(headerChunk);
+                    this.koice?.setFileHead(headerChunk);
                     this.streamHasHead = true;
                 }
 
@@ -841,7 +825,7 @@ export class LocalStreamer extends Streamer {
                                 let after = v * this.volumeGain; // pcm_s16le
                                 tmpChunk.writeInt16LE(after, i);
                             }
-                            this.stream.push(tmpChunk);
+                            this.koice?.push(tmpChunk);
                         } else {
                             break;
                         }

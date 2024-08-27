@@ -34,10 +34,5 @@ export interface ArisaStorage {
 
     globalAdmins: string[];
 
-    streamerMiddlemanID: string;
-    streamerMiddlemanToken: string;
-
     realIP?: string;
-
-    streamers: string[];
 }

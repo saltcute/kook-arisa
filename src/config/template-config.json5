@@ -41,13 +41,5 @@
 
     globalAdmins: ["1854484583"],
 
-    streamerMiddlemanID: "",
-    streamerMiddlemanToken: "",
-
-    realIP: "106.11.249.99",
-
-    streamers: [
-        "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
-        "1/SU1SeI=/H4N3MuaN4taN0rENdEzV0us==",
-    ],
+    realIP: "106.11.249.99"
 }

@@ -63,7 +63,11 @@
         <div class="slider-hit-area" @click="onClick">
             <div class="slider-container" ref="container">
                 <div class="filled" :style="{ height: value + '%' }"></div>
-                <div class="handle" :style="{ bottom: value + '%' }" @mousedown="onMouseDown"></div>
+                <div
+                    class="handle"
+                    :style="{ bottom: value + '%' }"
+                    @mousedown="onMouseDown"
+                ></div>
             </div>
         </div>
     </div>
@@ -77,7 +81,7 @@ export default {
     data() {
         return {
             value: 30,
-            dragging: false
+            dragging: false,
         };
     },
     mounted() {
@@ -91,8 +95,8 @@ export default {
     },
     emits: {
         inputValue(payload: number) {
-            return typeof payload == 'number';
-        }
+            return typeof payload == "number";
+        },
     },
     methods: {
         setSliderValue(value: number) {
@@ -111,14 +115,15 @@ export default {
             const rect = this.getRect();
             this.value =
                 100 -
-                ((clamp(e.clientY, rect.top, rect.bottom) - rect.top) / rect.height) *
-                100;
-            this.$emit('inputValue', this.value);
+                ((clamp(e.clientY, rect.top, rect.bottom) - rect.top) /
+                    rect.height) *
+                    100;
+            this.$emit("inputValue", this.value);
         },
         onClick(e: MouseEvent) {
             this.update(e);
-        }
+        },
     },
-    expose: ['setSliderValue']
+    expose: ["setSliderValue"],
 };
 </script>

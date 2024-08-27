@@ -4,7 +4,7 @@ import * as fs from "fs";
 
 import EssentialMenu from "@saltcute/kasumi-essential";
 
-const menu = new EssentialMenu("arisaadmin");
+const menu = new EssentialMenu("arisaadmin", "kook-arisa");
 menu.on("ready", () => {
     menu.client.middlewares.AccessControl.global.group.setCommandLevel(
         menu,

@@ -7,14 +7,13 @@ class AppCommand extends BaseCommand {
     name = "list";
     description = "List all streamers in use.";
     func: CommandFunction<BaseSession, any> = async (session) => {
-        const streamers = controller.allStreamerTokens;
         const inUseStreamers = controller.activeStreamersArray;
         const card = new Card()
             .addTitle(
-                `${inUseStreamers.length}/${streamers.length} Streamer(s) in Use`
+                `Streaming to ${inUseStreamers.length}/${controller.MAX_CONCURRENT_STREAMS} channels`
             )
             .addContext(
-                `${streamers.length - inUseStreamers.length} streamer(s) idle`
+                `${controller.MAX_CONCURRENT_STREAMS - inUseStreamers.length} streamer(s) idle`
             );
         for (const streamer of inUseStreamers) {
             card.addText(`**${streamer.kasumi.me.username}#${streamer.kasumi.me.identifyNum}** By: (met)${streamer.INVITATION_AUTHOR_ID}(met)
