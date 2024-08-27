@@ -72,9 +72,13 @@ export class QQMusic {
     }
 }
 
-const data = client.config.getSync("arisa::QQMusic.cookie");
-const cookie = typeof data == "string" ? data : "";
-const qqInstance = new QQMusic(cookie);
+client.on("connect.*", async () => {
+    const data = await client.config.getOne("arisa::QQMusic.cookie");
+    const cookie = typeof data == "string" ? data : "";
+    qqInstance.updateCookie(cookie);
+});
+
+const qqInstance = new QQMusic();
 export default qqInstance;
 
 export namespace QQMusic {
