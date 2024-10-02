@@ -13,6 +13,8 @@ export interface ArisaStorage {
     "arisa::config.assets.logo.neteasecloud": string;
     "arisa::config.assets.logo.spotify": string;
 
+    "arisa::auth.netease.cookie": string;
+
     kookClientID: string;
     kookClientSecret: string;
 

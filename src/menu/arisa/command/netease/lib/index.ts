@@ -9,24 +9,31 @@ export class Netease {
     }
     private cookie?: string;
     async init() {
-        try {
-            if ((await client.config.get("neteaseVIP")).neteaseVIP) {
-                this.cookie = (
-                    await netease.login({
-                        email: (
-                            await client.config.getOne("neteaseEmail")
-                        ).toString(),
-                        password: (
-                            await client.config.getOne("neteasePassword")
-                        ).toString(),
-                        realIP: this.REAL_IP,
-                    })
-                ).body.cookie;
+        let storedCookie: string | undefined = await client.config.getOne(
+            "arisa::auth.netease.cookie"
+        );
+        if (!storedCookie) {
+            try {
+                if (await client.config.getOne("neteaseVIP")) {
+                    storedCookie = (
+                        await netease.login({
+                            email: (
+                                await client.config.getOne("neteaseEmail")
+                            ).toString(),
+                            password: (
+                                await client.config.getOne("neteasePassword")
+                            ).toString(),
+                            realIP: this.REAL_IP,
+                        })
+                    ).body.cookie;
+                }
+            } catch (e) {
+                client.logger.error(e);
+                storedCookie = undefined;
             }
-        } catch (e) {
-            client.logger.error(e);
-            this.cookie = undefined;
         }
+        client.config.set("arisa::auth.netease.cookie", storedCookie);
+        this.cookie = storedCookie;
     }
     async search(
         keywords: string,
