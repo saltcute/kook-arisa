@@ -1,5 +1,7 @@
 import netease from "NeteaseCloudMusicApi";
+import delay from "delay";
 import { client } from "init/client";
+import qrcode from "qrcode-terminal";
 
 export class Netease {
     readonly REAL_IP?;
@@ -9,23 +11,102 @@ export class Netease {
     }
     private cookie?: string;
     async init() {
+        let needLogin = false;
         let storedCookie: string | undefined = await client.config.getOne(
             "arisa::auth.netease.cookie"
         );
-        if (!storedCookie) {
+        if (storedCookie) {
+            const res = await netease.login_status({ cookie: this.cookie });
+            if (res.status == 200) {
+                client.logger.info("Netease Music already logged in.");
+            } else needLogin = true;
+        } else needLogin = true;
+        if (needLogin) {
             try {
                 if (await client.config.getOne("neteaseVIP")) {
-                    storedCookie = (
-                        await netease.login({
-                            email: (
-                                await client.config.getOne("neteaseEmail")
-                            ).toString(),
-                            password: (
-                                await client.config.getOne("neteasePassword")
-                            ).toString(),
-                            realIP: this.REAL_IP,
-                        })
-                    ).body.cookie;
+                    const res = await netease.login({
+                        email: (
+                            await client.config.getOne("neteaseEmail")
+                        ).toString(),
+                        password: (
+                            await client.config.getOne("neteasePassword")
+                        ).toString(),
+                        realIP: this.REAL_IP,
+                    });
+                    if (res.body.code == 200 && res.body.cookie) {
+                        client.logger.info("Netease Music log in success.");
+                        storedCookie = res.body.cookie;
+                    } else {
+                        client.logger.info(
+                            "Netease Music log in failed. Trying QR Code log in."
+                        );
+                        // Login failed
+                        client.logger.debug(res);
+                        // Start QR Code login
+                        async function QRLogin() {
+                            const QRKey = (
+                                (await netease.login_qr_key({})).body as any
+                            ).data.unikey;
+                            const QRCodeImgBase64 = (
+                                (
+                                    await netease.login_qr_create({
+                                        key: QRKey,
+                                    })
+                                ).body as any
+                            ).data.qrurl;
+                            qrcode.generate(QRCodeImgBase64);
+                            client.logger.info(
+                                "Please use the Netease Music app to scan the QR Code."
+                            );
+                            while (true) {
+                                enum STATUS {
+                                    CODE_EXPIRED = 800,
+                                    WAITING_FOR_CODE_SCAN = 801,
+                                    WAITING_FOR_LOGIN_CONFIRMATION = 802,
+                                    LOGIN_SUCCESS = 803,
+                                }
+                                const res = (
+                                    await netease.login_qr_check({
+                                        key: QRKey,
+                                    })
+                                ).body as {
+                                    code: number;
+                                    message: string;
+                                    cookie: string;
+                                };
+                                switch (res.code) {
+                                    case STATUS.LOGIN_SUCCESS:
+                                        storedCookie = res.cookie;
+                                        return true;
+                                    case STATUS.WAITING_FOR_CODE_SCAN:
+                                        client.logger.info(
+                                            "Waiting for QR Code scan..."
+                                        );
+                                        break;
+                                    case STATUS.WAITING_FOR_LOGIN_CONFIRMATION:
+                                        client.logger.info(
+                                            "Waiting for confirmation..."
+                                        );
+                                        break;
+                                    case STATUS.CODE_EXPIRED:
+                                        client.logger.info(
+                                            "QR Code expired. Retrying in 5 minutes..."
+                                        );
+                                        return false;
+                                }
+                                await delay(5 * 1000);
+                            }
+                        }
+                        while (true) {
+                            const res = await QRLogin();
+                            if (res) break;
+                            else await delay(5 * 60 * 1000);
+                        }
+                    }
+                } else {
+                    client.logger.info(
+                        "Started without using a Netease account."
+                    );
                 }
             } catch (e) {
                 client.logger.error(e);
@@ -33,7 +114,7 @@ export class Netease {
             }
         }
         client.config.set("arisa::auth.netease.cookie", storedCookie);
-        this.cookie = storedCookie;
+        if (storedCookie) this.cookie = storedCookie;
     }
     async search(
         keywords: string,
