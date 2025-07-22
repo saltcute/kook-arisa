@@ -79,6 +79,7 @@ export class Netease {
                                 switch (res.code) {
                                     case STATUS.LOGIN_SUCCESS:
                                         storedCookie = res.cookie;
+                                        client.logger.info("Login success.");
                                         return true;
                                     case STATUS.WAITING_FOR_CODE_SCAN:
                                         client.logger.info(
