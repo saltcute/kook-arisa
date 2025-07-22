@@ -24,15 +24,17 @@ export class Netease {
         if (needLogin) {
             try {
                 if (await client.config.getOne("neteaseVIP")) {
-                    const res = await netease.login({
-                        email: (
-                            await client.config.getOne("neteaseEmail")
-                        ).toString(),
-                        password: (
-                            await client.config.getOne("neteasePassword")
-                        ).toString(),
-                        realIP: this.REAL_IP,
-                    });
+                    const res = await netease
+                        .login({
+                            email: (
+                                await client.config.getOne("neteaseEmail")
+                            ).toString(),
+                            password: (
+                                await client.config.getOne("neteasePassword")
+                            ).toString(),
+                            realIP: this.REAL_IP,
+                        })
+                        .catch((e) => e);
                     if (res.body.code == 200 && res.body.cookie) {
                         client.logger.info("Netease Music log in success.");
                         storedCookie = res.body.cookie;
