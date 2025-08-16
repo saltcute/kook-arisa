@@ -21,9 +21,9 @@ export interface ArisaStorage {
     internalWebuiPort: number;
     webuiUrl: string;
 
-    neteaseVIP: boolean;
-    neteaseEmail: string;
-    neteasePassword: string;
+    "arisa::auth.netease.enabled": boolean;
+    "arisa::auth.netease.phone.number": string;
+    "arisa::auth.netease.phone.country"?: string;
 
     QQCookieCode: string;
 

@@ -2,6 +2,7 @@ import netease from "NeteaseCloudMusicApi";
 import delay from "delay";
 import { client } from "init/client";
 import qrcode from "qrcode-terminal";
+import readline from "readline/promises";
 
 export class Netease {
     readonly REAL_IP?;
@@ -23,29 +24,53 @@ export class Netease {
         } else needLogin = true;
         if (needLogin) {
             try {
-                if (await client.config.getOne("neteaseVIP")) {
-                    const res = await netease
-                        .login({
-                            email: (
-                                await client.config.getOne("neteaseEmail")
-                            ).toString(),
-                            password: (
-                                await client.config.getOne("neteasePassword")
-                            ).toString(),
-                            realIP: this.REAL_IP,
-                        })
-                        .catch((e) => e);
+                if (await client.config.getOne("arisa::auth.netease.enabled")) {
+                    const phone = await client.config.getOne(
+                        "arisa::auth.netease.phone.number"
+                    );
+                    const country = await client.config.getOne(
+                        "arisa::auth.netease.phone.country"
+                    );
+                    let res: any = {};
+                    if (phone) {
+                        await netease.captcha_sent({
+                            phone,
+                            ctcode: country || "86",
+                        });
+                        const rl = readline.createInterface(
+                            process.stdin,
+                            process.stdout
+                        );
+                        const code = await rl.question(
+                            "Please enter the verification code sent to your mobile phone: \n"
+                        );
+                        res = await netease
+                            .login_cellphone({
+                                phone,
+                                countrycode: country || "86",
+                                captcha: code,
+                                realIP: this.REAL_IP,
+                            })
+                            .catch((e) => e);
+                    }
+
                     if (res.body.code == 200 && res.body.cookie) {
-                        client.logger.info("Netease Music log in success.");
+                        client.logger.info("Netease Music login success.");
                         storedCookie = res.body.cookie;
                     } else {
                         client.logger.info(
-                            "Netease Music log in failed. Trying QR Code log in."
+                            "Netease Music login failed. Trying QR Code log in."
                         );
                         // Login failed
                         client.logger.debug(res);
+
+                        enum QRLoginResult {
+                            SUCCESS,
+                            RETRY,
+                            SKIP,
+                        }
                         // Start QR Code login
-                        async function QRLogin() {
+                        async function QRLogin(): Promise<QRLoginResult> {
                             const QRKey = (
                                 (await netease.login_qr_key({})).body as any
                             ).data.unikey;
@@ -60,7 +85,12 @@ export class Netease {
                             client.logger.info(
                                 "Please use the Netease Music app to scan the QR Code."
                             );
-                            while (true) {
+                            const MAX_RETRY = 30;
+                            for (
+                                let retryCount = 0;
+                                retryCount < MAX_RETRY;
+                                retryCount++
+                            ) {
                                 enum STATUS {
                                     CODE_EXPIRED = 800,
                                     WAITING_FOR_CODE_SCAN = 801,
@@ -80,7 +110,7 @@ export class Netease {
                                     case STATUS.LOGIN_SUCCESS:
                                         storedCookie = res.cookie;
                                         client.logger.info("Login success.");
-                                        return true;
+                                        return QRLoginResult.SUCCESS;
                                     case STATUS.WAITING_FOR_CODE_SCAN:
                                         client.logger.info(
                                             "Waiting for QR Code scan..."
@@ -95,15 +125,33 @@ export class Netease {
                                         client.logger.info(
                                             "QR Code expired. Retrying in 5 minutes..."
                                         );
-                                        return false;
+                                        return QRLoginResult.RETRY;
                                 }
                                 await delay(5 * 1000);
                             }
+                            return QRLoginResult.SKIP;
                         }
                         while (true) {
                             const res = await QRLogin();
-                            if (res) break;
-                            else await delay(5 * 60 * 1000);
+                            switch (res) {
+                                case QRLoginResult.SUCCESS:
+                                    client.logger.info(
+                                        "QR Code login success."
+                                    );
+                                    break;
+                                case QRLoginResult.RETRY:
+                                    client.logger.info(
+                                        "Retrying QR Code login..."
+                                    );
+                                    await delay(5 * 60 * 1000);
+                                    continue;
+                                case QRLoginResult.SKIP:
+                                default:
+                                    client.logger.info(
+                                        "Skipped Netease login."
+                                    );
+                                    break;
+                            }
                         }
                     }
                 } else {
