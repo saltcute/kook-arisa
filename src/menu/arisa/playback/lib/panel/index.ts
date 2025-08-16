@@ -8,6 +8,7 @@ import type { ArisaNote } from "menu/arisa/command/note";
 interface PanelDetail {
     id: string;
     channelId: string;
+    targetUsers: string[];
 }
 
 export class ButtonControlPanel {
@@ -45,25 +46,25 @@ export class ButtonControlPanel {
 
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/next`,
-            async (event) => {
+            async () => {
                 await streamer.next();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/previous`,
-            async (event) => {
+            async () => {
                 await streamer.previous();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/pause`,
-            async (event) => {
+            async () => {
                 streamer.pause();
             }
         );
         this.client.events.button.registerActivator(
             `/control/${this.sessionId}/resume`,
-            async (event) => {
+            async () => {
                 streamer.resume();
             }
         );
@@ -126,7 +127,7 @@ export class ButtonControlPanel {
                 } else {
                     card.addText("**播放列表为空**");
                 }
-                this.maintainPanel(card);
+                this.maintainPanel(true, card, [event.authorId]);
             }
         );
 
@@ -170,8 +171,8 @@ export class ButtonControlPanel {
         });
     }
 
-    addPanel(id: string, channelId: string) {
-        this.panels.add({ id, channelId });
+    addPanel(id: string, channelId: string, targetUsers: string[] = []) {
+        this.panels.add({ id, channelId, targetUsers });
     }
     async newPanel(targetChannel: string): Promise<boolean> {
         if (this.panelChannelArray.includes(targetChannel)) {
@@ -181,10 +182,28 @@ export class ButtonControlPanel {
                     .map((v) => this.deletePanel(v.id))
             );
         }
+        const { data: channel } = await this.client.API.channel.view(
+            this.streamer.TARGET_CHANNEL_ID
+        );
+        const { data: link } = await this.client.API.invite.create({
+            guildId: this.streamer.TARGET_GUILD_ID,
+            channelId: this.streamer.TARGET_CHANNEL_ID,
+        });
+        const arisaNote: ArisaNote = require("menu/arisa/command/note").default;
         const { err, data } = await this.client.API.message.create(
             MessageType.CardMessage,
             targetChannel,
             new Card()
+                .addText("正在播放")
+                .addTitle("未知乐曲")
+                .addText(
+                    `加入${channel ? ` 🔈 ${link ? `[#${channel.name}](${link.url})` : `#${channel.name}`} ` : "语音频道"}以查看内容`
+                )
+                .addDivider()
+                .addContext(
+                    `发送 \`${this.client.plugin.primaryPrefix}${arisaNote.hierarchyName}\` 查看更新日志与帮助\n` +
+                        `推荐使用[网页面板](${this.client.config.getSync("webuiUrl")})，功能更加完善。问题、建议→[KOOK服务器](https://kook.top/iOOsLu)\n`
+                )
         );
         if (err) {
             this.client.logger.error(err);
@@ -203,23 +222,81 @@ export class ButtonControlPanel {
     }
 
     readonly MAINTAIN_INTERVAL = 5 * 1000;
-    async maintainPanel(customCard?: Card) {
-        if (Date.now() - this.lastMaintain < 500) return;
-        clearTimeout(this.maintainCounter);
-        const promises = this.panelMessageArray.map((id) =>
-            this.client.API.message.update(id, customCard || this.toCard())
-        );
+    readonly BOARDCAST_MAINTAIN_INTERVAL = 2 * 60 * 1000;
+    async maintainPanel(
+        temporary = true,
+        customCard?: Card,
+        targetUserOverride?: string[]
+    ) {
+        if (temporary) {
+            if (this.maintain) {
+                if (Date.now() - this.maintain.lastTime < 1000) return;
+                clearTimeout(this.maintain.counter);
+            }
+        } else {
+            if (this.boardcastMaintain) {
+                if (Date.now() - this.boardcastMaintain.lastTime < 1000) return;
+                clearTimeout(this.boardcastMaintain.counter);
+            }
+        }
+
+        const promises: Promise<any>[] = [];
+
+        if (temporary) {
+            promises.push(
+                ...this.panelMessageArray.flatMap((panelMessageId) =>
+                    (targetUserOverride || [...this.streamer.audienceIds]).map(
+                        (userId) =>
+                            this.client.API.message.update(
+                                panelMessageId,
+                                customCard || this.toCard(),
+                                undefined,
+                                userId
+                            )
+                    )
+                )
+            );
+        } else {
+            promises.push(
+                ...this.panelMessageArray.map((panelMessageId) =>
+                    this.client.API.message.update(
+                        panelMessageId,
+                        customCard || this.toCard()
+                    )
+                )
+            );
+        }
+
         await Promise.all(promises);
-        this.lastMaintain = Date.now();
-        this.maintainCounter = setTimeout(() => {
-            this.maintainPanel();
-        }, this.MAINTAIN_INTERVAL);
+
+        if (temporary) {
+            this.maintain = {
+                lastTime: Date.now(),
+                counter: setTimeout(() => {
+                    this.maintainPanel();
+                }, this.MAINTAIN_INTERVAL),
+            };
+        } else {
+            this.boardcastMaintain = {
+                lastTime: Date.now(),
+                counter: setTimeout(() => {
+                    this.maintainPanel(false);
+                }, this.BOARDCAST_MAINTAIN_INTERVAL),
+            };
+        }
     }
-    private maintainCounter?: NodeJS.Timeout;
-    private lastMaintain = -1;
+    private maintain?: {
+        counter: NodeJS.Timeout;
+        lastTime: number;
+    };
+    private boardcastMaintain?: {
+        counter: NodeJS.Timeout;
+        lastTime: number;
+    };
 
     async close() {
-        clearTimeout(this.maintainCounter);
+        clearTimeout(this.maintain?.counter);
+        clearTimeout(this.boardcastMaintain?.counter);
 
         const promises = this.panelMessageArray.map((id) =>
             this.client.API.message.delete(id)
