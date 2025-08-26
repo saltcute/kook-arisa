@@ -33,7 +33,6 @@
     internalWebuiPort: 80,
     webuiUrl: "http://localhost",
 
-    "arisa::auth.netease.cookie": "",
     "arisa::auth.netease.enabled": false,
     "arisa::auth.netease.phone.number": "",
     "arisa::auth.netease.phone.country": "",

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { cache, forceReferer } from "./lib/index";
 
 import netease from "menu/arisa/command/netease/lib";
+import { client } from "init/client";
 const router = Router();
 
 router.use(cache(60 * 15), forceReferer());
@@ -58,6 +59,22 @@ router.get("/lyric", (req, res) => {
             message: "no id was provided",
         });
     }
+});
+
+router.post("/updateCookie", (req, res) => {
+    if (req.body.code != client.config.getSync("QQCookieCode")) {
+        res.status(400).send({
+            code: 400,
+            message: "wrong code",
+        });
+        return;
+    }
+    const cookie = req.body.cookie;
+    netease.updateCookie(cookie);
+    res.send({
+        code: 200,
+        message: "success",
+    });
 });
 
 export default router;

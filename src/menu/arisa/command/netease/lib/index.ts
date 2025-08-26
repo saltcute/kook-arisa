@@ -164,8 +164,13 @@ export class Netease {
                 storedCookie = undefined;
             }
         }
-        client.config.set("arisa::auth.netease.cookie", storedCookie);
-        if (storedCookie) this.cookie = storedCookie;
+        this.updateCookie(storedCookie);
+    }
+    updateCookie(payload?: string) {
+        if (payload) {
+            this.cookie = payload;
+            client.config.set("arisa::auth.netease.cookie", payload);
+        }
     }
     async search(
         keywords: string,
