@@ -12,13 +12,21 @@ router.use(bodyParser.json());
 router.get("/search", cache(60 * 15), (req, res) => {
     const keyword = <string>req.query.keyword;
     if (keyword) {
-        qqmusic.search(keyword, undefined, 20).then((re) => {
-            res.send({
-                code: 200,
-                message: "success",
-                data: re,
+        qqmusic
+            .search(keyword, undefined, 20)
+            .then((re) => {
+                res.send({
+                    code: 200,
+                    message: "success",
+                    data: re,
+                });
+            })
+            .catch((e) => {
+                res.status(500).send({
+                    code: 500,
+                    message: e.message,
+                });
             });
-        });
     } else {
         res.status(400).send({
             code: 400,
@@ -30,13 +38,21 @@ router.get("/search", cache(60 * 15), (req, res) => {
 router.get("/lyric", cache(60 * 15), (req, res) => {
     const mid = <string>req.query.mid;
     if (mid) {
-        qqmusic.getLyric(mid).then((re) => {
-            res.send({
-                code: 200,
-                message: "success",
-                data: re,
+        qqmusic
+            .getLyric(mid)
+            .then((re) => {
+                res.send({
+                    code: 200,
+                    message: "success",
+                    data: re,
+                });
+            })
+            .catch((e) => {
+                res.status(500).send({
+                    code: 500,
+                    message: e.message,
+                });
             });
-        });
     } else {
         res.status(400).send({
             code: 400,
