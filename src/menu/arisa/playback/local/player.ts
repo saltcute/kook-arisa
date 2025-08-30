@@ -15,6 +15,8 @@ import { Time } from "../lib/time";
 import { MessageType } from "kasumi.js";
 
 import spotify from "menu/arisa/command/spotify/lib/index";
+import { createAccurateIntervalWorker } from "./streamWorker";
+
 const biliAPI = require("bili-api");
 
 export class LocalStreamer extends Streamer {
@@ -791,7 +793,7 @@ export class LocalStreamer extends Streamer {
                  * Rate over 10ms, 96KB/s / 100 = 0.96KB/10ms = 960B/10ms
                  */
                 // var rate = 960; // For pcm_u8;
-                while (Date.now() - this.lastRead < 20);
+                if (Date.now() - this.lastRead < 20) await delay(20);
 
                 this.lastRead = Date.now();
                 this.currentHeadSize = this.currentChunkStart;
@@ -801,42 +803,51 @@ export class LocalStreamer extends Streamer {
                     this.streamHasHead = true;
                 }
 
-                while (
-                    this.previousStream &&
-                    this.currentChunkStart <= this.currentBufferSize
-                ) {
-                    if (!this.paused) {
-                        this.lastRead = Date.now();
-                        const chunk = cache.subarray(
-                            this.currentChunkStart,
-                            this.currentChunkStart + this.RATE
-                        );
-                        if (
-                            this.previousStream &&
-                            this.currentChunkStart <= this.currentBufferSize
-                        ) {
-                            let tmpChunk = Buffer.alloc(chunk.length);
-                            for (
-                                let i = 0;
-                                i < chunk.length;
-                                i += this.BYTES_PER_SAMPLE
+                createAccurateIntervalWorker(
+                    () =>
+                        this.previousStream &&
+                        this.currentChunkStart <= this.currentBufferSize,
+                    BigInt(this.PUSH_INTERVAL * 1000 * 1000),
+                    () => {
+                        if (!this.paused) {
+                            this.lastRead = Date.now();
+                            const chunk = cache.subarray(
+                                this.currentChunkStart,
+                                this.currentChunkStart + this.RATE
+                            );
+                            if (
+                                this.previousStream &&
+                                this.currentChunkStart <= this.currentBufferSize
                             ) {
-                                let v = chunk.readInt16LE(i);
-                                let after = v * this.volumeGain; // pcm_s16le
-                                tmpChunk.writeInt16LE(after, i);
+                                const tmpChunk = Buffer.alloc(chunk.length);
+                                for (
+                                    let i = 0;
+                                    i < chunk.length;
+                                    i += this.BYTES_PER_SAMPLE
+                                ) {
+                                    let v = chunk.readInt16LE(i);
+                                    let after = v * this.volumeGain; // pcm_s16le
+                                    tmpChunk.writeInt16LE(after, i);
+                                }
+                                this.koice?.push(tmpChunk);
+                            } else {
+                                return false;
                             }
-                            this.koice?.push(tmpChunk);
-                        } else {
-                            break;
+                            this.currentChunkStart += this.RATE;
                         }
-                        this.currentChunkStart += this.RATE;
                     }
-                    await delay(this.PUSH_INTERVAL);
-                }
-                if (this.previousStream) {
-                    await this.endPlayback();
-                    await this.next();
-                }
+                )
+                    .then(async () => {
+                        if (this.previousStream) {
+                            await this.endPlayback();
+                            await this.next();
+                        }
+                    })
+                    .catch(async (e) => {
+                        this.kasumi.logger.error(e);
+                        await this.endPlayback();
+                        await this.next();
+                    });
             });
         } catch (e) {
             this.kasumi.logger.error(e);
