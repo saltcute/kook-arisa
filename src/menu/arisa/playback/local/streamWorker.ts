@@ -1,3 +1,4 @@
+import * as path from "path";
 import { isMainThread, workerData, Worker, parentPort } from "worker_threads";
 
 enum Signal {
@@ -48,7 +49,7 @@ export async function createAccurateIntervalWorker(
     work: () => Promise<boolean | void> | boolean | void
 ) {
     return new Promise<boolean>((resolve, reject) => {
-        const worker = new Worker(__filename, {
+        const worker = new Worker(path.resolve(__dirname, "streamWorker.js"), {
             workerData: { interval },
         });
         let index = 1;
@@ -86,8 +87,7 @@ async function accurateInterval(
     interval: bigint,
     work: (index: number) => Promise<boolean | void> | boolean | void
 ) {
-    let accumulatedTime = 0n,
-        lastRunTime = process.hrtime.bigint();
+    let lastRunTime = process.hrtime.bigint();
     let index = 1;
     while (condition(index)) {
         const currentTime = process.hrtime.bigint();
@@ -97,7 +97,6 @@ async function accurateInterval(
             const result = await work(index);
             if (result === false) break;
 
-            accumulatedTime += timeDifference;
             lastRunTime = currentTime;
             index++;
         }

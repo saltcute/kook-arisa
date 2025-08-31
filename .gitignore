@@ -3,6 +3,8 @@ node_modules/
 src/config/*.*
 !src/config/template-config.json5
 
+src/menu/arisa/playback/local/streamWorker.js
+
 .DS_Store
 
 dist/
