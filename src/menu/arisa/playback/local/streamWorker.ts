@@ -100,6 +100,8 @@ async function accurateInterval(
             lastRunTime = currentTime;
             index++;
         }
+
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 0.25); // Sleep for 0.25ms to prevent busy-waiting.
     }
 }
 
