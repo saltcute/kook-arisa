@@ -28,14 +28,13 @@ app.ws("/", (ws: WebSocket) => {
             message: string;
             data: any;
         }> {
-            const webuiUrl = await client.config.getOne("webuiUrl");
             return new Promise((resolve, rejects) => {
                 axios({
-                    baseURL: webuiUrl.toString(),
-                    url: "/api/me",
-                    method: "POST",
-                    data: {
-                        auth: `Bearer ${token}`,
+                    baseURL: "https://www.kookapp.cn",
+                    url: "/api/v3/user/me",
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
                     },
                 })
                     .then(({ data }) => {
