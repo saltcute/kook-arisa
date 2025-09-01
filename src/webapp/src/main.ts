@@ -1,4 +1,7 @@
 import { createApp } from "vue";
+
+import "@picocss/pico";
+
 import App from "./App.vue";
 import router from "./router";
 // @ts-ignore
@@ -7,6 +10,15 @@ import Notifications from "@kyvg/vue3-notification";
 import "./assets/fonts/JiangChengYuanTi/style.css";
 import "./assets/fonts/GenSenRounded/style.css";
 import "./assets/fonts/GenJyuuGothic/style.css";
+
+import "./assets/fonts/NotoSansSC/NotoSansSC-Regular.ttf";
+import "./assets/fonts/NotoSansTC/NotoSansTC-Regular.ttf";
+import "./assets/fonts/NotoSansJP/NotoSansJP-Regular.ttf";
+
+import "./assets/fonts/Comfortaa/Comfortaa-Regular.ttf";
+import "./assets/fonts/JosefinSans/JosefinSans-Regular.ttf";
+import "./assets/fonts/ChironGoRoundTC/ChironGoRoundTC-Regular.ttf";
+
 import "./assets/theme.css";
 
 const app = createApp(App);

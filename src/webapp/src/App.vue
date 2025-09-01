@@ -22,8 +22,6 @@ const view = ref<InstanceType<typeof RouterView> | null>(null);
 </template>
 
 <style lang="scss">
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans+TC&family=Noto+Sans+JP&family=Comfortaa&family=Josefin+Sans&display=swap");
-
 :root {
     --body-weight: 400;
     --header-weight: 600;
@@ -38,7 +36,7 @@ const view = ref<InstanceType<typeof RouterView> | null>(null);
     --card-panel-background-color-dark: #16242f;
     --card-panel-background-color-light: #ffffff;
 
-    --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "GenSenRounded TW R",
+    --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "GenSenRounded TW R", "Chiron GoRound TC",
         sans-serif;
     --header-font: "Josefin Sans", "Noto Sans JP", sans-serif;
 
@@ -50,7 +48,7 @@ const view = ref<InstanceType<typeof RouterView> | null>(null);
     }
 
     &[lang^="zh-CN"] {
-        --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "JiangChengYuanTi",
+        --body-font: "Comfortaa", "Gen Jyuu Gothic Regular", "JiangChengYuanTi", "Chiron GoRound TC",
             sans-serif;
         --header-font: "Josefin Sans", "Noto Sans SC", sans-serif;
     }
