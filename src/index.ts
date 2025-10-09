@@ -22,7 +22,7 @@ import "api/main";
         }
     }
 
-    const admins = await client.config.getOne("globalAdmins");
+    const admins = await client.config.getOne("arisa::config:admins");
     for (const admin of admins) {
         client.middlewares.AccessControl.global.group.assignUser(
             admin,
