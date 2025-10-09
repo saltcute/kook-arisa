@@ -241,6 +241,7 @@ export class Netease {
             (
                 await netease.song_url({
                     id,
+                    br: 128000,
                     cookie: this.cookie,
                     realIP: this.REAL_IP,
                 })
