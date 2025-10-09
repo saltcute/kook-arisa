@@ -394,7 +394,7 @@ export abstract class Streamer extends EventEmitter2 {
 }
 
 export abstract class Controller extends EventEmitter2 {
-    public readonly MAX_CONCURRENT_STREAMS = 15;
+    public readonly MAX_CONCURRENT_STREAMS;
 
     client: Kasumi<ArisaStorage>;
 
@@ -404,6 +404,9 @@ export abstract class Controller extends EventEmitter2 {
         super({ wildcard: true });
         this.controllerToken = client.TOKEN;
         this.client = client;
+        this.MAX_CONCURRENT_STREAMS =
+            this.client.config.getSync("arisa::config.maxConcurrentStreams") ||
+            15;
     }
 
     /**

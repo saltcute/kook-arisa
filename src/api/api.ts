@@ -92,12 +92,16 @@ router.get("/login", async (req, res) => {
             method: "POST",
             data: {
                 grant_type: "authorization_code",
-                client_id: (await client.config.get("kookClientID"))
-                    .kookClientID,
-                client_secret: (await client.config.get("kookClientSecret"))
-                    .kookClientSecret,
+                client_id: await client.config.getOne(
+                    "arisa::config.oauth.kook.client.id"
+                ),
+                client_secret: await client.config.getOne(
+                    "arisa::config.oauth.kook.client.secret"
+                ),
                 code,
-                redirect_uri: (await client.config.get("webuiUrl")).webuiUrl,
+                redirect_uri: await client.config.getOne(
+                    "arisa::config.webui.url"
+                ),
             },
         })
             .then(({ data }) => {

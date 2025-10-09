@@ -13,27 +13,30 @@ export interface ArisaStorage {
     "arisa::config.assets.logo.neteasecloud": string;
     "arisa::config.assets.logo.spotify": string;
 
-    kookClientID: string;
-    kookClientSecret: string;
+    "arisa::config.maxConcurrentStreams"?: number;
 
-    internalWebuiPort: number;
-    webuiUrl: string;
+    "arisa::config.oauth.kook.client.id": string;
+    "arisa::config.oauth.kook.client.secret": string;
+
+    "arisa::config.webui.url": string;
+    "arisa::config.webui.port": number;
 
     "arisa::auth.netease.cookie"?: string;
     "arisa::auth.netease.enabled": boolean;
     "arisa::auth.netease.phone.number": string;
     "arisa::auth.netease.phone.country"?: string;
 
-    QQCookieCode: string;
+    "arisa::config.netease.realIP"?: string;
+
+    "arisa::auth.QQMusicCookieRefresh.code": string;
 
     "arisa::session.ongoing": {
+        
         targetChannelId: string;
         targetGuildId: string;
         invitationAuthorId: string;
         invitationTextChannelId?: string;
     }[];
 
-    globalAdmins: string[];
-
-    realIP?: string;
+    "arisa::config:admins": string[];
 }

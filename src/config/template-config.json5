@@ -1,7 +1,7 @@
 {
     "kasumi::config.disableSnOrderCheck": true,
     "kasumi::config.token": "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
-    "kasumi::config.connection": "kookts",
+    "kasumi::config.connection": "kasumi",
     "kasumi::config.webhookVerifyToken": "",
     "kasumi::config.webhookEncryptKey": "",
     "kasumi::config.webhookPort": 11451,
@@ -27,19 +27,19 @@
     "arisa::config.assets.logo.neteasecloud": "(emj)netease(emj)[8397910479422202/VzgKzo9YsY05k05k]",
     "arisa::config.assets.logo.spotify": "(emj)spotify(emj)[8397910479422202/7TcBCyjDDN05k05k]",
 
-    kookClientID: "",
-    kookClientSecret: "",
+    "arisa::config.maxConcurrentStreams": 15,
 
-    internalWebuiPort: 80,
-    webuiUrl: "http://localhost",
+    "arisa::config.oauth.kook.client.id": "",
+    "arisa::config.oauth.kook.client.secret": "",
+
+    "arisa::config.webui.url": "http://localhost",
+    "arisa::config.webui.port": 80,
 
     "arisa::auth.netease.enabled": false,
     "arisa::auth.netease.phone.number": "",
     "arisa::auth.netease.phone.country": "",
 
-    QQCookieCode: "",
+    "arisa::auth.QQMusicCookieRefresh.code": "",
 
-    globalAdmins: ["1854484583"],
-
-    realIP: "106.11.249.99",
+    "arisa::config:admins": ["1854484583"],
 }

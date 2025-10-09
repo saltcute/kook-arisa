@@ -329,7 +329,7 @@ app.use(bodyParser.json());
 app.use("/", express.static(upath.join(__dirname, "..", "webapp", "dist")));
 app.get("/login", async (req, res) => {
     res.redirect(
-        `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${await client.config.getOne("kookClientID")}&redirect_uri=${encodeURIComponent((await client.config.getOne("webuiUrl")).toString())}&response_type=code&scope=get_user_info%20get_user_guilds`
+        `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${await client.config.getOne("kookClientID")}&redirect_uri=${encodeURIComponent((await client.config.getOne("arisa::config.webui.url")).toString())}&response_type=code&scope=get_user_info%20get_user_guilds`
     );
 });
 
@@ -338,13 +338,13 @@ app.use("/netease", netease);
 app.use("/qqmusic", qqmusic);
 app.use("/puchiriri", puchiriri);
 
-client.config.get("internalWebuiPort").then(({ internalWebuiPort }) => {
-    app.listen(internalWebuiPort, async () => {
+client.config.getOne("arisa::config.webui.port").then((port) => {
+    app.listen(port, async () => {
         client.logger.info(
-            `Webui start listening on port ${await client.config.getOne("internalWebuiPort")}`
+            `Webui start listening on port ${await client.config.getOne("arisa::config.webui.port")}`
         );
         client.logger.info(
-            `Access webui at ${await client.config.getOne("webuiUrl")} or http://localhost:${await client.config.getOne("internalWebuiPort")}`
+            `Access webui at ${await client.config.getOne("arisa::config.webui.url")} or http://localhost:${await client.config.getOne("arisa::config.webui.port")}`
         );
     });
 });

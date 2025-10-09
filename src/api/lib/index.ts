@@ -25,7 +25,9 @@ export function forceReferer() {
         next();
         return;
         if (
-            req.headers.referer?.startsWith(client.config.getSync("webuiUrl"))
+            req.headers.referer?.startsWith(
+                client.config.getSync("arisa::config.webui.url")
+            )
         ) {
             next();
         } else {

@@ -202,7 +202,7 @@ export class ButtonControlPanel {
                 .addDivider()
                 .addContext(
                     `发送 \`${this.client.plugin.primaryPrefix}${arisaNote.hierarchyName}\` 查看更新日志与帮助\n` +
-                        `推荐使用[网页面板](${this.client.config.getSync("webuiUrl")})，功能更加完善。问题、建议→[KOOK服务器](https://kook.top/iOOsLu)\n`
+                        `推荐使用[网页面板](${this.client.config.getSync("arisa::config.webui.url")})，功能更加完善。问题、建议→[KOOK服务器](https://kook.top/iOOsLu)\n`
                 )
         );
         if (err) {
@@ -490,7 +490,7 @@ export class ButtonControlPanel {
         const arisaNote: ArisaNote = require("menu/arisa/command/note").default;
         card.addDivider().addContext(
             `发送 \`${this.client.plugin.primaryPrefix}${arisaNote.hierarchyName}\` 查看更新日志与帮助\n` +
-                `推荐使用[网页面板](${this.client.config.getSync("webuiUrl")})，功能更加完善。问题、建议→[KOOK服务器](https://kook.top/iOOsLu)\n`
+                `推荐使用[网页面板](${this.client.config.getSync("arisa::config.webui.url")})，功能更加完善。问题、建议→[KOOK服务器](https://kook.top/iOOsLu)\n`
         );
         return card;
     }

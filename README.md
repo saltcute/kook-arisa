@@ -26,7 +26,7 @@ cp src/config/template-config.json5 src/config/config.json5
 {
     // KOOK connection settings. See https://kasumi.js.org/introduction/getting-started.html.
     "kasumi::config.token": "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
-    "kasumi::config.connection": "kookts",
+    "kasumi::config.connection": "kasumi",
     "kasumi::config.webhookVerifyToken": "",
     "kasumi::config.webhookEncryptKey": "",
     "kasumi::config.webhookPort": 11451,
@@ -36,15 +36,7 @@ cp src/config/template-config.json5 src/config/config.json5
 
     // Users whose id is in this array will have Admin group.
     // Use /arisaadmin to see admin commands.
-    globalAdmins: ["1854484583"],
-
-    // This is the actual bot that will join a voice channel.
-    // It could be the same as kasumi::config.token, but just to be safe a different one is recommended.
-    // You need at least one token.
-    streamers: [
-        "1/CR4Zyt=/thUr5d4YVme50pLSq5Ee9MA==",
-        "1/SU1SeI=/H4N3MuaN4taN0rENdEzV0us==",
-    ],
+    "arisa::config:admins": ["1854484583"],
 }
 ```
 
@@ -53,36 +45,36 @@ cp src/config/template-config.json5 src/config/config.json5
 ```json5
 {
     // Client ID and Client Secret is required for webui to work.
-    kookClientID: "",
+    "arisa::config.oauth.kook.client.id": "",
     // You need to have access to KOOK's oauth2 to get this.
-    kookClientSecret: "",
+   "arisa::config.oauth.kook.client.secret": "",
 
     // Optionally use other ports.
-    internalWebuiPort: 80,
+    "arisa::config.webui.port": 80,
     // This URL will be in cards and logs where it needs to link to the webui.
-    webuiUrl: "http://localhost",
+    "arisa::config.webui.url": "http://localhost",
 
-    // Set this to true to play VIP-exclusive tracks on Netease Cloud Music.
-    neteaseVIP: false,
+    // Set this to true to play VIP-exclusive tracks on Netease Cloud Music. NCM login is currently unavailable.
+    "arisa::auth.netease.enabled": false,
     // Your credentials are only sent to Netease's servers.
-    neteaseEmail: "nayutalien@love.you",
-    neteasePassword: "up!side@down#side$up%and^down",
+    "arisa::auth.netease.phone.number": "",
+    "arisa::auth.netease.phone.country": "",
 
-    // This is a random string that you will need if you want to update the cookie of QQ Music.
-    QQCookieCode: "11.86 mata aeru",
+    // This is a random string that you will need if you want to update the cookie of QQ Music and Netease Cloud Music.
+    "arisa::auth.QQMusicCookieRefresh.code": "11.86 mata aeru",
 }
 ```
 
-## Update QQ Music Cookie
+## Update QQ Music Cookie (and Netease Cloud Music Cookie)
 
 Most (90%) of the tracks on QQ Music needs a valid cookie to play. You can use [saltcute/QQMusicCookieRefresh](https://github.com/saltcute/QQMusicCookieRefresh) to refresh the cookie automatically. You need to login the QQ account to a normal QQ client on the server to use this.
 
 Or you can also send a POST request to `${webuiUrl}/qqmusic/updateCookie` with the body:
 
-```json5
+```json
 {
-    code: "The string you put in config",
-    cookie: "The cookie string",
+    "code": "The string you put in config",
+    "cookie": "The cookie string",
 }
 ```
 

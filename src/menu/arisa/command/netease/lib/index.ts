@@ -262,8 +262,8 @@ export class Netease {
 }
 
 const neteaseInstance = new Netease(
-    client.config.hasSync("realIP")
-        ? client.config.getSync("realIP").toString()
+    client.config.hasSync("arisa::config.netease.realIP")
+        ? client.config.getSync("arisa::config.netease.realIP").toString()
         : undefined
 );
 export default neteaseInstance;
