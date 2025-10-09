@@ -37,7 +37,9 @@ class Playlist {
             throw new Error(
                 "kasumi::config.mongoConnectionString does not exist in config"
             );
-        this.database = this.mongodb.db("playlist");
+        this.database = this.mongodb.db(
+            client.config.getSync("kasumi::config.mongoDatabaseName")
+        );
         this.colletion = this.database.collection<Playlist.collectionItem>(
             this.name
         );
@@ -127,7 +129,7 @@ class Playlist {
 }
 
 namespace playlist {
-    export const user = new Playlist("user");
-    export const channel = new Playlist("channel");
+    export const user = new Playlist("user-playlist");
+    export const channel = new Playlist("channel-playlist");
 }
 export default playlist;
