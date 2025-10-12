@@ -31,7 +31,6 @@ export interface ArisaStorage {
     "arisa::auth.QQMusicCookieRefresh.code": string;
 
     "arisa::session.ongoing": {
-        
         targetChannelId: string;
         targetGuildId: string;
         invitationAuthorId: string;

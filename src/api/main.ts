@@ -322,6 +322,11 @@ app.ws("/", (ws: WebSocket) => {
     let syncStatus = setInterval(() => {
         sendStatus();
     }, 500);
+
+    ws.on("close", () => {
+        clearInterval(keepAlive);
+        clearInterval(syncStatus);
+    });
 });
 
 app.use(bodyParser.json());

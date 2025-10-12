@@ -113,6 +113,7 @@ if (!isMainThread) {
         switch (msg.signal) {
             case Signal.TERMINATE:
                 condition = false;
+                break;
         }
     });
     let condition = true;
@@ -128,4 +129,8 @@ if (!isMainThread) {
             return true;
         }
     );
+    (async () => {
+        while (condition) await new Promise((r) => setTimeout(r, 50));
+        parentPort?.postMessage({ signal: Signal.END });
+    })();
 }

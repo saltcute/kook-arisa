@@ -86,7 +86,10 @@ router.get("/lyric", (req, res) => {
 });
 
 router.post("/updateCookie", (req, res) => {
-    if (req.body.code != client.config.getSync("arisa::auth.QQMusicCookieRefresh.code")) {
+    if (
+        req.body.code !=
+        client.config.getSync("arisa::auth.QQMusicCookieRefresh.code")
+    ) {
         res.status(400).send({
             code: 400,
             message: "wrong code",

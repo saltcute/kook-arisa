@@ -55,7 +55,7 @@ export class LocalStreamer extends Streamer {
             await this.disconnect("无法创建 Koice.js 实例");
             return false;
         }
-        this.koice.on("close", (event) => {
+        this.koice.once("close", (event) => {
             this.kasumi.logger.error(event);
             this.initKoice();
         });
@@ -106,6 +106,10 @@ export class LocalStreamer extends Streamer {
             );
         }
         this.isClosed = true;
+        if (this.ensureUsageTimer) {
+            clearTimeout(this.ensureUsageTimer);
+            delete this.ensureUsageTimer;
+        }
         if (this.koice) {
             this.koice.removeAllListeners("close");
             this.koice.on("close", () => {
@@ -441,18 +445,21 @@ export class LocalStreamer extends Streamer {
     }
 
     private lastOperation: number;
+    private ensureUsageTimer?: NodeJS.Timeout;
     private ensureUsage() {
+        if (this.isClosed) return;
+
         if (Date.now() - this.lastOperation > 30 * 60 * 1000) {
             this.disconnect("机器人闲置");
         } else {
             this.lastOperation = Date.now();
+            this.ensureUsageTimer = setTimeout(
+                () => {
+                    this.ensureUsage();
+                },
+                15 * 60 * 1000
+            );
         }
-        setTimeout(
-            () => {
-                this.ensureUsage();
-            },
-            15 * 60 * 1000
-        );
     }
 
     private ffmpegInstance: ffmpeg.FfmpegCommand | undefined;

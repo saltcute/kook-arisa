@@ -99,8 +99,7 @@ class Backend extends EventEmitter2 {
         try {
             const self = this;
             this.ws = new WebSocket(
-                window.location.protocol.replace("http", "ws") +
-                    location.host
+                window.location.protocol.replace("http", "ws") + location.host
             );
             this.isWsAlive = true;
             this.isWsClosed = false;

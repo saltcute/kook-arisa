@@ -320,6 +320,12 @@ export class ButtonControlPanel {
         this.client.events.button.removeActivator(
             `/control/${this.sessionId}/showqueue`
         );
+
+        this.streamer.removeAllListeners("disconnect");
+        this.streamer.removeAllListeners("play");
+        this.streamer.removeAllListeners("connect");
+        this.streamer.removeAllListeners("pause");
+        this.streamer.removeAllListeners("resume");
     }
 
     private getProgressBar(playedTime: number, duration: number) {
