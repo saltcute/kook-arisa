@@ -69,7 +69,7 @@ cp src/config/template-config.json5 src/config/config.json5
 
 Most (90%) of the tracks on QQ Music needs a valid cookie to play. You can use [saltcute/QQMusicCookieRefresh](https://github.com/saltcute/QQMusicCookieRefresh) to refresh the cookie automatically. You need to login the QQ account to a normal QQ client on the server to use this.
 
-Or you can also send a POST request to `${webuiUrl}/qqmusic/updateCookie` with the body:
+Or you can also send a POST request to `/qqmusic/updateCookie` at the base URL configured by `arisa::config.webui.url` with the body:
 
 ```json
 {

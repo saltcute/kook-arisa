@@ -334,7 +334,7 @@ app.use(bodyParser.json());
 app.use("/", express.static(upath.join(__dirname, "..", "webapp", "dist")));
 app.get("/login", async (req, res) => {
     res.redirect(
-        `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${await client.config.getOne("kookClientID")}&redirect_uri=${encodeURIComponent((await client.config.getOne("arisa::config.webui.url")).toString())}&response_type=code&scope=get_user_info%20get_user_guilds`
+        `https://www.kookapp.cn/app/oauth2/authorize?id=12273&client_id=${await client.config.getOne("arisa::config.oauth.kook.client.id")}&redirect_uri=${encodeURIComponent((await client.config.getOne("arisa::config.webui.url")).toString())}&response_type=code&scope=get_user_info%20get_user_guilds`
     );
 });
 
